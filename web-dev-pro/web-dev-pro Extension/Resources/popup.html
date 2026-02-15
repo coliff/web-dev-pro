@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Web Dev Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="popup.css" />
+    <script type="module" src="popup.js"></script>
+  </head>
+
+  <body>
+    <header>
+      <h1>Source Toolkit</h1>
+      <p>SEO, Storage, CSS, A11y, Performance</p>
+    </header>
+
+    <main>
+      <section class="tool-group">
+        <div class="group-head">
+          <h2>SEO Check</h2>
+          <button class="primary" data-action="seo">Run</button>
+        </div>
+        <div id="seo-output" class="output"></div>
+      </section>
+
+      <section class="tool-group">
+        <div class="group-head">
+          <h2>Storage Viewer</h2>
+          <button class="primary" data-action="storage">Refresh</button>
+        </div>
+        <div class="storage-toolbar">
+          <button data-action="storage-copy">Copy JSON</button>
+        </div>
+        <div id="storage-output" class="output"></div>
+      </section>
+
+      <section class="tool-group">
+        <div class="group-head">
+          <h2>CSS Quick Tools</h2>
+        </div>
+        <div class="grid-buttons">
+          <button data-css-tool="zIndex">Show z-index</button>
+          <button data-css-tool="overflow">Overflow issues</button>
+          <button data-css-tool="layout">Flex/Grid bounds</button>
+          <button data-css-tool="darkMode">Dark mode sim</button>
+          <button data-css-tool="noAnimations">Disable animations</button>
+          <button data-css-tool="noImages">Disable images</button>
+          <button data-css-tool="forceHover">Force hover</button>
+        </div>
+      </section>
+
+      <section class="tool-group">
+        <div class="group-head">
+          <h2>Accessibility Snapshot</h2>
+          <button class="primary" data-action="a11y">Run</button>
+        </div>
+        <div class="grid-buttons">
+          <button data-action="a11y-filter-none">Color filter: Off</button>
+          <button data-action="a11y-filter-protanopia">Protanopia</button>
+          <button data-action="a11y-filter-deuteranopia">Deuteranopia</button>
+          <button data-action="a11y-filter-tritanopia">Tritanopia</button>
+        </div>
+        <div id="a11y-output" class="output"></div>
+        <p class="hint">
+          Tip: Click any page element after running to inspect ARIA attrs.
+        </p>
+      </section>
+
+      <section class="tool-group">
+        <div class="group-head">
+          <h2>Performance Snapshot</h2>
+          <button class="primary" data-action="perf">Run</button>
+        </div>
+        <div id="perf-output" class="output"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p id="status">Ready</p>
+    </footer>
+  </body>
+</html>
