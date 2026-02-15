@@ -342,6 +342,11 @@ async function switchTab(tabName) {
 
   if (tabName === "seo") {
     await runAction("seo");
+    return;
+  }
+
+  if (tabName === "perf") {
+    await runAction("perf");
   }
 }
 
