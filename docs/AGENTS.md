@@ -8,5 +8,4 @@
 ## HTML
 
 - Every page should have a header, main and footer element
-- ALways prefer using Bootstrap utility classes over custom CSS
-  
+- Always prefer using Bootstrap utility classes over custom CSS
