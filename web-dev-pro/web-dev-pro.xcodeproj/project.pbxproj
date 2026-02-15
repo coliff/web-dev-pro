@@ -253,7 +253,7 @@
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "web-dev-pro Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "web-dev-pro Extension";
+				INFOPLIST_KEY_CFBundleDisplayName = "Dev Inspector";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -286,7 +286,7 @@
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "web-dev-pro Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "web-dev-pro Extension";
+				INFOPLIST_KEY_CFBundleDisplayName = "Dev Inspector";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
