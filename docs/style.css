@@ -1,0 +1,120 @@
+/* Custom Properties */
+:root {
+  --color-dark: #2c3e50;
+  --color-grass: #7cb342;
+}
+
+/* Typography */
+body {
+  font-family: "Nunito", sans-serif;
+  background: linear-gradient(
+    180deg,
+    #87ceeb 0%,
+    #b4e7ce 50%,
+    var(--color-grass) 100%
+  );
+  min-height: 100vh;
+  color: var(--color-dark);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Fredoka", sans-serif;
+}
+
+/* Hero Section */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(255, 255, 255, 0.3) 0%,
+      transparent 20%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 230, 109, 0.2) 0%,
+      transparent 40%
+    );
+  pointer-events: none;
+}
+
+.app-icon {
+  width: 140px;
+  height: 140px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.btn-app-store {
+  transition: transform 0.2s ease;
+}
+
+.btn-app-store:hover {
+  transform: scale(1.05);
+}
+
+/* Screenshots Section */
+.screenshots-section {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+}
+
+.screenshot-img {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.screenshot-img:hover {
+  transform: translateY(-10px) scale(1.02);
+}
+
+/* Features Section */
+.feature-card {
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Privacy Policy Section */
+.privacy-section {
+  background: var(--color-dark);
+}
+
+.privacy-section p,
+.privacy-section ul {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+}
+
+/* Footer */
+.footer a:hover {
+  color: #ffe66d !important;
+}

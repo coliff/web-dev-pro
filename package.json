@@ -1,0 +1,25 @@
+{
+  "name": "animal-match-3",
+  "version": "1.0.0",
+  "description": "Animal Match 3 iPhone game",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christianoliff/animal-match-3.git"
+  },
+  "homepage": "https://animal-match-3.christianoliff.com",
+  "bugs": {
+    "url": "https://github.com/christianoliff/animal-match-3/issues"
+  },
+  "scripts": {
+    "prettier": "npx prettier --write docs/**/*.{html,css}",
+    "prettier:check": "npx prettier --check docs/**/*.{html,css}",
+    "htmlhint": "npx htmlhint docs/**/*.html",
+    "pa11y": "npx pa11y https://christianoliff.com/",
+    "serve": "npx http-server -o docs/index.html -p 8080 -c-1",
+    "spellcheck": "npx cspell \"docs/**/*.html\" --no-progress"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": "0.2",
+  "words": [
+    "jsdelivr",
+    "Oliff"
+  ],
+  "language": "en,en-US",
+  "allowCompoundWords": true,
+  "ignorePaths": [
+    ".cspell.json",
+    "**/node_modules/**"
+  ],
+  "useGitignore": true
+}
