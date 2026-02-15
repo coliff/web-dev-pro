@@ -8,7 +8,8 @@
 import SafariServices
 import os.log
 
-class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
+@MainActor
+final class SafariWebExtensionHandler: NSObject, @preconcurrency NSExtensionRequestHandling {
 
     func beginRequest(with context: NSExtensionContext) {
         let request = context.inputItems.first as? NSExtensionItem

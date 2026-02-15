@@ -280,7 +280,6 @@ function computeSeoSnapshot() {
     const canonicalUrl = document.querySelector('link[rel="canonical"]')?.href || "";
 
     const openGraphCount = document.querySelectorAll('meta[property^="og:"]').length;
-    const twitterCount = document.querySelectorAll('meta[name^="twitter:"]').length;
 
     const structuredData = [];
     if (document.querySelectorAll('script[type="application/ld+json"]').length) {
@@ -306,9 +305,6 @@ function computeSeoSnapshot() {
     if (openGraphCount === 0) {
         warnings.push("No Open Graph tags found");
     }
-    if (twitterCount === 0) {
-        warnings.push("No Twitter card tags found");
-    }
     if (structuredData.length === 0) {
         warnings.push("No structured data detected");
     }
@@ -318,7 +314,6 @@ function computeSeoSnapshot() {
         metaDescriptionLength: metaDescription.length,
         canonicalUrl,
         openGraphCount,
-        twitterCount,
         structuredData,
         warnings
     };

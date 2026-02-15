@@ -15,15 +15,22 @@
     </header>
 
     <main>
-      <section class="tool-group">
+      <nav class="tabs" aria-label="Tools">
+        <button class="tab active" data-tab="seo">SEO</button>
+        <button class="tab" data-tab="storage">Storage</button>
+        <button class="tab" data-tab="css">CSS</button>
+        <button class="tab" data-tab="a11y">A11y</button>
+        <button class="tab" data-tab="perf">Performance</button>
+      </nav>
+
+      <section class="tool-group tab-panel active" data-panel="seo">
         <div class="group-head">
           <h2>SEO Check</h2>
-          <button class="primary" data-action="seo">Run</button>
         </div>
         <div id="seo-output" class="output"></div>
       </section>
 
-      <section class="tool-group">
+      <section class="tool-group tab-panel" data-panel="storage">
         <div class="group-head">
           <h2>Storage Viewer</h2>
           <button class="primary" data-action="storage">Refresh</button>
@@ -34,7 +41,7 @@
         <div id="storage-output" class="output"></div>
       </section>
 
-      <section class="tool-group">
+      <section class="tool-group tab-panel" data-panel="css">
         <div class="group-head">
           <h2>CSS Quick Tools</h2>
         </div>
@@ -49,7 +56,7 @@
         </div>
       </section>
 
-      <section class="tool-group">
+      <section class="tool-group tab-panel" data-panel="a11y">
         <div class="group-head">
           <h2>Accessibility Snapshot</h2>
           <button class="primary" data-action="a11y">Run</button>
@@ -66,7 +73,7 @@
         </p>
       </section>
 
-      <section class="tool-group">
+      <section class="tool-group tab-panel" data-panel="perf">
         <div class="group-head">
           <h2>Performance Snapshot</h2>
           <button class="primary" data-action="perf">Run</button>

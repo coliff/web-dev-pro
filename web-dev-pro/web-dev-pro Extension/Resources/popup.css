@@ -1,11 +1,11 @@
 :root {
-  color-scheme: light;
-  --bg: #f5f5f7;
-  --panel: #ffffff;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --line: #d1d5db;
-  --accent: #0b67ff;
+  color-scheme: dark;
+  --bg: #0b1220;
+  --panel: #121a2b;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --line: #2c3a52;
+  --accent: #4f8cff;
   --accent-text: #ffffff;
 }
 
@@ -39,12 +39,38 @@ header p {
   font-size: 12px;
 }
 
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 10px;
+  padding-bottom: 2px;
+}
+
+.tab {
+  white-space: nowrap;
+}
+
+.tab.active {
+  border-color: var(--accent);
+  color: #dbeafe;
+  background: #1e3a8a;
+}
+
 .tool-group {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
   margin-bottom: 10px;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
 }
 
 .group-head {
@@ -61,7 +87,7 @@ header p {
 
 button {
   border: 1px solid var(--line);
-  background: #fff;
+  background: #0f172a;
   color: var(--text);
   border-radius: 8px;
   padding: 6px 8px;
@@ -77,8 +103,8 @@ button.primary {
 
 button.active {
   border-color: var(--accent);
-  color: var(--accent);
-  background: #eaf2ff;
+  color: #dbeafe;
+  background: #1e3a8a;
 }
 
 .grid-buttons {
@@ -94,7 +120,7 @@ button.active {
   max-height: 180px;
   overflow: auto;
   padding: 8px;
-  background: #fbfdff;
+  background: #0f172a;
   font-size: 12px;
   white-space: pre-wrap;
 }
@@ -126,7 +152,7 @@ button.active {
   border-radius: 8px;
   padding: 6px;
   margin-bottom: 6px;
-  background: #fff;
+  background: #0f172a;
 }
 
 .storage-row code {
@@ -150,26 +176,4 @@ button.active {
 footer {
   font-size: 12px;
   color: var(--muted);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --bg: #111827;
-    --panel: #1f2937;
-    --text: #e5e7eb;
-    --muted: #9ca3af;
-    --line: #374151;
-    --accent: #3b82f6;
-    --accent-text: #ffffff;
-  }
-
-  button {
-    background: #111827;
-  }
-
-  .output,
-  .storage-row {
-    background: #111827;
-  }
 }
