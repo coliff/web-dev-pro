@@ -1,13 +1,18 @@
 {
   "version": "0.2",
   "words": [
+    "Avenir",
     "jsdelivr",
-    "Oliff"
+    "Oliff",
+    "xctimeline",
+    "xcuserdata",
+    "xcworkspace"
   ],
   "language": "en,en-US",
   "allowCompoundWords": true,
   "ignorePaths": [
     ".cspell.json",
+    ".gitignore",
     "**/node_modules/**"
   ],
   "useGitignore": true
