@@ -36,15 +36,18 @@
       <section class="tool-group tab-panel rounded-3 overflow-hidden" data-panel="a11y">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h2 class="m-0 fs-6">Accessibility Snapshot</h2>
-          <button class="primary" data-action="a11y" type="button">Run</button>
+          <button class="btn btn-primary" data-action="a11y" type="button">Run</button>
         </div>
-        <div class="grid-buttons row g-1">
-          <div class="col-6"><button class="w-100" data-action="a11y-filter-none" type="button">Color filter: Off</button></div>
-          <div class="col-6"><button class="w-100" data-action="a11y-filter-protanopia" type="button">Protanopia</button></div>
-          <div class="col-6"><button class="w-100" data-action="a11y-filter-deuteranopia" type="button">Deuteranopia</button></div>
-          <div class="col-6"><button class="w-100" data-action="a11y-filter-tritanopia" type="button">Tritanopia</button></div>
-        </div>
-        <div id="a11y-output" class="output"></div>
+        <p class="mb-1 mt-0 fw-medium small">Emulate vision deficiencies</p>
+        <p class="small text-secondary opacity-75 mb-2 mt-0">Forces vision deficiency emulation</p>
+        <select id="a11y-vision-select" class="form-select form-select-sm mb-2" aria-label="Vision deficiency emulation">
+          <option value="none" selected>No Emulation</option>
+          <option value="protanopia">Protanopia</option>
+          <option value="deuteranopia">Deuteranopia</option>
+          <option value="tritanopia">Tritanopia</option>
+          <option value="blurred">Blurred vision</option>
+        </select>
+        <div id="a11y-output" class="output rounded-3"></div>
         <p class="small text-secondary mt-1 mb-0">
           Tip: Click any page element after running to inspect ARIA attrs.
         </p>
@@ -146,15 +149,15 @@
       <section class="tool-group tab-panel overflow-hidden" data-panel="storage">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h2 class="m-0 fs-6">Storage Viewer</h2>
-          <button class="primary btn-icon d-inline-flex align-items-center justify-content-center" data-action="storage" type="button" aria-label="Refresh storage"
+          <button class="primary btn btn-icon d-inline-flex align-items-center justify-content-center" data-action="storage" type="button" aria-label="Refresh storage"
             title="Refresh storage">
             <img class="d-block" src="icons/refresh.svg" alt="Refresh" width="18" height="18" aria-hidden="true" />
           </button>
         </div>
         <div class="d-flex gap-1 mb-1">
-          <button data-action="storage-copy" type="button">Copy JSON</button>
+          <button data-action="storage-copy" type="button" class="btn btn-secondary">Copy JSON</button>
         </div>
-        <div id="storage-output" class="output rounded-3 small overflow-auto"></div>
+        <div id="storage-output" class="output rounded-3 small overflow-auto p-2"></div>
       </section>
     </main>
 

@@ -253,7 +253,8 @@ function setColorBlindFilter(filterName) {
         none: "",
         protanopia: "url('#') grayscale(0.1) sepia(0.2) saturate(0.8)",
         deuteranopia: "grayscale(0.25) hue-rotate(-20deg)",
-        tritanopia: "grayscale(0.2) hue-rotate(35deg)"
+        tritanopia: "grayscale(0.2) hue-rotate(35deg)",
+        blurred: "blur(3px)"
     };
 
     state.toolActive.colorBlind = filterName in filters ? filterName : "none";

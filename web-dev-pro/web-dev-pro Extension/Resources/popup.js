@@ -375,24 +375,7 @@ async function handleStorageAction(event) {
 
 async function runAction(action) {
   try {
-    if (action === "a11y-filter-none") {
-      await sendToActiveTab({ action: "a11y-color-filter", filter: "none" });
-    } else if (action === "a11y-filter-protanopia") {
-      await sendToActiveTab({
-        action: "a11y-color-filter",
-        filter: "protanopia",
-      });
-    } else if (action === "a11y-filter-deuteranopia") {
-      await sendToActiveTab({
-        action: "a11y-color-filter",
-        filter: "deuteranopia",
-      });
-    } else if (action === "a11y-filter-tritanopia") {
-      await sendToActiveTab({
-        action: "a11y-color-filter",
-        filter: "tritanopia",
-      });
-    } else if (action === "seo") {
+    if (action === "seo") {
       const result = await sendToActiveTab({ action: "seo-snapshot" });
       renderSEO(result);
     } else if (action === "a11y") {
@@ -518,6 +501,24 @@ async function bindEvents() {
       await toggleCssTool(input);
     });
   });
+
+  const visionSelect = document.getElementById("a11y-vision-select");
+  if (visionSelect instanceof HTMLSelectElement) {
+    visionSelect.addEventListener("change", async () => {
+      try {
+        await sendToActiveTab({
+          action: "a11y-color-filter",
+          filter: visionSelect.value,
+        });
+      } catch (error) {
+        const message =
+          (error && typeof error === "object" && "message" in error && error.message)
+          || String(error)
+          || "Request failed.";
+        setStatus(message, true);
+      }
+    });
+  }
 
   const savedTab = await loadSavedTab();
   if (savedTab && validTabs.has(savedTab)) {

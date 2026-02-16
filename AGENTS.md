@@ -1,6 +1,6 @@
 # AGENTS.md
 
-An iPhone Safari browser extension that allows you to view the source code of any website.
+An iPhone and iPad Safari browser extension that allows you to check and test a variety of web development tools.
 
 ## HTML
 
