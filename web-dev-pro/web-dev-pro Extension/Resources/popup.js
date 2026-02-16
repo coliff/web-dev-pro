@@ -318,8 +318,13 @@ async function loadStorage() {
   renderStorage(response);
 }
 
-async function handleStorageAction(event) {
-  const target = event.target;
+async function handleStorageAction(source) {
+  const startNode = source instanceof HTMLElement ? source : source?.target;
+  if (!(startNode instanceof HTMLElement)) {
+    return;
+  }
+
+  const target = startNode.closest("[data-storage-action]");
   if (!(target instanceof HTMLElement)) {
     return;
   }
@@ -332,11 +337,15 @@ async function handleStorageAction(event) {
   const kind = target.dataset.kind;
   const key = target.dataset.key;
 
-  if (!kind || !key || !lastStoragePayload) {
+  if (!kind || !key) {
     return;
   }
 
-  const item = lastStoragePayload.items.find(
+  if (!lastStoragePayload) {
+    await loadStorage();
+  }
+
+  const item = lastStoragePayload?.items?.find(
     (entry) => entry.kind === kind && entry.key === key,
   );
   if (!item) {
@@ -344,7 +353,7 @@ async function handleStorageAction(event) {
   }
 
   if (action === "copy") {
-    await navigator.clipboard.writeText(item.value);
+    await navigator.clipboard.writeText(String(item.value ?? ""));
     setStatus(`Copied ${kind}:${key}`);
     return;
   }
@@ -477,6 +486,12 @@ async function bindEvents() {
       return;
     }
 
+    const storageActionButton = target.closest("[data-storage-action]");
+    if (storageActionButton instanceof HTMLElement) {
+      await handleStorageAction(storageActionButton);
+      return;
+    }
+
     const tabButton = target.closest("[data-tab]");
     if (tabButton instanceof HTMLElement && tabButton.dataset.tab) {
       await switchTab(tabButton.dataset.tab);
@@ -489,7 +504,7 @@ async function bindEvents() {
       return;
     }
 
-    await handleStorageAction(event);
+    await handleStorageAction(target);
   });
 
   document.querySelectorAll("input[data-css-tool]").forEach((input) => {

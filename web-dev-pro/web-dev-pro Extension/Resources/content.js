@@ -446,6 +446,47 @@ function computePerfSnapshot() {
             ? (performance.getEntriesByType("resource") || [])
             : [];
 
+        const normalizeUrl = (value) => {
+            try {
+                const url = new URL(value, location.href);
+                url.hash = "";
+                return url.href;
+            } catch (_error) {
+                return value || "";
+            }
+        };
+
+        const bytesFromEntry = (entry) => {
+            if (!entry) {
+                return null;
+            }
+
+            const transfer = Number(entry.transferSize || 0);
+            if (transfer > 0) {
+                return transfer;
+            }
+
+            const encoded = Number(entry.encodedBodySize || 0);
+            if (encoded > 0) {
+                return encoded;
+            }
+
+            const decoded = Number(entry.decodedBodySize || 0);
+            if (decoded > 0) {
+                return decoded;
+            }
+
+            return null;
+        };
+
+        const resourceIndex = new Map();
+        for (const resource of resourceEntries) {
+            const key = normalizeUrl(resource.name);
+            if (!resourceIndex.has(key)) {
+                resourceIndex.set(key, resource);
+            }
+        }
+
         const transferBytes = resourceEntries.reduce((sum, entry) => {
             const value = entry.transferSize || entry.encodedBodySize || 0;
             return sum + value;
@@ -469,16 +510,19 @@ function computePerfSnapshot() {
                     return null;
                 }
 
-                const entry = resourceEntries.find((resource) => resource.name === src);
-                const bytes = entry?.transferSize || entry?.encodedBodySize || 0;
-                const largeBySize = bytes > 200 * 1024;
+                const normalizedSrc = normalizeUrl(src);
+                const entry = resourceIndex.get(normalizedSrc)
+                    || resourceEntries.find((resource) => normalizeUrl(resource.name) === normalizedSrc);
+                const bytes = bytesFromEntry(entry);
+                const largeBySize = bytes !== null && bytes > 200 * 1024;
                 const largeByDimension = img.naturalWidth > 2000 || img.naturalHeight > 2000;
 
                 if (!largeBySize && !largeByDimension) {
                     return null;
                 }
 
-                return `${src.slice(0, 72)}${src.length > 72 ? "..." : ""} (${Math.round(bytes / 1024)}KB)`;
+                const sizeText = bytes === null ? "size unavailable" : `${Math.round(bytes / 1024)}KB`;
+                return `${src.slice(0, 72)}${src.length > 72 ? "..." : ""} (${sizeText})`;
             })
             .filter(Boolean)
             .slice(0, 10);
