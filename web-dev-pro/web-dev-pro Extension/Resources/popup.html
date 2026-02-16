@@ -43,7 +43,7 @@
 
     <section class="tool-group p-3 tab-panel rounded-3 overflow-hidden" data-panel="a11y">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h2 class="m-0 fs-6">Accessibility</h2>
+        <h2 class="fs-6">Accessibility</h2>
       </div>
       <div id="a11y-output" class="output rounded-3 overflow-auto"></div>
       <p class="small text-secondary mt-1 mb-0">
@@ -53,7 +53,7 @@
 
     <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="rendering">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h2 class="m-0 fs-6">Rendering</h2>
+        <h2 class="fs-6">Rendering</h2>
       </div>
       <h2 class="mt-2 mb-1 fw-semibold small">Emulate CSS media feature prefers-color-scheme</h2>
       <p class="small opacity-50 mb-2 mt-0">Forces CSS prefers-color-scheme media feature</p>
@@ -110,7 +110,7 @@
 
     <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="css">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h2 class="m-0 fs-6">CSS Quick Tools</h2>
+        <h2 class="fs-6">CSS Quick Tools</h2>
       </div>
       <div class="d-flex flex-column gap-2 overflow-auto">
         <div>
@@ -180,6 +180,20 @@
       <div id="seo-output" class="output overflow-auto"></div>
     </section>
 
+    <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="storage">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="fs-6">Storage Viewer</h2>
+        <button class="primary btn btn-icon d-inline-flex align-items-center justify-content-center"
+          data-action="storage" type="button" aria-label="Refresh storage" title="Refresh storage">
+          <img class="d-block" src="icons/refresh.svg" alt="Refresh" width="18" height="18" aria-hidden="true" />
+        </button>
+      </div>
+      <div class="d-flex gap-1 mb-1">
+        <button data-action="storage-copy" type="button" class="btn btn-secondary">Copy JSON</button>
+      </div>
+      <div id="storage-output" class="output storage-output rounded-3 small overflow-auto p-2"></div>
+    </section>
+
     <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="settings">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-6">Settings</h2>
@@ -209,19 +223,6 @@
       </div>
     </section>
 
-    <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="storage">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <h2 class="m-0 fs-6">Storage Viewer</h2>
-        <button class="primary btn btn-icon d-inline-flex align-items-center justify-content-center"
-          data-action="storage" type="button" aria-label="Refresh storage" title="Refresh storage">
-          <img class="d-block" src="icons/refresh.svg" alt="Refresh" width="18" height="18" aria-hidden="true" />
-        </button>
-      </div>
-      <div class="d-flex gap-1 mb-1">
-        <button data-action="storage-copy" type="button" class="btn btn-secondary">Copy JSON</button>
-      </div>
-      <div id="storage-output" class="output storage-output rounded-3 small overflow-auto p-2"></div>
-    </section>
   </main>
 
   <footer class="d-none small text-secondary p-2 border-top">
