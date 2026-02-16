@@ -224,8 +224,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-tools Extension/Info.plist";
+				EXCLUDED_RESOURCE_FILE_NAMES = "Info.plist App-Info.plist Extension-Info.plist ._*";
+				EXCLUDED_SOURCE_FILE_NAMES = (
+					"._*",
+					Info.plist,
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Config/Extension-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -257,8 +262,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-tools Extension/Info.plist";
+				EXCLUDED_RESOURCE_FILE_NAMES = "Info.plist App-Info.plist Extension-Info.plist ._*";
+				EXCLUDED_SOURCE_FILE_NAMES = (
+					"._*",
+					Info.plist,
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Config/Extension-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -292,8 +302,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-tools/Info.plist";
+				EXCLUDED_RESOURCE_FILE_NAMES = "Info.plist App-Info.plist Extension-Info.plist ._*";
+				EXCLUDED_SOURCE_FILE_NAMES = "._*";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Config/App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -333,8 +345,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-tools/Info.plist";
+				EXCLUDED_RESOURCE_FILE_NAMES = "Info.plist App-Info.plist Extension-Info.plist ._*";
+				EXCLUDED_SOURCE_FILE_NAMES = "._*";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Config/App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

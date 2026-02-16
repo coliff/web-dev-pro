@@ -65,8 +65,19 @@ body {
   min-height: 0;
 }
 
+main {
+  min-height: 0;
+}
+
 .tab-panel {
   display: none;
+}
+
+.tab-panel.active {
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 .accordion-button.no-expand::after {

@@ -822,9 +822,16 @@ function renderPerf(result) {
   const externalList = document.createElement("ul");
   externalList.className = "small mb-0 ps-3";
   for (const scriptInfo of externalScripts) {
-    const url = typeof scriptInfo === "object" && scriptInfo
+    const rawUrl = typeof scriptInfo === "object" && scriptInfo
       ? String(scriptInfo.url || "")
       : String(scriptInfo || "");
+    const url = (() => {
+      try {
+        return new URL(rawUrl).href;
+      } catch (_error) {
+        return rawUrl;
+      }
+    })();
     const sizeKb = typeof scriptInfo === "object" && scriptInfo
       ? scriptInfo.sizeKb
       : null;
@@ -837,8 +844,12 @@ function renderPerf(result) {
     link.href = url;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = `${url} (${sizeLabel})`;
+    link.textContent = url;
     li.append(link);
+    const size = document.createElement("span");
+    size.className = "opacity-75 small";
+    size.textContent = ` (${sizeLabel})`;
+    li.append(size);
     externalList.append(li);
   }
   externalBody.append(externalList);
