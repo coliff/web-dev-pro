@@ -1,6 +1,6 @@
 //
 //  SafariWebExtensionHandler.swift
-//  web-dev-pro Extension
+//  web-dev-tools Extension
 //
 //  Created by Christian Oliff on 15/02/2026.
 //

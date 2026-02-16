@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		19545EC02F41B5BF00AECCC7 /* web-dev-pro Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 19545EBF2F41B5BF00AECCC7 /* web-dev-pro Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		19545EC02F41B5BF00AECCC7 /* web-dev-tools Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 19545EBF2F41B5BF00AECCC7 /* web-dev-tools Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -16,7 +16,7 @@
 			containerPortal = 19545E9A2F41B5BE00AECCC7 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 19545EBE2F41B5BF00AECCC7;
-			remoteInfo = "web-dev-pro Extension";
+			remoteInfo = "web-dev-tools Extension";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -27,7 +27,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				19545EC02F41B5BF00AECCC7 /* web-dev-pro Extension.appex in Embed Foundation Extensions */,
+				19545EC02F41B5BF00AECCC7 /* web-dev-tools Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -35,47 +35,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		19545EA22F41B5BE00AECCC7 /* web-dev-pro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "web-dev-pro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		19545EBF2F41B5BF00AECCC7 /* web-dev-pro Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "web-dev-pro Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		19545EA22F41B5BE00AECCC7 /* web-dev-tools.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "web-dev-tools.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		19545EBF2F41B5BF00AECCC7 /* web-dev-tools Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "web-dev-tools Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		19545ED92F41B5BF00AECCC7 /* Exceptions for "web-dev-pro" folder in "web-dev-pro" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 19545EA12F41B5BE00AECCC7 /* web-dev-pro */;
-		};
-		19545EDD2F41B5BF00AECCC7 /* Exceptions for "web-dev-pro Extension" folder in "web-dev-pro Extension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 19545EBE2F41B5BF00AECCC7 /* web-dev-pro Extension */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		19545EA42F41B5BE00AECCC7 /* web-dev-pro */ = {
+		19545EA42F41B5BE00AECCC7 /* web-dev-tools */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				19545ED92F41B5BF00AECCC7 /* Exceptions for "web-dev-pro" folder in "web-dev-pro" target */,
-			);
-			path = "web-dev-pro";
+			path = "web-dev-tools";
 			sourceTree = "<group>";
 		};
-		19545EC32F41B5BF00AECCC7 /* web-dev-pro Extension */ = {
+		19545EC32F41B5BF00AECCC7 /* web-dev-tools Extension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				19545EDD2F41B5BF00AECCC7 /* Exceptions for "web-dev-pro Extension" folder in "web-dev-pro Extension" target */,
-			);
-			explicitFolders = (
-				Resources/_locales,
-				Resources/icons,
-				Resources/images,
-			);
-			path = "web-dev-pro Extension";
+			path = "web-dev-tools Extension";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -101,8 +73,8 @@
 		19545E992F41B5BE00AECCC7 = {
 			isa = PBXGroup;
 			children = (
-				19545EA42F41B5BE00AECCC7 /* web-dev-pro */,
-				19545EC32F41B5BF00AECCC7 /* web-dev-pro Extension */,
+				19545EA42F41B5BE00AECCC7 /* web-dev-tools */,
+				19545EC32F41B5BF00AECCC7 /* web-dev-tools Extension */,
 				19545EA32F41B5BE00AECCC7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -110,8 +82,8 @@
 		19545EA32F41B5BE00AECCC7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				19545EA22F41B5BE00AECCC7 /* web-dev-pro.app */,
-				19545EBF2F41B5BF00AECCC7 /* web-dev-pro Extension.appex */,
+				19545EA22F41B5BE00AECCC7 /* web-dev-tools.app */,
+				19545EBF2F41B5BF00AECCC7 /* web-dev-tools Extension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,9 +91,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		19545EA12F41B5BE00AECCC7 /* web-dev-pro */ = {
+		19545EA12F41B5BE00AECCC7 /* web-dev-tools */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 19545EDF2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-pro" */;
+			buildConfigurationList = 19545EDF2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-tools" */;
 			buildPhases = (
 				19545E9E2F41B5BE00AECCC7 /* Sources */,
 				19545E9F2F41B5BE00AECCC7 /* Frameworks */,
@@ -134,18 +106,18 @@
 				19545EC22F41B5BF00AECCC7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				19545EA42F41B5BE00AECCC7 /* web-dev-pro */,
+				19545EA42F41B5BE00AECCC7 /* web-dev-tools */,
 			);
-			name = "web-dev-pro";
+			name = "web-dev-tools";
 			packageProductDependencies = (
 			);
-			productName = "web-dev-pro";
-			productReference = 19545EA22F41B5BE00AECCC7 /* web-dev-pro.app */;
+			productName = "web-dev-tools";
+			productReference = 19545EA22F41B5BE00AECCC7 /* web-dev-tools.app */;
 			productType = "com.apple.product-type.application";
 		};
-		19545EBE2F41B5BF00AECCC7 /* web-dev-pro Extension */ = {
+		19545EBE2F41B5BF00AECCC7 /* web-dev-tools Extension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 19545EDA2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-pro Extension" */;
+			buildConfigurationList = 19545EDA2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-tools Extension" */;
 			buildPhases = (
 				19545EBB2F41B5BF00AECCC7 /* Sources */,
 				19545EBC2F41B5BF00AECCC7 /* Frameworks */,
@@ -156,13 +128,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				19545EC32F41B5BF00AECCC7 /* web-dev-pro Extension */,
+				19545EC32F41B5BF00AECCC7 /* web-dev-tools Extension */,
 			);
-			name = "web-dev-pro Extension";
+			name = "web-dev-tools Extension";
 			packageProductDependencies = (
 			);
-			productName = "web-dev-pro Extension";
-			productReference = 19545EBF2F41B5BF00AECCC7 /* web-dev-pro Extension.appex */;
+			productName = "web-dev-tools Extension";
+			productReference = 19545EBF2F41B5BF00AECCC7 /* web-dev-tools Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -183,7 +155,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 19545E9D2F41B5BE00AECCC7 /* Build configuration list for PBXProject "web-dev-pro" */;
+			buildConfigurationList = 19545E9D2F41B5BE00AECCC7 /* Build configuration list for PBXProject "web-dev-tools" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -197,8 +169,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				19545EA12F41B5BE00AECCC7 /* web-dev-pro */,
-				19545EBE2F41B5BF00AECCC7 /* web-dev-pro Extension */,
+				19545EA12F41B5BE00AECCC7 /* web-dev-tools */,
+				19545EBE2F41B5BF00AECCC7 /* web-dev-tools Extension */,
 			);
 		};
 /* End PBXProject section */
@@ -240,7 +212,7 @@
 /* Begin PBXTargetDependency section */
 		19545EC22F41B5BF00AECCC7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 19545EBE2F41B5BF00AECCC7 /* web-dev-pro Extension */;
+			target = 19545EBE2F41B5BF00AECCC7 /* web-dev-tools Extension */;
 			targetProxy = 19545EC12F41B5BF00AECCC7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -253,8 +225,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-pro Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Dev Inspector";
+				INFOPLIST_FILE = "web-dev-tools Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -267,7 +239,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-pro.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-tools.Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -286,8 +258,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-pro Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Dev Inspector";
+				INFOPLIST_FILE = "web-dev-tools Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -300,7 +272,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-pro.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-tools.Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -321,8 +293,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-pro/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "web-dev-pro";
+				INFOPLIST_FILE = "web-dev-tools/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -333,14 +306,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-pro";
+				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-tools";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -361,8 +334,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "web-dev-pro/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "web-dev-pro";
+				INFOPLIST_FILE = "web-dev-tools/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -373,14 +347,14 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-pro";
+				PRODUCT_BUNDLE_IDENTIFIER = "oliff-watanabe.web-dev-tools";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -516,7 +490,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		19545E9D2F41B5BE00AECCC7 /* Build configuration list for PBXProject "web-dev-pro" */ = {
+		19545E9D2F41B5BE00AECCC7 /* Build configuration list for PBXProject "web-dev-tools" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				19545EE22F41B5BF00AECCC7 /* Debug */,
@@ -525,7 +499,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		19545EDA2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-pro Extension" */ = {
+		19545EDA2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-tools Extension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				19545EDB2F41B5BF00AECCC7 /* Debug */,
@@ -534,7 +508,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		19545EDF2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-pro" */ = {
+		19545EDF2F41B5BF00AECCC7 /* Build configuration list for PBXNativeTarget "web-dev-tools" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				19545EE02F41B5BF00AECCC7 /* Debug */,
