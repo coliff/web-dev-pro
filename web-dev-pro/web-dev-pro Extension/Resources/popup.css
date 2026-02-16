@@ -20,6 +20,9 @@ body {
   .tab.active {
     background-color: #000 !important;
   }
+  .form-select {
+    border-color: #bbb !important;
+  }
 }
 
 .tab {
