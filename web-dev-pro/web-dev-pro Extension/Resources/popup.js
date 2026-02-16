@@ -477,13 +477,15 @@ async function bindEvents() {
       return;
     }
 
-    if (target.dataset.tab) {
-      await switchTab(target.dataset.tab);
+    const tabButton = target.closest("[data-tab]");
+    if (tabButton instanceof HTMLElement && tabButton.dataset.tab) {
+      await switchTab(tabButton.dataset.tab);
       return;
     }
 
-    if (target.dataset.action) {
-      await runAction(target.dataset.action);
+    const actionButton = target.closest("[data-action]");
+    if (actionButton instanceof HTMLElement && actionButton.dataset.action) {
+      await runAction(actionButton.dataset.action);
       return;
     }
 

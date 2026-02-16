@@ -72,6 +72,7 @@
 			);
 			explicitFolders = (
 				Resources/_locales,
+				Resources/icons,
 				Resources/images,
 			);
 			path = "web-dev-pro Extension";
