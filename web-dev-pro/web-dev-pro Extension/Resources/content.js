@@ -13,11 +13,34 @@ const state = {
         disableAvif: false,
         disableWebp: false
     },
+    prefersColorSchemeEmulation: null,
     styleNodes: new Map(),
     overlayNodes: [],
     ariaInspectorInstalled: false,
     ariaTooltip: null,
     imageFormatObserver: null
+};
+
+const originalMatchMedia = window.matchMedia.bind(window);
+window.matchMedia = function (query) {
+    const mql = originalMatchMedia(query);
+    const emulated = state.prefersColorSchemeEmulation;
+    if (!emulated || typeof query !== "string") return mql;
+    const q = query.replace(/\s+/g, " ").trim().toLowerCase();
+    const isDark = q.includes("prefers-color-scheme: dark") || q.includes("(prefers-color-scheme:dark)");
+    const isLight = q.includes("prefers-color-scheme: light") || q.includes("(prefers-color-scheme:light)");
+    if (!isDark && !isLight) return mql;
+    const matches = (isDark && emulated === "dark") || (isLight && emulated === "light");
+    return {
+        get matches() { return matches; },
+        get media() { return query; },
+        addListener: function (fn) { return mql.addListener(fn); },
+        removeListener: function (fn) { return mql.removeListener(fn); },
+        addEventListener: function (type, fn) { return mql.addEventListener(type, fn); },
+        removeEventListener: function (type, fn) { return mql.removeEventListener(type, fn); },
+        dispatchEvent: mql.dispatchEvent.bind(mql),
+        onchange: null
+    };
 };
 
 function addStyle(id, cssText) {
@@ -276,6 +299,19 @@ function setColorBlindFilter(filterName) {
     );
 
     return { active: state.toolActive.colorBlind };
+}
+
+function setPrefersColorSchemeEmulation(value) {
+    state.prefersColorSchemeEmulation = value === "light" || value === "dark" ? value : null;
+    const root = document.documentElement;
+    if (state.prefersColorSchemeEmulation) {
+        root.style.setProperty("color-scheme", state.prefersColorSchemeEmulation);
+        root.setAttribute("data-prefers-color-scheme", state.prefersColorSchemeEmulation);
+    } else {
+        root.style.removeProperty("color-scheme");
+        root.removeAttribute("data-prefers-color-scheme");
+    }
+    return { value: state.prefersColorSchemeEmulation };
 }
 
 function fallbackUrlForFormat(url, format) {
@@ -836,6 +872,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "rendering-format") {
         return Promise.resolve(setImageFormatDisabled(request.format, request.disable));
+    }
+
+    if (request.action === "prefers-color-scheme") {
+        return Promise.resolve(setPrefersColorSchemeEmulation(request.value));
     }
 
     return undefined;

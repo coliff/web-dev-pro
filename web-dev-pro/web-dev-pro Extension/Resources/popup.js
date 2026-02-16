@@ -481,12 +481,19 @@ async function switchTab(tabName) {
   if (tabName === "rendering") {
     const avifSwitch = document.getElementById("rendering-disable-avif");
     const webpSwitch = document.getElementById("rendering-disable-webp");
+    const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
     try {
       if (avifSwitch instanceof HTMLInputElement && avifSwitch.checked) {
         await sendToActiveTab({ action: "rendering-format", format: "avif", disable: true });
       }
       if (webpSwitch instanceof HTMLInputElement && webpSwitch.checked) {
         await sendToActiveTab({ action: "rendering-format", format: "webp", disable: true });
+      }
+      if (colorSchemeSelect instanceof HTMLSelectElement && colorSchemeSelect.value !== "no-emulation") {
+        await sendToActiveTab({
+          action: "prefers-color-scheme",
+          value: colorSchemeSelect.value,
+        });
       }
     } catch {
       // Ignore if tab doesn't accept (e.g. chrome://)
@@ -546,6 +553,27 @@ async function bindEvents() {
           || String(error)
           || "Request failed.";
         setStatus(message, true);
+      }
+    });
+  }
+
+  const colorSchemeKey = "popup.rendering.prefersColorScheme";
+  const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
+  if (colorSchemeSelect instanceof HTMLSelectElement) {
+    const stored = await loadStoredValue(colorSchemeKey);
+    if (stored === "light" || stored === "dark" || stored === "no-emulation") {
+      colorSchemeSelect.value = stored;
+    }
+    colorSchemeSelect.addEventListener("change", async () => {
+      const value = colorSchemeSelect.value;
+      await saveStoredValue(colorSchemeKey, value);
+      try {
+        await sendToActiveTab({
+          action: "prefers-color-scheme",
+          value: value === "no-emulation" ? null : value,
+        });
+      } catch (error) {
+        setStatus("Could not apply prefers-color-scheme.", true);
       }
     });
   }
