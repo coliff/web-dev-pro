@@ -18,30 +18,109 @@ const state = {
     overlayNodes: [],
     ariaInspectorInstalled: false,
     ariaTooltip: null,
-    imageFormatObserver: null
+    imageFormatObserver: null,
+    mediaQueryWrappers: new Set()
 };
 
 const originalMatchMedia = window.matchMedia.bind(window);
+
+function parseColorSchemeQuery(query) {
+    if (typeof query !== "string") {
+        return { isDark: false, isLight: false };
+    }
+    const q = query.replace(/\s+/g, " ").trim().toLowerCase();
+    return {
+        isDark: q.includes("prefers-color-scheme: dark") || q.includes("(prefers-color-scheme:dark)"),
+        isLight: q.includes("prefers-color-scheme: light") || q.includes("(prefers-color-scheme:light)")
+    };
+}
+
+function getEmulatedMatch(query, fallback) {
+    const emulated = state.prefersColorSchemeEmulation;
+    if (!emulated) {
+        return fallback;
+    }
+
+    const { isDark, isLight } = parseColorSchemeQuery(query);
+    if (!isDark && !isLight) {
+        return fallback;
+    }
+
+    return (isDark && emulated === "dark") || (isLight && emulated === "light");
+}
+
 window.matchMedia = function (query) {
     const mql = originalMatchMedia(query);
-    const emulated = state.prefersColorSchemeEmulation;
-    if (!emulated || typeof query !== "string") return mql;
-    const q = query.replace(/\s+/g, " ").trim().toLowerCase();
-    const isDark = q.includes("prefers-color-scheme: dark") || q.includes("(prefers-color-scheme:dark)");
-    const isLight = q.includes("prefers-color-scheme: light") || q.includes("(prefers-color-scheme:light)");
-    if (!isDark && !isLight) return mql;
-    const matches = (isDark && emulated === "dark") || (isLight && emulated === "light");
-    return {
-        get matches() { return matches; },
+    const { isDark, isLight } = parseColorSchemeQuery(query);
+    if (!isDark && !isLight) {
+        return mql;
+    }
+
+    const listeners = new Set();
+    let onChangeHandler = null;
+
+    const wrapper = {
+        get matches() {
+            return getEmulatedMatch(query, mql.matches);
+        },
         get media() { return query; },
-        addListener: function (fn) { return mql.addListener(fn); },
-        removeListener: function (fn) { return mql.removeListener(fn); },
-        addEventListener: function (type, fn) { return mql.addEventListener(type, fn); },
-        removeEventListener: function (type, fn) { return mql.removeEventListener(type, fn); },
-        dispatchEvent: mql.dispatchEvent.bind(mql),
-        onchange: null
+        addListener(fn) {
+            if (typeof fn === "function") {
+                listeners.add(fn);
+            }
+        },
+        removeListener(fn) {
+            listeners.delete(fn);
+        },
+        addEventListener(type, fn) {
+            if (type === "change" && typeof fn === "function") {
+                listeners.add(fn);
+            }
+        },
+        removeEventListener(type, fn) {
+            if (type === "change") {
+                listeners.delete(fn);
+            }
+        },
+        dispatchEvent(event) {
+            listeners.forEach((fn) => {
+                try {
+                    fn.call(wrapper, event);
+                } catch (_error) {
+                    // Ignore listener errors.
+                }
+            });
+            return true;
+        },
+        get onchange() {
+            return onChangeHandler;
+        },
+        set onchange(fn) {
+            if (onChangeHandler) {
+                listeners.delete(onChangeHandler);
+            }
+            onChangeHandler = typeof fn === "function" ? fn : null;
+            if (onChangeHandler) {
+                listeners.add(onChangeHandler);
+            }
+        },
+        __notify() {
+            const event = { matches: wrapper.matches, media: query, type: "change", target: wrapper, currentTarget: wrapper };
+            wrapper.dispatchEvent(event);
+        }
     };
+
+    state.mediaQueryWrappers.add(wrapper);
+    return wrapper;
 };
+
+function notifyColorSchemeMqls() {
+    state.mediaQueryWrappers.forEach((wrapper) => {
+        if (wrapper && typeof wrapper.__notify === "function") {
+            wrapper.__notify();
+        }
+    });
+}
 
 function addStyle(id, cssText) {
     removeStyle(id);
@@ -311,6 +390,7 @@ function setPrefersColorSchemeEmulation(value) {
         root.style.removeProperty("color-scheme");
         root.removeAttribute("data-prefers-color-scheme");
     }
+    notifyColorSchemeMqls();
     return { value: state.prefersColorSchemeEmulation };
 }
 
