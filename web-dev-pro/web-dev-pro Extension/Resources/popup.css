@@ -112,3 +112,11 @@ button:not(.tab) {
   font-size: 11px;
   word-break: break-all;
 }
+
+.storage-output {
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}

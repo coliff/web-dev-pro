@@ -405,6 +405,83 @@ function appendBulletList(root, title, items, listClassName = "") {
   root.append(line);
 }
 
+function appendCollapsibleBulletList(root, title, items) {
+  const line = document.createElement("div");
+  line.className = "metric";
+
+  if (!items || items.length === 0) {
+    const head = document.createElement("strong");
+    head.textContent = `${title}: `;
+    const empty = document.createElement("span");
+    empty.className = "text-success";
+    empty.textContent = "None";
+    line.append(head, empty);
+    root.append(line);
+    return;
+  }
+
+  const details = document.createElement("details");
+  details.className = "mt-1";
+
+  const summary = document.createElement("summary");
+  summary.className = "small text-secondary";
+  summary.textContent = `${title} (${items.length})`;
+
+  const list = document.createElement("ul");
+  list.className = "small text-secondary mb-0 mt-1 ps-3";
+  for (const item of items) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    list.append(li);
+  }
+
+  details.append(summary, list);
+  line.append(details);
+  root.append(line);
+}
+
+function appendHeadingTree(root, items) {
+  const line = document.createElement("div");
+  line.className = "metric";
+
+  if (!items || items.length === 0) {
+    const head = document.createElement("strong");
+    head.textContent = "Heading tree: ";
+    const empty = document.createElement("span");
+    empty.className = "text-success";
+    empty.textContent = "None";
+    line.append(head, empty);
+    root.append(line);
+    return;
+  }
+
+  const details = document.createElement("details");
+  details.className = "mt-1";
+
+  const summary = document.createElement("summary");
+  summary.className = "small text-secondary";
+  summary.textContent = `Heading tree (${items.length})`;
+
+  const wrap = document.createElement("div");
+  wrap.className = "small text-secondary mt-1";
+
+  for (const raw of items) {
+    const text = String(raw ?? "");
+    const match = text.match(/^h([1-6])\s*:\s*(.*)$/i);
+    const level = match ? Number(match[1]) : 1;
+    const label = match ? `H${level} ${match[2]}` : text;
+
+    const item = document.createElement("div");
+    item.textContent = label;
+    item.style.marginLeft = `${Math.max(0, level - 1) * 12}px`;
+    wrap.append(item);
+  }
+
+  details.append(summary, wrap);
+  line.append(details);
+  root.append(line);
+}
+
 function renderSEO(result) {
   const output = document.getElementById("seo-output");
   output.textContent = "";
@@ -424,15 +501,45 @@ function renderA11y(result) {
   const output = document.getElementById("a11y-output");
   output.textContent = "";
 
-  renderKeyValues("a11y-output", {
-    "Missing alt count": result.missingAltCount,
-    "Low contrast findings": result.lowContrastCount,
-    "Headings found": result.headingTree.length,
-    "ARIA inspect": "Enabled (tap page element)",
-  });
+  const missingAltLine = document.createElement("div");
+  missingAltLine.className = "metric";
+  const missingAltKey = document.createElement("strong");
+  missingAltKey.textContent = "Missing alt count: ";
+  const missingAltVal = document.createElement("span");
+  missingAltVal.textContent = String(result.missingAltCount ?? 0);
+  missingAltLine.append(missingAltKey, missingAltVal);
+  output.append(missingAltLine);
 
-  appendList(output, "Missing alt samples", result.missingAltSamples);
-  appendList(output, "Heading tree", result.headingTree);
+  appendCollapsibleBulletList(output, "Missing alt samples", result.missingAltSamples);
+
+  const lowContrastLine = document.createElement("div");
+  lowContrastLine.className = "metric";
+  const lowContrastKey = document.createElement("strong");
+  lowContrastKey.textContent = "Low contrast findings: ";
+  const lowContrastVal = document.createElement("span");
+  lowContrastVal.textContent = String(result.lowContrastCount ?? 0);
+  lowContrastLine.append(lowContrastKey, lowContrastVal);
+  output.append(lowContrastLine);
+
+  const headingsFoundLine = document.createElement("div");
+  headingsFoundLine.className = "metric";
+  const headingsFoundKey = document.createElement("strong");
+  headingsFoundKey.textContent = "Headings found: ";
+  const headingsFoundVal = document.createElement("span");
+  headingsFoundVal.textContent = String(result.headingTree?.length ?? 0);
+  headingsFoundLine.append(headingsFoundKey, headingsFoundVal);
+  output.append(headingsFoundLine);
+
+  appendHeadingTree(output, result.headingTree);
+
+  const ariaInspectLine = document.createElement("div");
+  ariaInspectLine.className = "metric";
+  const ariaInspectKey = document.createElement("strong");
+  ariaInspectKey.textContent = "ARIA inspect: ";
+  const ariaInspectVal = document.createElement("span");
+  ariaInspectVal.textContent = "Enabled (tap page element)";
+  ariaInspectLine.append(ariaInspectKey, ariaInspectVal);
+  output.append(ariaInspectLine);
 }
 
 function renderPerf(result) {
@@ -479,28 +586,6 @@ function makeStorageRow(item) {
   copyBtn.dataset.key = item.key;
 
   actions.append(copyBtn);
-
-  if (item.editable) {
-    const editBtn = document.createElement("button");
-    editBtn.type = "button";
-    editBtn.className = "btn btn-sm btn-secondary";
-    editBtn.textContent = "Edit";
-    editBtn.dataset.storageAction = "edit";
-    editBtn.dataset.kind = item.kind;
-    editBtn.dataset.key = item.key;
-    actions.append(editBtn);
-  }
-
-  if (item.deletable) {
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.className = "btn btn-sm btn-secondary";
-    delBtn.textContent = "Delete";
-    delBtn.dataset.storageAction = "delete";
-    delBtn.dataset.kind = item.kind;
-    delBtn.dataset.key = item.key;
-    actions.append(delBtn);
-  }
 
   row.append(heading, value, actions);
   return row;
@@ -565,29 +650,6 @@ async function handleStorageAction(source) {
     flashButtonLabel(target, "Copied");
     setStatus(`Copied ${kind}:${key}`);
     return;
-  }
-
-  if (action === "edit") {
-    const next = await showTextPrompt(`Update ${kind}:${key}`, item.value);
-    if (next === null) {
-      return;
-    }
-
-    await sendToActiveTab({ action: "storage-set", kind, key, value: next });
-    await loadStorage();
-    setStatus(`Updated ${kind}:${key}`);
-    return;
-  }
-
-  if (action === "delete") {
-    const approved = await showConfirmDialog(`Delete ${kind}:${key}?`);
-    if (!approved) {
-      return;
-    }
-
-    await sendToActiveTab({ action: "storage-delete", kind, key });
-    await loadStorage();
-    setStatus(`Deleted ${kind}:${key}`);
   }
 }
 
