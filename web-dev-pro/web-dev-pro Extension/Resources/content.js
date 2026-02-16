@@ -538,6 +538,7 @@ function computeSeoSnapshot() {
     }
 
     return {
+        title,
         titleLength: title.length,
         metaDescriptionLength: metaDescription.length,
         canonicalUrl,

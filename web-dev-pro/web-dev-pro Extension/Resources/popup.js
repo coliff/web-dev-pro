@@ -142,10 +142,185 @@ function renderBuildInfo() {
   dateNode.textContent = `Build ${buildDate}`;
 }
 
+function getOsVersionFromUserAgent(userAgent) {
+  if (typeof userAgent !== "string") {
+    return "Unknown";
+  }
+
+  const iosMatch = userAgent.match(/OS (\d+(?:[_\.]\d+)*) like Mac OS X/i);
+  if (iosMatch?.[1]) {
+    return `iOS/iPadOS ${iosMatch[1].replace(/_/g, ".")}`;
+  }
+
+  const macMatch = userAgent.match(/Mac OS X (\d+(?:[_\.]\d+)*)/i);
+  if (macMatch?.[1]) {
+    return `macOS ${macMatch[1].replace(/_/g, ".")}`;
+  }
+
+  const androidMatch = userAgent.match(/Android (\d+(?:\.\d+)*)/i);
+  if (androidMatch?.[1]) {
+    return `Android ${androidMatch[1]}`;
+  }
+
+  const windowsMatch = userAgent.match(/Windows NT (\d+(?:\.\d+)*)/i);
+  if (windowsMatch?.[1]) {
+    return `Windows NT ${windowsMatch[1]}`;
+  }
+
+  return "Unknown";
+}
+
+function renderDeviceInfo() {
+  const userAgent = navigator.userAgent || "Unknown";
+  const uaData = navigator.userAgentData;
+
+  const osNode = document.getElementById("device-os-version");
+  const nameNode = document.getElementById("device-name");
+  const uaNode = document.getElementById("device-user-agent");
+  const displayNode = document.getElementById("device-display");
+  const dprNode = document.getElementById("device-dpr");
+
+  if (!osNode || !nameNode || !uaNode || !displayNode || !dprNode) {
+    return;
+  }
+
+  const platform = uaData?.platform || navigator.platform || "Unknown";
+  const mobileHint = uaData?.mobile === true || /iphone|ipad|android/i.test(userAgent) ? "mobile" : "desktop";
+  const logicalWidth = Number.isFinite(screen.width) ? screen.width : 0;
+  const logicalHeight = Number.isFinite(screen.height) ? screen.height : 0;
+  const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio : 1;
+  const physicalWidth = Math.round(logicalWidth * dpr);
+  const physicalHeight = Math.round(logicalHeight * dpr);
+
+  osNode.textContent = getOsVersionFromUserAgent(userAgent);
+  nameNode.textContent = `${platform} (${mobileHint})`;
+  uaNode.textContent = userAgent;
+  displayNode.textContent = `${logicalWidth}x${logicalHeight} logical, ${physicalWidth}x${physicalHeight} physical`;
+  dprNode.textContent = `${dpr.toFixed(2)}x`;
+}
+
 function setStatus(text, isError = false) {
   const node = document.getElementById("status");
   node.textContent = text;
   node.classList.toggle("text-danger", isError);
+}
+
+function flashButtonLabel(button, nextLabel, timeoutMs = 900) {
+  if (!(button instanceof HTMLButtonElement)) {
+    return;
+  }
+  const original = button.textContent;
+  button.textContent = nextLabel;
+  button.disabled = true;
+  globalThis.setTimeout(() => {
+    button.textContent = original;
+    button.disabled = false;
+  }, timeoutMs);
+}
+
+function showDialogShell(title) {
+  const overlay = document.createElement("div");
+  overlay.className = "position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-2";
+  overlay.style.background = "rgba(2, 6, 23, 0.7)";
+  overlay.style.zIndex = "2147483647";
+
+  const panel = document.createElement("div");
+  panel.className = "rounded-3 p-2";
+  panel.style.width = "100%";
+  panel.style.maxWidth = "330px";
+  panel.style.background = "var(--panel)";
+  panel.style.border = "1px solid var(--line)";
+  panel.style.color = "var(--text)";
+
+  const heading = document.createElement("div");
+  heading.className = "small fw-semibold mb-2";
+  heading.textContent = title;
+
+  panel.append(heading);
+  overlay.append(panel);
+  document.body.append(overlay);
+  return { overlay, panel };
+}
+
+function showTextPrompt(title, initialValue) {
+  return new Promise((resolve) => {
+    const { overlay, panel } = showDialogShell(title);
+
+    const input = document.createElement("textarea");
+    input.className = "form-control form-control-sm mb-2";
+    input.rows = 5;
+    input.value = String(initialValue ?? "");
+
+    const actions = document.createElement("div");
+    actions.className = "d-flex gap-1 justify-content-end";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "btn btn-sm btn-outline-secondary";
+    cancelBtn.textContent = "Cancel";
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "btn btn-sm btn-primary";
+    saveBtn.textContent = "Save";
+
+    const finish = (value) => {
+      overlay.remove();
+      resolve(value);
+    };
+
+    cancelBtn.addEventListener("click", () => finish(null));
+    saveBtn.addEventListener("click", () => finish(input.value));
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        finish(null);
+      }
+    });
+
+    actions.append(cancelBtn, saveBtn);
+    panel.append(input, actions);
+    input.focus();
+    input.select();
+  });
+}
+
+function showConfirmDialog(message) {
+  return new Promise((resolve) => {
+    const { overlay, panel } = showDialogShell("Confirm");
+
+    const text = document.createElement("p");
+    text.className = "small mb-2";
+    text.textContent = message;
+
+    const actions = document.createElement("div");
+    actions.className = "d-flex gap-1 justify-content-end";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "btn btn-sm btn-outline-secondary";
+    cancelBtn.textContent = "Cancel";
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "btn btn-sm btn-danger";
+    deleteBtn.textContent = "Delete";
+
+    const finish = (approved) => {
+      overlay.remove();
+      resolve(approved);
+    };
+
+    cancelBtn.addEventListener("click", () => finish(false));
+    deleteBtn.addEventListener("click", () => finish(true));
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        finish(false);
+      }
+    });
+
+    actions.append(cancelBtn, deleteBtn);
+    panel.append(text, actions);
+  });
 }
 
 function renderKeyValues(targetId, data) {
@@ -200,19 +375,49 @@ function appendList(root, title, items) {
   root.append(line);
 }
 
+function appendBulletList(root, title, items, listClassName = "") {
+  const line = document.createElement("div");
+  line.className = "metric";
+
+  const head = document.createElement("strong");
+  head.textContent = `${title}:`;
+  line.append(head);
+
+  if (!items || items.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "text-success";
+    empty.textContent = " None";
+    line.append(empty);
+    root.append(line);
+    return;
+  }
+
+  const list = document.createElement("ul");
+  list.className = `small mb-0 mt-1 ps-3 ${listClassName}`.trim();
+
+  for (const item of items) {
+    const entry = document.createElement("li");
+    entry.textContent = item;
+    list.append(entry);
+  }
+
+  line.append(list);
+  root.append(line);
+}
+
 function renderSEO(result) {
   const output = document.getElementById("seo-output");
   output.textContent = "";
 
   renderKeyValues("seo-output", {
-    "Title length": result.titleLength,
+    "Title": result.title || "(missing)",
     "Meta description length": result.metaDescriptionLength,
     "Canonical URL": result.canonicalUrl || "Missing",
     "Open Graph tags": result.openGraphCount,
     "Structured data": result.structuredData.join(", ") || "None",
   });
 
-  appendList(output, "Warnings", result.warnings);
+  appendBulletList(output, "Warnings", result.warnings, "text-secondary");
 }
 
 function renderA11y(result) {
@@ -249,12 +454,12 @@ function renderPerf(result) {
   });
 
   appendList(output, "Large images", largeImages);
-  appendList(output, "Blocking scripts", blockingHeadScripts);
+  appendBulletList(output, "Blocking scripts", blockingHeadScripts);
 }
 
 function makeStorageRow(item) {
   const row = document.createElement("div");
-  row.className = "storage-row rounded-3";
+  row.className = "storage-row rounded-3 bg-secondary bg-opacity-25";
 
   const heading = document.createElement("strong");
   heading.textContent = `${item.kind} :: ${item.key}`;
@@ -267,6 +472,7 @@ function makeStorageRow(item) {
 
   const copyBtn = document.createElement("button");
   copyBtn.type = "button";
+  copyBtn.className = "btn btn-sm btn-secondary";
   copyBtn.textContent = "Copy";
   copyBtn.dataset.storageAction = "copy";
   copyBtn.dataset.kind = item.kind;
@@ -277,6 +483,7 @@ function makeStorageRow(item) {
   if (item.editable) {
     const editBtn = document.createElement("button");
     editBtn.type = "button";
+    editBtn.className = "btn btn-sm btn-secondary";
     editBtn.textContent = "Edit";
     editBtn.dataset.storageAction = "edit";
     editBtn.dataset.kind = item.kind;
@@ -287,6 +494,7 @@ function makeStorageRow(item) {
   if (item.deletable) {
     const delBtn = document.createElement("button");
     delBtn.type = "button";
+    delBtn.className = "btn btn-sm btn-secondary";
     delBtn.textContent = "Delete";
     delBtn.dataset.storageAction = "delete";
     delBtn.dataset.kind = item.kind;
@@ -354,12 +562,13 @@ async function handleStorageAction(source) {
 
   if (action === "copy") {
     await navigator.clipboard.writeText(String(item.value ?? ""));
+    flashButtonLabel(target, "Copied");
     setStatus(`Copied ${kind}:${key}`);
     return;
   }
 
   if (action === "edit") {
-    const next = prompt(`Update ${kind}:${key}`, item.value);
+    const next = await showTextPrompt(`Update ${kind}:${key}`, item.value);
     if (next === null) {
       return;
     }
@@ -371,7 +580,7 @@ async function handleStorageAction(source) {
   }
 
   if (action === "delete") {
-    const approved = confirm(`Delete ${kind}:${key}?`);
+    const approved = await showConfirmDialog(`Delete ${kind}:${key}?`);
     if (!approved) {
       return;
     }
@@ -471,6 +680,11 @@ async function switchTab(tabName) {
 
   if (tabName === "seo") {
     await runAction("seo");
+    return;
+  }
+
+  if (tabName === "a11y") {
+    await runAction("a11y");
     return;
   }
 
@@ -629,6 +843,7 @@ async function bindEvents() {
   }
 
   renderBuildInfo();
+  renderDeviceInfo();
   void switchTab(currentTab);
 }
 

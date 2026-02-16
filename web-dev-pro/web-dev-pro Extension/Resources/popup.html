@@ -44,7 +44,6 @@
     <section class="tool-group tab-panel rounded-3 overflow-hidden" data-panel="a11y">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="m-0 fs-6">Accessibility Snapshot</h2>
-        <button class="btn btn-primary" data-action="a11y" type="button">Run</button>
       </div>
       <div id="a11y-output" class="output rounded-3 overflow-auto"></div>
       <p class="small text-secondary mt-1 mb-0">
@@ -187,6 +186,19 @@
       <div class="form-check form-switch mb-2">
         <input class="form-check-input" type="checkbox" role="switch" id="dark-mode-switch" checked switch>
         <label class="form-check-label" for="dark-mode-switch">Dark mode</label>
+      </div>
+
+      <div class="card border-secondary bg-secondary bg-opacity-10 mt-3">
+        <div class="card-body p-2">
+          <h3 class="h6 mb-2">Device Info</h3>
+          <div class="small d-grid gap-1">
+            <div><strong>OS version:</strong> <span id="device-os-version"></span></div>
+            <div><strong>Device:</strong> <span id="device-name"></span></div>
+            <div><strong>User agent:</strong> <span id="device-user-agent" class="text-break"></span></div>
+            <div><strong>Display:</strong> <span id="device-display"></span></div>
+            <div><strong>Pixel density:</strong> <span id="device-dpr"></span></div>
+          </div>
+        </div>
       </div>
 
       <div class="small text-secondary opacity-75 mt-auto">
