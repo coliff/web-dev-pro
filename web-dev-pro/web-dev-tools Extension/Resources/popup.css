@@ -17,6 +17,10 @@ body {
   .tab {
     background-color: #eee !important;
   }
+  .form-check-input,
+  .form-select {
+    border-color: #ccc;
+  }
 }
 
 [data-bs-theme="dark"] {
@@ -26,8 +30,9 @@ body {
   .tab.active {
     background-color: #000 !important;
   }
+  .form-check-input,
   .form-select {
-    border-color: #888;
+    border-color: #666;
   }
 }
 
