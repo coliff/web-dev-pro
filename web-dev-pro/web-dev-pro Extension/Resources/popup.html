@@ -17,6 +17,9 @@
         <button class="nav-link tab mb-0" data-tab="css" type="button">CSS</button>
         <button class="nav-link tab mb-0" data-tab="perf" type="button">Performance</button>
         <button class="nav-link tab active mb-0" data-tab="seo" type="button">SEO</button>
+        <button class="nav-link tab mb-0" data-tab="settings" type="button" aria-label="Settings" title="Settings">
+          <span aria-hidden="true">⚙</span>
+        </button>
         <button class="nav-link tab mb-0" data-tab="storage" type="button">Storage</button>
       </nav>
 
@@ -64,6 +67,22 @@
           <h2 class="m-0 fs-6">SEO Check</h2>
         </div>
         <div id="seo-output" class="output"></div>
+      </section>
+
+      <section class="tool-group tab-panel overflow-hidden" data-panel="settings">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="m-0 fs-6">Settings</h2>
+        </div>
+
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" role="switch" id="dark-mode-switch" switch checked>
+          <label class="form-check-label" for="dark-mode-switch">Dark mode</label>
+        </div>
+
+        <div class="small text-secondary opacity-75 mt-auto">
+          <div id="settings-build-version"></div>
+          <div id="settings-build-date"></div>
+        </div>
       </section>
 
       <section class="tool-group tab-panel overflow-hidden" data-panel="storage">

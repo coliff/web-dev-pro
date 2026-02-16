@@ -17,9 +17,13 @@
     "htmlhint": "npx htmlhint docs/**/*.html",
     "pa11y": "npx pa11y https://webdevpro-app.christianoliff.com/",
     "serve": "npx http-server -o docs/index.html -p 8080 -c-1",
-    "spellcheck": "npx cspell \"docs/**/*.html\" --no-progress"
+    "spellcheck": "npx cspell \"docs/**/*.html\" --no-progress",
+    "stylelint": "npx stylelint \"web-dev-pro/**/*.css\" --fix"
+  },
+  "devDependencies": {
+    "stylelint-config-standard": "^40.0.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

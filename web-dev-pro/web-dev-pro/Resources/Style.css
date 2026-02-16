@@ -1,5 +1,5 @@
 * {
-  -webkit-user-select: none;
+  user-select: none;
   -webkit-user-drag: none;
   cursor: default;
 }
@@ -19,11 +19,9 @@ body {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-
   gap: var(--spacing);
   margin: 0 calc(var(--spacing) * 2);
   height: 100%;
-
   font: -apple-system-short-body;
   text-align: center;
 }

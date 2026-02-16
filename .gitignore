@@ -4,6 +4,7 @@
 
 ## User settings
 xcuserdata/
+node_modules/
 
 ## Obj-C/Swift specific
 *.hmap

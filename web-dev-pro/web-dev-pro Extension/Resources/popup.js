@@ -3,7 +3,8 @@ const ext = globalThis.browser ?? globalThis.chrome;
 let lastStoragePayload = null;
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
-const validTabs = new Set(["a11y", "css", "perf", "seo", "storage"]);
+const darkModeKey = "popup.darkModeEnabled";
+const validTabs = new Set(["a11y", "css", "perf", "seo", "settings", "storage"]);
 
 async function getActiveTabId() {
   if (ext.tabs.query.length === 1) {
@@ -41,9 +42,9 @@ async function sendToActiveTab(message) {
   });
 }
 
-async function loadSavedTab() {
+async function loadStoredValue(key) {
   try {
-    const localValue = globalThis.localStorage?.getItem(popupTabKey);
+    const localValue = globalThis.localStorage?.getItem(key);
     if (localValue) {
       return localValue;
     }
@@ -57,13 +58,13 @@ async function loadSavedTab() {
 
   try {
     if (typeof ext.storage.local.get === "function" && ext.storage.local.get.length <= 1) {
-      const result = await ext.storage.local.get(popupTabKey);
-      return result?.[popupTabKey] ?? null;
+      const result = await ext.storage.local.get(key);
+      return result?.[key] ?? null;
     }
 
     return await new Promise((resolve) => {
-      ext.storage.local.get([popupTabKey], (result) => {
-        resolve(result?.[popupTabKey] ?? null);
+      ext.storage.local.get([key], (result) => {
+        resolve(result?.[key] ?? null);
       });
     });
   } catch {
@@ -71,9 +72,9 @@ async function loadSavedTab() {
   }
 }
 
-async function saveTab(tabName) {
+async function saveStoredValue(key, value) {
   try {
-    globalThis.localStorage?.setItem(popupTabKey, tabName);
+    globalThis.localStorage?.setItem(key, value);
   } catch {
     // Ignore localStorage access failures and continue to extension storage.
   }
@@ -82,7 +83,7 @@ async function saveTab(tabName) {
     return;
   }
 
-  const payload = { [popupTabKey]: tabName };
+  const payload = { [key]: value };
   try {
     if (typeof ext.storage.local.set === "function" && ext.storage.local.set.length <= 1) {
       await ext.storage.local.set(payload);
@@ -95,6 +96,50 @@ async function saveTab(tabName) {
   } catch {
     // localStorage fallback already handled above.
   }
+}
+
+async function loadSavedTab() {
+  return await loadStoredValue(popupTabKey);
+}
+
+async function saveTab(tabName) {
+  await saveStoredValue(popupTabKey, tabName);
+}
+
+async function loadDarkModeEnabled() {
+  const stored = await loadStoredValue(darkModeKey);
+  if (stored === null) {
+    return true;
+  }
+  return stored === "true";
+}
+
+async function saveDarkModeEnabled(enabled) {
+  await saveStoredValue(darkModeKey, String(enabled));
+}
+
+function applyTheme(isDarkMode) {
+  document.documentElement.dataset.bsTheme = isDarkMode ? "dark" : "light";
+  document.body.classList.toggle("light-mode", !isDarkMode);
+}
+
+function renderBuildInfo() {
+  const versionNode = document.getElementById("settings-build-version");
+  const dateNode = document.getElementById("settings-build-date");
+  if (!versionNode || !dateNode) {
+    return;
+  }
+
+  const manifest = ext.runtime?.getManifest?.();
+  const version = manifest?.version ?? "unknown";
+
+  const parsedDate = new Date(document.lastModified);
+  const buildDate = Number.isNaN(parsedDate.getTime())
+    ? new Date().toISOString().slice(0, 10)
+    : parsedDate.toISOString().slice(0, 10);
+
+  versionNode.textContent = `Version ${version}`;
+  dateNode.textContent = `Build ${buildDate}`;
 }
 
 function setStatus(text, isError = false) {
@@ -442,6 +487,20 @@ async function bindEvents() {
     currentTab = savedTab;
   }
 
+  const darkModeSwitch = document.getElementById("dark-mode-switch");
+  if (darkModeSwitch instanceof HTMLInputElement) {
+    const darkModeEnabled = await loadDarkModeEnabled();
+    darkModeSwitch.checked = darkModeEnabled;
+    applyTheme(darkModeEnabled);
+
+    darkModeSwitch.addEventListener("change", () => {
+      const enabled = darkModeSwitch.checked;
+      applyTheme(enabled);
+      void saveDarkModeEnabled(enabled);
+    });
+  }
+
+  renderBuildInfo();
   void switchTab(currentTab);
 }
 
