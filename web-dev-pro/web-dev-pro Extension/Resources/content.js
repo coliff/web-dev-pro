@@ -729,7 +729,7 @@ function computePerfSnapshot() {
             } catch (_error) {
                 return false;
             }
-        }).length;
+        }).map((script) => script.src).slice(0, 20);
 
         const largeImages = [...document.querySelectorAll("img")]
             .map((img) => {
@@ -772,7 +772,7 @@ function computePerfSnapshot() {
         return {
             domNodes: 0,
             pageWeightKb: 0,
-            externalScripts: 0,
+            externalScripts: [],
             largeImages: [],
             blockingHeadScripts: [],
             error: error?.message || String(error)

@@ -548,6 +548,9 @@ function renderPerf(result) {
   const blockingHeadScripts = Array.isArray(safeResult.blockingHeadScripts)
     ? safeResult.blockingHeadScripts
     : [];
+  const externalScripts = Array.isArray(safeResult.externalScripts)
+    ? safeResult.externalScripts
+    : [];
 
   const output = document.getElementById("perf-output");
   output.textContent = "";
@@ -555,13 +558,81 @@ function renderPerf(result) {
   renderKeyValues("perf-output", {
     "Total DOM nodes": safeResult.domNodes ?? 0,
     "Page weight estimate": `${safeResult.pageWeightKb ?? 0} KB`,
-    "External scripts": safeResult.externalScripts ?? 0,
-    "Large images": largeImages.length,
-    "Blocking <head> scripts": blockingHeadScripts.length,
   });
 
-  appendList(output, "Large images", largeImages);
-  appendBulletList(output, "Blocking scripts", blockingHeadScripts);
+  const accordion = document.createElement("div");
+  accordion.className = "accordion border-bottom-0";
+
+  const externalDetails = document.createElement("details");
+  externalDetails.className = "accordion-item border-bottom-0";
+  externalDetails.setAttribute("name", "accordion");
+  const externalSummary = document.createElement("summary");
+  externalSummary.className = "accordion-button rounded-top";
+  const externalHeader = document.createElement("h2");
+  externalHeader.className = "accordion-header user-select-none";
+  externalHeader.textContent = `External scripts (${externalScripts.length})`;
+  externalSummary.append(externalHeader);
+  externalDetails.append(externalSummary);
+  const externalBody = document.createElement("div");
+  externalBody.className = "accordion-body border-bottom";
+  const externalList = document.createElement("ul");
+  externalList.className = "small mb-0 ps-3";
+  for (const src of externalScripts) {
+    const li = document.createElement("li");
+    li.textContent = src;
+    externalList.append(li);
+  }
+  externalBody.append(externalList);
+  externalDetails.append(externalBody);
+  accordion.append(externalDetails);
+
+  const blockingDetails = document.createElement("details");
+  blockingDetails.className = "accordion-item border-bottom-0";
+  blockingDetails.setAttribute("name", "accordion");
+  const blockingSummary = document.createElement("summary");
+  blockingSummary.className = "accordion-button rounded-top";
+  const blockingHeader = document.createElement("h2");
+  blockingHeader.className = "accordion-header user-select-none";
+  blockingHeader.textContent = `Blocking <head> scripts (${blockingHeadScripts.length})`;
+  blockingSummary.append(blockingHeader);
+  blockingDetails.append(blockingSummary);
+  const blockingBody = document.createElement("div");
+  blockingBody.className = "accordion-body border-bottom";
+  const blockingList = document.createElement("ul");
+  blockingList.className = "small mb-0 ps-3";
+  for (const src of blockingHeadScripts) {
+    const li = document.createElement("li");
+    li.textContent = src;
+    blockingList.append(li);
+  }
+  blockingBody.append(blockingList);
+  blockingDetails.append(blockingBody);
+  accordion.append(blockingDetails);
+
+  const largeDetails = document.createElement("details");
+  largeDetails.className = "accordion-item border-bottom-0";
+  largeDetails.setAttribute("name", "accordion");
+  const largeSummary = document.createElement("summary");
+  largeSummary.className = "accordion-button rounded-top";
+  const largeHeader = document.createElement("h2");
+  largeHeader.className = "accordion-header user-select-none";
+  largeHeader.textContent = `Large images (${largeImages.length})`;
+  largeSummary.append(largeHeader);
+  largeDetails.append(largeSummary);
+  const largeBody = document.createElement("div");
+  largeBody.className = "accordion-body border-bottom";
+  const largeList = document.createElement("ul");
+  largeList.className = "small mb-0 ps-3 text-secondary";
+  for (const src of largeImages) {
+    const li = document.createElement("li");
+    li.textContent = src;
+    largeList.append(li);
+  }
+  largeBody.append(largeList);
+  largeDetails.append(largeBody);
+  accordion.append(largeDetails);
+
+  output.append(accordion);
 }
 
 function makeStorageRow(item) {

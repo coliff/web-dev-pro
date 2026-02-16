@@ -54,15 +54,6 @@ body {
   filter: brightness(0) invert(1);
 }
 
-body.light-mode .tab-icon {
-  /* Dark icons on light theme */
-  filter: brightness(0) invert(0.4);
-}
-
-body.light-mode .tab.active .tab-icon {
-  filter: brightness(0) invert(0.1);
-}
-
 .tool-group {
   flex: 1;
   min-height: 0;
@@ -79,7 +70,6 @@ button:not(.tab) {
 .btn-icon {
   width: 30px;
   height: 30px;
-  font-size: 18px;
   line-height: 1;
 }
 
@@ -89,7 +79,6 @@ button:not(.tab) {
 
 .output {
   flex: 1 1 auto;
-  min-height: 0;
   min-height: 36px;
   max-height: none;
   overflow: auto;
@@ -119,4 +108,50 @@ button:not(.tab) {
   overscroll-behavior: contain;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+}
+
+
+details.accordion-item:not([open]) .accordion-button {
+  background-color: var(--bs-accordion-bg);
+}
+
+details.accordion-item:not([open]):last-of-type .accordion-button {
+  border-bottom-right-radius: var(--bs-accordion-border-radius);
+  border-bottom-left-radius: var(--bs-accordion-border-radius);
+}
+
+details.accordion-item:not([open]) .accordion-button::after {
+  background-image: var(--bs-accordion-btn-active-icon);
+  transform: unset;
+}
+
+details.accordion-item[open] .accordion-button::after {
+  background-image: var(--bs-accordion-btn-icon);
+  transform: var(--bs-accordion-btn-icon-transform);
+}
+
+details.accordion-item .accordion-header {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Hide the default disclosure triangle on Safari */
+summary.accordion-button::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  details.accordion-item {
+    interpolate-size: allow-keywords;
+  }
+}
+
+details.accordion-item::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition: content-visibility 0.2s allow-discrete, block-size 0.2s;
+}
+
+details.accordion-item[open]::details-content {
+  block-size: auto;
 }

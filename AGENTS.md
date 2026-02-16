@@ -8,3 +8,20 @@ An iPhone and iPad Safari browser extension that allows you to check and test a 
 - All pages should have a header, main and footer element
 - Always prefer using Bootstrap utility classes over custom CSS
 - Switches should always have the `switch` attribute and the `role="switch"` attribute
+
+## Accordions
+
+Accordions are built with details/summary elements but use Bootstrap's CSS. The markup is like this:
+
+```html
+ <div class="accordion border-bottom-0">
+    <details class="accordion-item border-bottom-0" name="accordion">
+      <summary class="accordion-button rounded-top">
+        <h2 class="accordion-header user-select-none">Accordion Title 1</h2>
+      </summary>
+      <div class="accordion-body border-bottom">
+        <p>Accordion content.</p>
+      </div>
+    </details>
+  </div>
+```
