@@ -55,8 +55,6 @@ body.light-mode .tab.active .tab-icon {
 }
 
 .tool-group {
-  background: var(--panel);
-  border: 1px solid var(--line);
   padding: 10px;
   margin: 0;
   flex: 1;
@@ -68,8 +66,6 @@ body.light-mode .tab.active .tab-icon {
 }
 
 button:not(.tab) {
-  border: 1px solid var(--line);
-  background: var(--surface);
   color: var(--text);
   border-radius: 8px;
   padding: 6px 8px;
@@ -83,28 +79,22 @@ button.primary {
   color: var(--accent-text);
 }
 
-.icon-button {
+.btn-icon {
   width: 30px;
   height: 30px;
   font-size: 18px;
   line-height: 1;
 }
 
-.icon-button-icon {
-  display: block;
-  /* White icon on primary button */
+.btn-icon img {
   filter: brightness(0) invert(1);
 }
 
 .output {
-  border: 1px solid var(--line);
   border-radius: 8px;
   min-height: 36px;
   max-height: none;
-  overflow: auto;
   padding: 8px;
-  background: var(--surface);
-  font-size: 12px;
   white-space: pre-wrap;
   -webkit-overflow-scrolling: touch;
 }
@@ -114,11 +104,9 @@ button.primary {
 }
 
 .storage-row {
-  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 6px;
   margin-bottom: 6px;
-  background: var(--surface);
 }
 
 .storage-row code {

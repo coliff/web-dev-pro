@@ -254,7 +254,7 @@ function renderPerf(result) {
 
 function makeStorageRow(item) {
   const row = document.createElement("div");
-  row.className = "storage-row";
+  row.className = "storage-row rounded-3";
 
   const heading = document.createElement("strong");
   heading.textContent = `${item.kind} :: ${item.key}`;
