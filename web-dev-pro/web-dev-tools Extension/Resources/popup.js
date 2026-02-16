@@ -825,13 +825,7 @@ function renderPerf(result) {
     const rawUrl = typeof scriptInfo === "object" && scriptInfo
       ? String(scriptInfo.url || "")
       : String(scriptInfo || "");
-    const url = (() => {
-      try {
-        return new URL(rawUrl).href;
-      } catch (_error) {
-        return rawUrl;
-      }
-    })();
+    const url = rawUrl;
     const sizeKb = typeof scriptInfo === "object" && scriptInfo
       ? scriptInfo.sizeKb
       : null;
@@ -840,12 +834,16 @@ function renderPerf(result) {
       : `${sizeKb} KB`;
 
     const li = document.createElement("li");
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = url;
-    li.append(link);
+    if (url) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = url;
+      li.append(link);
+    } else {
+      li.textContent = "(unknown script URL)";
+    }
     const size = document.createElement("span");
     size.className = "opacity-75 small";
     size.textContent = ` (${sizeLabel})`;

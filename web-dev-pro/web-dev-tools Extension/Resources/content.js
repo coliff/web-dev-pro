@@ -711,7 +711,7 @@ function computeA11ySnapshot() {
     };
 }
 
-function computePerfSnapshot() {
+async function computePerfSnapshot() {
     try {
         const domNodes = document.getElementsByTagName("*").length;
         const resourceEntries = typeof performance?.getEntriesByType === "function"
@@ -776,17 +776,63 @@ function computePerfSnapshot() {
         }).map((script) => script.src);
 
         const uniqueExternalScripts = [...new Set(externalScriptUrls)].slice(0, 20);
-        const externalScripts = uniqueExternalScripts.map((url) => {
+        const parseLength = (value) => {
+            const parsed = Number.parseInt(String(value || ""), 10);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        };
+
+        const probeContentLength = async (url) => {
+            try {
+                const headResponse = await fetch(url, {
+                    method: "HEAD",
+                    cache: "no-store",
+                    credentials: "omit"
+                });
+                const headLength = parseLength(headResponse.headers.get("content-length"));
+                if (headLength !== null) {
+                    return headLength;
+                }
+            } catch (_error) {
+                // Continue to range request fallback.
+            }
+
+            try {
+                const rangeResponse = await fetch(url, {
+                    method: "GET",
+                    cache: "no-store",
+                    credentials: "omit",
+                    headers: { Range: "bytes=0-0" }
+                });
+
+                const contentRange = rangeResponse.headers.get("content-range");
+                if (contentRange) {
+                    const match = contentRange.match(/\/(\d+)\s*$/);
+                    const totalLength = parseLength(match?.[1]);
+                    if (totalLength !== null) {
+                        return totalLength;
+                    }
+                }
+
+                return parseLength(rangeResponse.headers.get("content-length"));
+            } catch (_error) {
+                return null;
+            }
+        };
+
+        const externalScripts = await Promise.all(uniqueExternalScripts.map(async (url) => {
             const normalizedUrl = normalizeUrl(url);
             const entry = resourceIndex.get(normalizedUrl)
                 || resourceEntries.find((resource) => normalizeUrl(resource.name) === normalizedUrl);
-            const bytes = bytesFromEntry(entry);
+            let bytes = bytesFromEntry(entry);
+            if (bytes === null) {
+                bytes = await probeContentLength(normalizedUrl);
+            }
 
             return {
-                url,
-                sizeKb: bytes === null ? null : Math.round(bytes / 1024)
+                url: normalizedUrl,
+                sizeKb: bytes === null ? null : Math.max(1, Math.ceil(bytes / 1024))
             };
-        });
+        }));
 
         const largeImages = [...document.querySelectorAll("img")]
             .map((img) => {
