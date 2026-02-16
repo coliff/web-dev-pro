@@ -62,6 +62,14 @@ body {
   display: none;
 }
 
+.accordion-button.no-expand::after {
+  display: none !important;
+}
+
+.accordion-button {
+  padding: 0.35rem 0.6rem;
+}
+
 button:not(.tab) {
   padding: 6px 8px;
 }

@@ -473,13 +473,32 @@ function appendHeadingTree(root, items) {
 
     const item = document.createElement("div");
     item.textContent = label;
-    item.style.marginLeft = `${Math.max(0, level - 1) * 12}px`;
+    const indent = Math.max(0, level - 1) * 18;
+    item.style.marginLeft = `${indent}px`;
+    if (level > 1) {
+      item.style.borderLeft = "1px solid var(--bs-border-color)";
+      item.style.paddingLeft = "8px";
+    }
     wrap.append(item);
   }
 
   details.append(summary, wrap);
   line.append(details);
   root.append(line);
+}
+
+function lockAccordionWhenEmpty(details, summary, count) {
+  if (count > 0) {
+    return;
+  }
+
+  summary.classList.add("pe-none", "no-expand");
+  details.open = false;
+  details.addEventListener("toggle", () => {
+    if (details.open) {
+      details.open = false;
+    }
+  });
 }
 
 function renderSEO(result) {
@@ -501,45 +520,132 @@ function renderA11y(result) {
   const output = document.getElementById("a11y-output");
   output.textContent = "";
 
-  const missingAltLine = document.createElement("div");
-  missingAltLine.className = "metric";
-  const missingAltKey = document.createElement("strong");
-  missingAltKey.textContent = "Missing alt count: ";
-  const missingAltVal = document.createElement("span");
-  missingAltVal.textContent = String(result.missingAltCount ?? 0);
-  missingAltLine.append(missingAltKey, missingAltVal);
-  output.append(missingAltLine);
+  const missingAltSamples = Array.isArray(result?.missingAltSamples) ? result.missingAltSamples : [];
+  const lowContrastSamples = Array.isArray(result?.lowContrastSamples) ? result.lowContrastSamples : [];
+  const headingTree = Array.isArray(result?.headingTree) ? result.headingTree : [];
 
-  appendCollapsibleBulletList(output, "Missing alt samples", result.missingAltSamples);
+  const accordion = document.createElement("div");
+  accordion.className = "accordion border-bottom-0";
 
-  const lowContrastLine = document.createElement("div");
-  lowContrastLine.className = "metric";
-  const lowContrastKey = document.createElement("strong");
-  lowContrastKey.textContent = "Low contrast findings: ";
-  const lowContrastVal = document.createElement("span");
-  lowContrastVal.textContent = String(result.lowContrastCount ?? 0);
-  lowContrastLine.append(lowContrastKey, lowContrastVal);
-  output.append(lowContrastLine);
+  const missingAltDetails = document.createElement("details");
+  missingAltDetails.className = "accordion-item border-bottom-0";
+  missingAltDetails.setAttribute("name", "a11y-issues");
+  const missingAltSummary = document.createElement("summary");
+  missingAltSummary.className = "accordion-button rounded-top";
+  const missingAltHeader = document.createElement("h2");
+  missingAltHeader.className = "accordion-header user-select-none fs-6 text-body";
+  missingAltHeader.textContent = `Missing alt samples (${missingAltSamples.length})`;
+  missingAltSummary.append(missingAltHeader);
+  lockAccordionWhenEmpty(missingAltDetails, missingAltSummary, missingAltSamples.length);
+  missingAltDetails.append(missingAltSummary);
+  const missingAltBody = document.createElement("div");
+  missingAltBody.className = "accordion-body border-bottom p-2";
+  const missingAltList = document.createElement("ul");
+  missingAltList.className = "small mb-0 ps-3";
+  for (const sample of missingAltSamples) {
+    const li = document.createElement("li");
+    li.textContent = sample;
+    missingAltList.append(li);
+  }
+  if (!missingAltSamples.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    missingAltBody.append(empty);
+  } else {
+    missingAltBody.append(missingAltList);
+  }
+  missingAltDetails.append(missingAltBody);
+  accordion.append(missingAltDetails);
 
-  const headingsFoundLine = document.createElement("div");
-  headingsFoundLine.className = "metric";
-  const headingsFoundKey = document.createElement("strong");
-  headingsFoundKey.textContent = "Headings found: ";
-  const headingsFoundVal = document.createElement("span");
-  headingsFoundVal.textContent = String(result.headingTree?.length ?? 0);
-  headingsFoundLine.append(headingsFoundKey, headingsFoundVal);
-  output.append(headingsFoundLine);
+  const lowContrastDetails = document.createElement("details");
+  lowContrastDetails.className = "accordion-item border-bottom-0";
+  lowContrastDetails.setAttribute("name", "a11y-issues");
+  const lowContrastSummary = document.createElement("summary");
+  lowContrastSummary.className = "accordion-button rounded-top";
+  const lowContrastHeader = document.createElement("h2");
+  lowContrastHeader.className = "accordion-header user-select-none fs-6 text-body";
+  lowContrastHeader.textContent = `Low contrast findings (${lowContrastSamples.length})`;
+  lowContrastSummary.append(lowContrastHeader);
+  lockAccordionWhenEmpty(lowContrastDetails, lowContrastSummary, lowContrastSamples.length);
+  lowContrastDetails.append(lowContrastSummary);
+  const lowContrastBody = document.createElement("div");
+  lowContrastBody.className = "accordion-body border-bottom p-2";
+  const lowContrastList = document.createElement("ul");
+  lowContrastList.className = "small mb-0 ps-3";
+  for (const sample of lowContrastSamples) {
+    const li = document.createElement("li");
+    const text = String(sample ?? "");
+    const match = text.match(/^(.*)\s(\(contrast\s[\d.]+:1\))$/i);
+    if (match) {
+      li.append(document.createTextNode(`${match[1]} `));
+      const meta = document.createElement("span");
+      meta.className = "opacity-75";
+      meta.textContent = match[2];
+      li.append(meta);
+    } else {
+      li.textContent = text;
+    }
+    lowContrastList.append(li);
+  }
+  if (!lowContrastSamples.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    lowContrastBody.append(empty);
+  } else {
+    lowContrastBody.append(lowContrastList);
+  }
+  lowContrastDetails.append(lowContrastBody);
+  accordion.append(lowContrastDetails);
 
-  appendHeadingTree(output, result.headingTree);
+  const headingTreeDetails = document.createElement("details");
+  headingTreeDetails.className = "accordion-item border-bottom-0";
+  headingTreeDetails.setAttribute("name", "a11y-issues");
+  const headingTreeSummary = document.createElement("summary");
+  headingTreeSummary.className = "accordion-button rounded-top";
+  const headingTreeHeader = document.createElement("h2");
+  headingTreeHeader.className = "accordion-header user-select-none fs-6 text-body";
+  headingTreeHeader.textContent = `Heading tree (${headingTree.length})`;
+  headingTreeSummary.append(headingTreeHeader);
+  lockAccordionWhenEmpty(headingTreeDetails, headingTreeSummary, headingTree.length);
+  headingTreeDetails.append(headingTreeSummary);
+  const headingTreeBody = document.createElement("div");
+  headingTreeBody.className = "accordion-body border-bottom p-2";
+  const headingTreeWrap = document.createElement("div");
+  headingTreeWrap.className = "small";
+  for (const raw of headingTree) {
+    const text = String(raw ?? "");
+    const match = text.match(/^h([1-6])\s*:\s*(.*)$/i);
+    const level = match ? Number(match[1]) : 1;
+    const label = match ? `H${level} ${match[2]}` : text;
+    const item = document.createElement("div");
+    item.textContent = label;
+    const indent = Math.max(0, level - 1) * 18;
+    item.style.marginLeft = `${indent}px`;
+    if (level > 1) {
+      item.style.borderLeft = "1px solid var(--bs-border-color)";
+      item.style.paddingLeft = "8px";
+    }
+    headingTreeWrap.append(item);
+  }
+  if (!headingTree.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    headingTreeBody.append(empty);
+  } else {
+    headingTreeBody.append(headingTreeWrap);
+  }
+  headingTreeDetails.append(headingTreeBody);
+  accordion.append(headingTreeDetails);
 
-  const ariaInspectLine = document.createElement("div");
-  ariaInspectLine.className = "metric";
-  const ariaInspectKey = document.createElement("strong");
-  ariaInspectKey.textContent = "ARIA inspect: ";
-  const ariaInspectVal = document.createElement("span");
-  ariaInspectVal.textContent = "Enabled (tap page element)";
-  ariaInspectLine.append(ariaInspectKey, ariaInspectVal);
-  output.append(ariaInspectLine);
+  output.append(accordion);
+
+  const ariaInfo = document.createElement("div");
+  ariaInfo.className = "alert alert-info py-1 px-2 small mt-3 mb-0";
+  ariaInfo.textContent = "ARIA inspect enabled: tap any page element to view ARIA attributes.";
+  output.append(ariaInfo);
 }
 
 function renderPerf(result) {
@@ -572,6 +678,7 @@ function renderPerf(result) {
   externalHeader.className = "accordion-header user-select-none fs-6 text-body";
   externalHeader.textContent = `External scripts (${externalScripts.length})`;
   externalSummary.append(externalHeader);
+  lockAccordionWhenEmpty(externalDetails, externalSummary, externalScripts.length);
   externalDetails.append(externalSummary);
   const externalBody = document.createElement("div");
   externalBody.className = "accordion-body border-bottom p-2";
@@ -595,6 +702,7 @@ function renderPerf(result) {
   blockingHeader.className = "accordion-header user-select-none fs-6 text-body";
   blockingHeader.textContent = `Blocking <head> scripts (${blockingHeadScripts.length})`;
   blockingSummary.append(blockingHeader);
+  lockAccordionWhenEmpty(blockingDetails, blockingSummary, blockingHeadScripts.length);
   blockingDetails.append(blockingSummary);
   const blockingBody = document.createElement("div");
   blockingBody.className = "accordion-body border-bottom p-2";
@@ -618,11 +726,12 @@ function renderPerf(result) {
   largeHeader.className = "accordion-header user-select-none fs-6 text-body";
   largeHeader.textContent = `Large images (${largeImages.length})`;
   largeSummary.append(largeHeader);
+  lockAccordionWhenEmpty(largeDetails, largeSummary, largeImages.length);
   largeDetails.append(largeSummary);
   const largeBody = document.createElement("div");
   largeBody.className = "accordion-body border-bottom p-2";
   const largeList = document.createElement("ul");
-  largeList.className = "small mb-0 ps-3 text-secondary";
+  largeList.className = "small mb-0 ps-3";
   for (const src of largeImages) {
     const li = document.createElement("li");
     li.textContent = src;
@@ -724,7 +833,7 @@ async function handleStorageAction(source) {
   }
 }
 
-async function runAction(action) {
+async function runAction(action, sourceButton = null) {
   try {
     if (action === "seo") {
       const result = await sendToActiveTab({ action: "seo-snapshot" });
@@ -747,6 +856,7 @@ async function runAction(action) {
       await navigator.clipboard.writeText(
         JSON.stringify(lastStoragePayload, null, 2),
       );
+      flashButtonLabel(sourceButton, "Copied");
       setStatus("Storage JSON copied.");
       return;
     }
@@ -869,7 +979,7 @@ async function bindEvents() {
 
     const actionButton = target.closest("[data-action]");
     if (actionButton instanceof HTMLElement && actionButton.dataset.action) {
-      await runAction(actionButton.dataset.action);
+      await runAction(actionButton.dataset.action, actionButton);
       return;
     }
 

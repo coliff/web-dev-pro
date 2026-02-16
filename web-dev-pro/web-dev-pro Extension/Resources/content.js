@@ -647,11 +647,18 @@ function computeA11ySnapshot() {
         .slice(0, 300);
 
     let lowContrastCount = 0;
+    const lowContrastSamples = [];
     for (const node of textElements) {
         const style = getComputedStyle(node);
         const ratio = contrastRatio(style.color, getEffectiveBackgroundColor(node));
         if (ratio < 4.5) {
             lowContrastCount += 1;
+            if (lowContrastSamples.length < 12) {
+                const text = (node.textContent || "").trim().replace(/\s+/g, " ").slice(0, 80);
+                lowContrastSamples.push(
+                    `${text || "(no text)"} (contrast ${ratio.toFixed(2)}:1)`
+                );
+            }
         }
     }
 
@@ -665,6 +672,7 @@ function computeA11ySnapshot() {
         missingAltCount: missingAlt.length,
         missingAltSamples: missingAlt.slice(0, 8).map((img) => img.currentSrc || img.src || "(inline image)"),
         lowContrastCount,
+        lowContrastSamples,
         headingTree
     };
 }
