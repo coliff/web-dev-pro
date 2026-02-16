@@ -1,0 +1,19 @@
+{
+  "root": true,
+  "extends": ["eslint:recommended"],
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "script"
+  },
+  "env": {
+    "browser": true,
+    "webextensions": true
+  },
+  "rules": {
+    "no-prototype-builtins": "off",
+    "no-redeclare": "off",
+    "no-undef": "off",
+    "no-unused-vars": "off",
+    "no-useless-escape": "off"
+  }
+}
