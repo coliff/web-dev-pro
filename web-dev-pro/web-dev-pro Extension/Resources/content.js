@@ -9,12 +9,15 @@ const state = {
         noAnimations: false,
         noImages: false,
         forceHover: false,
-        colorBlind: "none"
+        colorBlind: "none",
+        disableAvif: false,
+        disableWebp: false
     },
     styleNodes: new Map(),
     overlayNodes: [],
     ariaInspectorInstalled: false,
-    ariaTooltip: null
+    ariaTooltip: null,
+    imageFormatObserver: null
 };
 
 function addStyle(id, cssText) {
@@ -273,6 +276,114 @@ function setColorBlindFilter(filterName) {
     );
 
     return { active: state.toolActive.colorBlind };
+}
+
+function fallbackUrlForFormat(url, format) {
+    if (!url || typeof url !== "string") return url;
+    const lower = url.toLowerCase();
+    if (format === "avif" && (lower.includes(".avif") || lower.includes("format=avif"))) {
+        return url.replace(/\.avif(\?|$)/i, ".jpg$1").replace(/([?&])format=avif(&|$)/i, "$1format=jpg$2");
+    }
+    if (format === "webp" && (lower.includes(".webp") || lower.includes("format=webp"))) {
+        return url.replace(/\.webp(\?|$)/i, ".jpg$1").replace(/([?&])format=webp(&|$)/i, "$1format=jpg$2");
+    }
+    return null;
+}
+
+function rewriteImageFormat(format) {
+    const isAvif = format === "avif";
+    const ext = isAvif ? ".avif" : ".webp";
+    const type = isAvif ? "image/avif" : "image/webp";
+
+    document.querySelectorAll("img[src]").forEach((img) => {
+        if (img.hasAttribute("data-original-src")) return;
+        const src = img.getAttribute("src");
+        const fallback = fallbackUrlForFormat(src, format);
+        if (fallback && fallback !== src) {
+            img.setAttribute("data-original-src", src);
+            img.src = fallback;
+        }
+    });
+
+    document.querySelectorAll(`source[type="${type}"], source[srcset*="${ext}"]`).forEach((source) => {
+        if (source.hasAttribute("data-original-srcset") || source.hasAttribute("data-original-src")) return;
+        const srcset = source.getAttribute("srcset");
+        const src = source.getAttribute("src");
+        if (srcset) {
+            const rewritten = srcset.split(",").map((part) => {
+                const u = part.trim().split(/\s+/)[0];
+                const f = fallbackUrlForFormat(u, format);
+                return f ? part.replace(u, f) : part;
+            }).join(", ");
+            if (rewritten !== srcset) {
+                source.setAttribute("data-original-srcset", srcset);
+                source.setAttribute("srcset", rewritten);
+            }
+        }
+        if (src) {
+            const f = fallbackUrlForFormat(src, format);
+            if (f) {
+                source.setAttribute("data-original-src", src);
+                source.setAttribute("src", f);
+            }
+        }
+    });
+}
+
+function observeImageFormat(format) {
+    if (state.imageFormatObserver) return;
+
+    state.imageFormatObserver = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.addedNodes.length) {
+                for (const node of m.addedNodes) {
+                    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                    if (state.toolActive.disableAvif) rewriteImageFormat("avif");
+                    if (state.toolActive.disableWebp) rewriteImageFormat("webp");
+                    if (node.querySelectorAll) {
+                        node.querySelectorAll("img[src], source[srcset], source[src]").forEach((el) => {
+                            if (state.toolActive.disableAvif) {
+                                const src = el.getAttribute("src") || el.getAttribute("srcset") || "";
+                                if (fallbackUrlForFormat(src, "avif") || el.getAttribute("type") === "image/avif") {
+                                    rewriteImageFormat("avif");
+                                }
+                            }
+                            if (state.toolActive.disableWebp) {
+                                const src = el.getAttribute("src") || el.getAttribute("srcset") || "";
+                                if (fallbackUrlForFormat(src, "webp") || el.getAttribute("type") === "image/webp") {
+                                    rewriteImageFormat("webp");
+                                }
+                            }
+                        });
+                    }
+                    break;
+                }
+            }
+        }
+    });
+
+    state.imageFormatObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function setImageFormatDisabled(format, disable) {
+    if (format === "avif") {
+        state.toolActive.disableAvif = Boolean(disable);
+    } else if (format === "webp") {
+        state.toolActive.disableWebp = Boolean(disable);
+    }
+
+    if (state.toolActive.disableAvif || state.toolActive.disableWebp) {
+        observeImageFormat(format);
+        if (state.toolActive.disableAvif) rewriteImageFormat("avif");
+        if (state.toolActive.disableWebp) rewriteImageFormat("webp");
+    } else {
+        if (state.imageFormatObserver) {
+            state.imageFormatObserver.disconnect();
+            state.imageFormatObserver = null;
+        }
+    }
+
+    return { disableAvif: state.toolActive.disableAvif, disableWebp: state.toolActive.disableWebp };
 }
 
 function computeSeoSnapshot() {
@@ -721,6 +832,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "a11y-color-filter") {
         return Promise.resolve(setColorBlindFilter(request.filter));
+    }
+
+    if (request.action === "rendering-format") {
+        return Promise.resolve(setImageFormatDisabled(request.format, request.disable));
     }
 
     return undefined;

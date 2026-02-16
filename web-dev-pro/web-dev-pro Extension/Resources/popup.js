@@ -4,7 +4,7 @@ let lastStoragePayload = null;
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const darkModeKey = "popup.darkModeEnabled";
-const validTabs = new Set(["a11y", "css", "perf", "seo", "settings", "storage"]);
+const validTabs = new Set(["a11y", "css", "perf", "rendering", "seo", "settings", "storage"]);
 
 async function getActiveTabId() {
   if (ext.tabs.query.length === 1) {
@@ -477,6 +477,21 @@ async function switchTab(tabName) {
   if (tabName === "perf") {
     await runAction("perf");
   }
+
+  if (tabName === "rendering") {
+    const avifSwitch = document.getElementById("rendering-disable-avif");
+    const webpSwitch = document.getElementById("rendering-disable-webp");
+    try {
+      if (avifSwitch instanceof HTMLInputElement && avifSwitch.checked) {
+        await sendToActiveTab({ action: "rendering-format", format: "avif", disable: true });
+      }
+      if (webpSwitch instanceof HTMLInputElement && webpSwitch.checked) {
+        await sendToActiveTab({ action: "rendering-format", format: "webp", disable: true });
+      }
+    } catch {
+      // Ignore if tab doesn't accept (e.g. chrome://)
+    }
+  }
 }
 
 async function bindEvents() {
@@ -517,7 +532,7 @@ async function bindEvents() {
     });
   });
 
-  const visionSelect = document.getElementById("a11y-vision-select");
+  const visionSelect = document.getElementById("rendering-vision-select");
   if (visionSelect instanceof HTMLSelectElement) {
     visionSelect.addEventListener("change", async () => {
       try {
@@ -531,6 +546,38 @@ async function bindEvents() {
           || String(error)
           || "Request failed.";
         setStatus(message, true);
+      }
+    });
+  }
+
+  const disableAvifKey = "popup.rendering.disableAvif";
+  const disableWebpKey = "popup.rendering.disableWebp";
+  const avifSwitch = document.getElementById("rendering-disable-avif");
+  const webpSwitch = document.getElementById("rendering-disable-webp");
+
+  if (avifSwitch instanceof HTMLInputElement) {
+    const stored = await loadStoredValue(disableAvifKey);
+    avifSwitch.checked = stored === "true";
+    avifSwitch.addEventListener("change", async () => {
+      const enabled = avifSwitch.checked;
+      await saveStoredValue(disableAvifKey, String(enabled));
+      try {
+        await sendToActiveTab({ action: "rendering-format", format: "avif", disable: enabled });
+      } catch (e) {
+        setStatus("Could not apply AVIF setting.", true);
+      }
+    });
+  }
+  if (webpSwitch instanceof HTMLInputElement) {
+    const stored = await loadStoredValue(disableWebpKey);
+    webpSwitch.checked = stored === "true";
+    webpSwitch.addEventListener("change", async () => {
+      const enabled = webpSwitch.checked;
+      await saveStoredValue(disableWebpKey, String(enabled));
+      try {
+        await sendToActiveTab({ action: "rendering-format", format: "webp", disable: enabled });
+      } catch (e) {
+        setStatus("Could not apply WebP setting.", true);
       }
     });
   }
