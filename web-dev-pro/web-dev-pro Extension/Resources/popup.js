@@ -34,7 +34,7 @@ async function sendToActiveTab(message) {
     ext.tabs.sendMessage(tabId, message, (response) => {
       const err = ext.runtime?.lastError;
       if (err) {
-        reject(new Error(err.message));
+        reject(new Error(err.message || "Request failed."));
         return;
       }
       resolve(response);
@@ -231,19 +231,25 @@ function renderA11y(result) {
 }
 
 function renderPerf(result) {
+  const safeResult = result && typeof result === "object" ? result : {};
+  const largeImages = Array.isArray(safeResult.largeImages) ? safeResult.largeImages : [];
+  const blockingHeadScripts = Array.isArray(safeResult.blockingHeadScripts)
+    ? safeResult.blockingHeadScripts
+    : [];
+
   const output = document.getElementById("perf-output");
   output.textContent = "";
 
   renderKeyValues("perf-output", {
-    "Total DOM nodes": result.domNodes,
-    "Page weight estimate": `${result.pageWeightKb} KB`,
-    "External scripts": result.externalScripts,
-    "Large images": result.largeImages.length,
-    "Blocking <head> scripts": result.blockingHeadScripts.length,
+    "Total DOM nodes": safeResult.domNodes ?? 0,
+    "Page weight estimate": `${safeResult.pageWeightKb ?? 0} KB`,
+    "External scripts": safeResult.externalScripts ?? 0,
+    "Large images": largeImages.length,
+    "Blocking <head> scripts": blockingHeadScripts.length,
   });
 
-  appendList(output, "Large images", result.largeImages);
-  appendList(output, "Blocking scripts", result.blockingHeadScripts);
+  appendList(output, "Large images", largeImages);
+  appendList(output, "Blocking scripts", blockingHeadScripts);
 }
 
 function makeStorageRow(item) {
@@ -394,6 +400,9 @@ async function runAction(action) {
       renderA11y(result);
     } else if (action === "perf") {
       const result = await sendToActiveTab({ action: "perf-snapshot" });
+      if (!result || typeof result !== "object") {
+        throw new Error("Performance snapshot unavailable on this page.");
+      }
       renderPerf(result);
     } else if (action === "storage") {
       await loadStorage();
@@ -409,7 +418,11 @@ async function runAction(action) {
     }
 
   } catch (error) {
-    setStatus(error.message || String(error), true);
+    const message =
+      (error && typeof error === "object" && "message" in error && error.message)
+      || String(error)
+      || "Request failed.";
+    setStatus(message, true);
   }
 }
 
@@ -437,7 +450,11 @@ async function toggleCssTool(control) {
     if (control instanceof HTMLInputElement && typeof priorValue === "boolean") {
       control.checked = priorValue;
     }
-    setStatus(error.message || String(error), true);
+    const message =
+      (error && typeof error === "object" && "message" in error && error.message)
+      || String(error)
+      || "Request failed.";
+    setStatus(message, true);
   }
 }
 

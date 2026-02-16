@@ -439,58 +439,72 @@ function computeA11ySnapshot() {
 }
 
 function computePerfSnapshot() {
-    const domNodes = document.getElementsByTagName("*").length;
+    try {
+        const domNodes = document.getElementsByTagName("*").length;
+        const resourceEntries = typeof performance?.getEntriesByType === "function"
+            ? (performance.getEntriesByType("resource") || [])
+            : [];
 
-    const resourceEntries = performance.getEntriesByType("resource") || [];
-    const transferBytes = resourceEntries.reduce((sum, entry) => {
-        const value = entry.transferSize || entry.encodedBodySize || 0;
-        return sum + value;
-    }, 0);
+        const transferBytes = resourceEntries.reduce((sum, entry) => {
+            const value = entry.transferSize || entry.encodedBodySize || 0;
+            return sum + value;
+        }, 0);
 
-    const htmlBytes = (document.documentElement.outerHTML || "").length * 2;
-    const pageWeightKb = Math.round((transferBytes + htmlBytes) / 1024);
+        const htmlBytes = (document.documentElement?.outerHTML || "").length * 2;
+        const pageWeightKb = Math.round((transferBytes + htmlBytes) / 1024);
 
-    const externalScripts = [...document.querySelectorAll("script[src]")].filter((script) => {
-        try {
-            return new URL(script.src, location.href).origin !== location.origin;
-        } catch (_error) {
-            return false;
-        }
-    }).length;
-
-    const largeImages = [...document.querySelectorAll("img")]
-        .map((img) => {
-            const src = img.currentSrc || img.src;
-            if (!src) {
-                return null;
+        const externalScripts = [...document.querySelectorAll("script[src]")].filter((script) => {
+            try {
+                return new URL(script.src, location.href).origin !== location.origin;
+            } catch (_error) {
+                return false;
             }
+        }).length;
 
-            const entry = resourceEntries.find((resource) => resource.name === src);
-            const bytes = entry?.transferSize || entry?.encodedBodySize || 0;
-            const largeBySize = bytes > 200 * 1024;
-            const largeByDimension = img.naturalWidth > 2000 || img.naturalHeight > 2000;
+        const largeImages = [...document.querySelectorAll("img")]
+            .map((img) => {
+                const src = img.currentSrc || img.src;
+                if (!src) {
+                    return null;
+                }
 
-            if (!largeBySize && !largeByDimension) {
-                return null;
-            }
+                const entry = resourceEntries.find((resource) => resource.name === src);
+                const bytes = entry?.transferSize || entry?.encodedBodySize || 0;
+                const largeBySize = bytes > 200 * 1024;
+                const largeByDimension = img.naturalWidth > 2000 || img.naturalHeight > 2000;
 
-            return `${src.slice(0, 72)}${src.length > 72 ? "..." : ""} (${Math.round(bytes / 1024)}KB)`;
-        })
-        .filter(Boolean)
-        .slice(0, 10);
+                if (!largeBySize && !largeByDimension) {
+                    return null;
+                }
 
-    const blockingHeadScripts = [...document.head.querySelectorAll("script")]
-        .filter((script) => script.src && !script.hasAttribute("defer") && !script.hasAttribute("async") && script.type !== "module")
-        .map((script) => script.src)
-        .slice(0, 10);
+                return `${src.slice(0, 72)}${src.length > 72 ? "..." : ""} (${Math.round(bytes / 1024)}KB)`;
+            })
+            .filter(Boolean)
+            .slice(0, 10);
 
-    return {
-        domNodes,
-        pageWeightKb,
-        externalScripts,
-        largeImages,
-        blockingHeadScripts
-    };
+        const headScripts = document.head ? [...document.head.querySelectorAll("script")] : [];
+        const blockingHeadScripts = headScripts
+            .filter((script) => script.src && !script.hasAttribute("defer") && !script.hasAttribute("async") && script.type !== "module")
+            .map((script) => script.src)
+            .slice(0, 10);
+
+        return {
+            domNodes,
+            pageWeightKb,
+            externalScripts,
+            largeImages,
+            blockingHeadScripts
+        };
+    } catch (error) {
+        return {
+            domNodes: 0,
+            pageWeightKb: 0,
+            externalScripts: 0,
+            largeImages: [],
+            blockingHeadScripts: [],
+            error: error?.message || String(error)
+        };
+    }
 }
 
 async function listIndexedDb() {
