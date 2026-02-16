@@ -1,160 +1,176 @@
 <!doctype html>
 <html lang="en-US" data-bs-theme="dark" class="h-100 w-100">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Web Dev Pro</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Extensions for iPhone Safari browser">
-    <link rel="stylesheet" href="bootstrap.min.css" />
-    <link rel="stylesheet" href="popup.css" />
-    <script type="module" src="popup.js"></script>
-  </head>
 
-  <body class="m-0 p-0 h-100 d-flex flex-column overflow-hidden w-100">
-    <main class="d-flex flex-column flex-grow-1 w-100">
-      <nav class="nav nav-tabs nav-fill tabs mb-0 border-bottom bg-dark" aria-label="Tools">
-        <button class="nav-link tab mb-0 border-0" data-tab="a11y" type="button" aria-label="Accessibility" title="Accessibility">
-          <img class="tab-icon" src="icons/tab-a11y.svg" alt="Accessibility" width="20" height="20" />
-        </button>
-        <button class="nav-link tab mb-0 border-0" data-tab="css" type="button" aria-label="CSS" title="CSS">
-          <img class="tab-icon" src="icons/tab-css.svg" alt="CSS" width="20" height="20" />
-        </button>
-        <button class="nav-link tab mb-0 border-0" data-tab="perf" type="button" aria-label="Performance" title="Performance">
-          <img class="tab-icon" src="icons/tab-perf.svg" alt="Performance" width="20" height="20" />
-        </button>
-        <button class="nav-link tab mb-0 border-0" data-tab="seo" type="button" aria-label="SEO" title="SEO">
-          <img class="tab-icon" src="icons/tab-seo.svg" alt="SEO" width="20" height="20" />
-        </button>
-        <button class="nav-link tab mb-0 border-0" data-tab="storage" type="button" aria-label="Storage" title="Storage">
-          <img class="tab-icon" src="icons/tab-storage.svg" alt="Storage" width="20" height="20" />
-        </button>
-        <button class="nav-link tab mb-0 border-0" data-tab="settings" type="button" aria-label="Settings" title="Settings">
-          <img class="tab-icon" src="icons/tab-settings.svg" alt="Settings" width="20" height="20" />
-        </button>
-      </nav>
+<head>
+  <meta charset="UTF-8" />
+  <title>Web Dev Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Extensions for iPhone Safari browser">
+  <link rel="stylesheet" href="bootstrap.min.css" />
+  <link rel="stylesheet" href="popup.css" />
+  <script type="module" src="popup.js"></script>
+</head>
 
-      <section class="tool-group tab-panel rounded-3 overflow-hidden" data-panel="a11y">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h2 class="m-0 fs-6">Accessibility Snapshot</h2>
-          <button class="btn btn-primary" data-action="a11y" type="button">Run</button>
-        </div>
-        <p class="mb-1 mt-0 fw-medium small">Emulate vision deficiencies</p>
-        <p class="small text-secondary opacity-75 mb-2 mt-0">Forces vision deficiency emulation</p>
-        <select id="a11y-vision-select" class="form-select form-select-sm mb-2" aria-label="Vision deficiency emulation">
-          <option value="none" selected>No Emulation</option>
-          <option value="protanopia">Protanopia</option>
-          <option value="deuteranopia">Deuteranopia</option>
-          <option value="tritanopia">Tritanopia</option>
-          <option value="blurred">Blurred vision</option>
-        </select>
-        <div id="a11y-output" class="output rounded-3"></div>
-        <p class="small text-secondary mt-1 mb-0">
-          Tip: Click any page element after running to inspect ARIA attrs.
-        </p>
-      </section>
+<body class="m-0 p-0 h-100 d-flex flex-column overflow-hidden w-100">
+  <main class="d-flex flex-column flex-grow-1 w-100">
+    <nav class="nav nav-tabs nav-fill tabs mb-0 border-bottom bg-dark" aria-label="Tools">
+      <button class="nav-link tab mb-0 border-0" data-tab="a11y" type="button" aria-label="Accessibility"
+        title="Accessibility">
+        <img class="tab-icon" src="icons/tab-a11y.svg" alt="Accessibility" width="20" height="20" />
+      </button>
+      <button class="nav-link tab mb-0 border-0" data-tab="css" type="button" aria-label="CSS" title="CSS">
+        <img class="tab-icon" src="icons/tab-css.svg" alt="CSS" width="20" height="20" />
+      </button>
+      <button class="nav-link tab mb-0 border-0" data-tab="perf" type="button" aria-label="Performance"
+        title="Performance">
+        <img class="tab-icon" src="icons/tab-perf.svg" alt="Performance" width="20" height="20" />
+      </button>
+      <button class="nav-link tab mb-0 border-0" data-tab="seo" type="button" aria-label="SEO" title="SEO">
+        <img class="tab-icon" src="icons/tab-seo.svg" alt="SEO" width="20" height="20" />
+      </button>
+      <button class="nav-link tab mb-0 border-0" data-tab="storage" type="button" aria-label="Storage" title="Storage">
+        <img class="tab-icon" src="icons/tab-storage.svg" alt="Storage" width="20" height="20" />
+      </button>
+      <button class="nav-link tab mb-0 border-0" data-tab="settings" type="button" aria-label="Settings"
+        title="Settings">
+        <img class="tab-icon" src="icons/tab-settings.svg" alt="Settings" width="20" height="20" />
+      </button>
+    </nav>
 
-      <section class="tool-group tab-panel overflow-hidden" data-panel="css">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h2 class="m-0 fs-6">CSS Quick Tools</h2>
-        </div>
-        <div class="d-flex flex-column gap-2 overflow-auto">
-          <div>
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-zindex-switch" data-css-tool="zIndex" switch>
-              <label class="form-check-label" for="css-zindex-switch">Show z-index</label>
-            </div>
-            <p class="small opacity-50 mb-0 ms-4">Highlights stacking levels to spot overlap and layering issues.</p>
+    <section class="tool-group tab-panel rounded-3 overflow-hidden" data-panel="a11y">
+      <h2 class="mb-1 mt-0 fw-medium small">Emulate vision deficiencies</h2>
+      <p class="small text-secondary opacity-75 mb-2 mt-0">Forces vision deficiency emulation</p>
+      <select id="a11y-vision-select" class="form-select form-select-sm mb-2" aria-label="Vision deficiency emulation">
+        <option value="none" selected>No Emulation</option>
+        <option value="protanopia">Protanopia</option>
+        <option value="deuteranopia">Deuteranopia</option>
+        <option value="tritanopia">Tritanopia</option>
+        <option value="blurred">Blurred vision</option>
+      </select>
+
+      <div class="opacity-75">
+        <hr class="my-2">
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="m-0 fs-6">Accessibility Snapshot</h2>
+        <button class="btn btn-primary" data-action="a11y" type="button">Run</button>
+      </div>
+      <div id="a11y-output" class="output rounded-3"></div>
+      <p class="small text-secondary mt-1 mb-0">
+        Tip: Click any page element after running to inspect ARIA attrs.
+      </p>
+    </section>
+
+    <section class="tool-group tab-panel overflow-hidden" data-panel="css">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="m-0 fs-6">CSS Quick Tools</h2>
+      </div>
+      <div class="d-flex flex-column gap-2 overflow-auto">
+        <div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="css-zindex-switch" data-css-tool="zIndex"
+              switch>
+            <label class="form-check-label" for="css-zindex-switch">Show z-index</label>
           </div>
+          <p class="small opacity-50 mb-0 ms-4">Highlights stacking levels to spot overlap and layering issues.</p>
+        </div>
 
-          <div>
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-overflow-switch" data-css-tool="overflow" switch>
-              <label class="form-check-label" for="css-overflow-switch">Overflow issues</label>
-            </div>
-            <p class="small opacity-50 mb-0 ms-4">Marks clipped or scroll-conflicting elements.</p>
+        <div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="css-overflow-switch"
+              data-css-tool="overflow" switch>
+            <label class="form-check-label" for="css-overflow-switch">Overflow issues</label>
           </div>
+          <p class="small opacity-50 mb-0 ms-4">Marks clipped or scroll-conflicting elements.</p>
+        </div>
 
-          <div>
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-layout-switch" data-css-tool="layout" switch>
-              <label class="form-check-label" for="css-layout-switch">Flex/Grid bounds</label>
-            </div>
-            <p class="small opacity-50 mb-0 ms-4">Outlines flex and grid containers to inspect layout boundaries.</p>
+        <div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="css-layout-switch" data-css-tool="layout"
+              switch>
+            <label class="form-check-label" for="css-layout-switch">Flex/Grid bounds</label>
           </div>
+          <p class="small opacity-50 mb-0 ms-4">Outlines flex and grid containers to inspect layout boundaries.</p>
+        </div>
 
-          <div>
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-no-animations-switch" data-css-tool="noAnimations" switch>
-              <label class="form-check-label" for="css-no-animations-switch">Disable animations</label>
-            </div>
-            <p class="small opacity-50 mb-0 ms-4">Turns off CSS animations and transitions for motion checks.</p>
+        <div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="css-no-animations-switch"
+              data-css-tool="noAnimations" switch>
+            <label class="form-check-label" for="css-no-animations-switch">Disable animations</label>
           </div>
+          <p class="small opacity-50 mb-0 ms-4">Turns off CSS animations and transitions for motion checks.</p>
+        </div>
 
-          <div>
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-no-images-switch" data-css-tool="noImages" switch>
-              <label class="form-check-label" for="css-no-images-switch">Disable images</label>
-            </div>
-            <p class="small opacity-50 mb-0 ms-4">Hides image content to evaluate structure and fallback UX.</p>
+        <div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="css-no-images-switch"
+              data-css-tool="noImages" switch>
+            <label class="form-check-label" for="css-no-images-switch">Disable images</label>
           </div>
+          <p class="small opacity-50 mb-0 ms-4">Hides image content to evaluate structure and fallback UX.</p>
+        </div>
 
-          <div>
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-force-hover-switch" data-css-tool="forceHover" switch>
-              <label class="form-check-label" for="css-force-hover-switch">Force hover</label>
-            </div>
-            <p class="small opacity-50 mb-0 ms-4">Forces hover states on interactive elements for inspection.</p>
+        <div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="css-force-hover-switch"
+              data-css-tool="forceHover" switch>
+            <label class="form-check-label" for="css-force-hover-switch">Force hover</label>
           </div>
+          <p class="small opacity-50 mb-0 ms-4">Forces hover states on interactive elements for inspection.</p>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="tool-group tab-panel overflow-hidden" data-panel="perf">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h2 class="m-0 fs-6">Performance Snapshot</h2>
-        </div>
-        <div id="perf-output" class="output"></div>
-      </section>
+    <section class="tool-group tab-panel overflow-hidden" data-panel="perf">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="m-0 fs-6">Performance Snapshot</h2>
+      </div>
+      <div id="perf-output" class="output"></div>
+    </section>
 
-      <section class="tool-group tab-panel active d-flex flex-column overflow-hidden" data-panel="seo">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h2 class="m-0 fs-6">SEO Check</h2>
-        </div>
-        <div id="seo-output" class="output"></div>
-      </section>
+    <section class="tool-group tab-panel active d-flex flex-column overflow-hidden" data-panel="seo">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="m-0 fs-6">SEO Check</h2>
+      </div>
+      <div id="seo-output" class="output"></div>
+    </section>
 
-      <section class="tool-group tab-panel overflow-hidden" data-panel="settings">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h2 class="m-0 fs-6">Settings</h2>
-        </div>
+    <section class="tool-group tab-panel overflow-hidden" data-panel="settings">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="m-0 fs-6">Settings</h2>
+      </div>
 
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" role="switch" id="dark-mode-switch" checked switch>
-          <label class="form-check-label" for="dark-mode-switch">Dark mode</label>
-        </div>
+      <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" role="switch" id="dark-mode-switch" checked switch>
+        <label class="form-check-label" for="dark-mode-switch">Dark mode</label>
+      </div>
 
-        <div class="small text-secondary opacity-75 mt-auto">
-          <div id="settings-build-version"></div>
-          <div id="settings-build-date"></div>
-        </div>
-      </section>
+      <div class="small text-secondary opacity-75 mt-auto">
+        <div id="settings-build-version"></div>
+        <div id="settings-build-date"></div>
+      </div>
+    </section>
 
-      <section class="tool-group tab-panel overflow-hidden" data-panel="storage">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h2 class="m-0 fs-6">Storage Viewer</h2>
-          <button class="primary btn btn-icon d-inline-flex align-items-center justify-content-center" data-action="storage" type="button" aria-label="Refresh storage"
-            title="Refresh storage">
-            <img class="d-block" src="icons/refresh.svg" alt="Refresh" width="18" height="18" aria-hidden="true" />
-          </button>
-        </div>
-        <div class="d-flex gap-1 mb-1">
-          <button data-action="storage-copy" type="button" class="btn btn-secondary">Copy JSON</button>
-        </div>
-        <div id="storage-output" class="output rounded-3 small overflow-auto p-2"></div>
-      </section>
-    </main>
+    <section class="tool-group tab-panel overflow-hidden" data-panel="storage">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="m-0 fs-6">Storage Viewer</h2>
+        <button class="primary btn btn-icon d-inline-flex align-items-center justify-content-center"
+          data-action="storage" type="button" aria-label="Refresh storage" title="Refresh storage">
+          <img class="d-block" src="icons/refresh.svg" alt="Refresh" width="18" height="18" aria-hidden="true" />
+        </button>
+      </div>
+      <div class="d-flex gap-1 mb-1">
+        <button data-action="storage-copy" type="button" class="btn btn-secondary">Copy JSON</button>
+      </div>
+      <div id="storage-output" class="output rounded-3 small overflow-auto p-2"></div>
+    </section>
+  </main>
 
-    <footer class="d-none small text-secondary p-2 border-top">
-      <p id="status" class="m-0">Ready</p>
-    </footer>
-  </body>
+  <footer class="d-none small text-secondary p-2 border-top">
+    <p id="status" class="m-0">Ready</p>
+  </footer>
+</body>
+
 </html>
