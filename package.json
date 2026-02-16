@@ -1,13 +1,13 @@
 {
   "name": "web-dev-pro",
   "version": "1.0.0",
-  "description": "Animal Match 3 iPhone game",
+  "description": "Web Developer Tools for iOS",
   "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/coliff/web-dev-pro.git"
   },
-  "homepage": "https://web-dev-pro-app.christianoliff.com",
+  "homepage": "https://web-dev-tools-app.christianoliff.com",
   "bugs": {
     "url": "https://github.com/coliff/web-dev-pro/issues"
   },
@@ -15,7 +15,7 @@
     "prettier": "npx prettier --write docs/**/*.{html,css,json,js}",
     "prettier:check": "npx prettier --check docs/**/*.{html,css,json,js}",
     "htmlhint": "npx htmlhint docs/**/*.html",
-    "pa11y": "npx pa11y https://webdevpro-app.christianoliff.com/",
+    "pa11y": "npx pa11y https://web-dev-tools-app.christianoliff.com/",
     "serve": "npx http-server -o \"web-dev-pro/web-dev-pro Extension/Resources/popup.html\" -p 8080 -c-1",
     "serve-docs": "npx http-server -o docs/index.html -p 8080 -c-1",
     "spellcheck": "npx cspell \"docs/**/*.html\" --no-progress",
