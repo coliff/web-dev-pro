@@ -413,17 +413,30 @@ async function runAction(action) {
   }
 }
 
-async function toggleCssTool(button) {
-  const tool = button.dataset.cssTool;
+async function toggleCssTool(control) {
+  const tool = control.dataset.cssTool;
   if (!tool) {
     return;
   }
 
+  const priorValue =
+    control instanceof HTMLInputElement ? !control.checked : undefined;
+
   try {
     const response = await sendToActiveTab({ action: "css-tool-toggle", tool });
-    button.classList.toggle("active", response.active);
-    setStatus(`${tool}: ${response.active ? "on" : "off"}`);
+    const isActive = Boolean(response?.active);
+
+    if (control instanceof HTMLInputElement) {
+      control.checked = isActive;
+    } else {
+      control.classList.toggle("active", isActive);
+    }
+
+    setStatus(`${tool}: ${isActive ? "on" : "off"}`);
   } catch (error) {
+    if (control instanceof HTMLInputElement && typeof priorValue === "boolean") {
+      control.checked = priorValue;
+    }
     setStatus(error.message || String(error), true);
   }
 }
@@ -474,12 +487,17 @@ async function bindEvents() {
       return;
     }
 
-    if (target.dataset.cssTool) {
-      await toggleCssTool(target);
+    await handleStorageAction(event);
+  });
+
+  document.querySelectorAll("input[data-css-tool]").forEach((input) => {
+    if (!(input instanceof HTMLInputElement)) {
       return;
     }
 
-    await handleStorageAction(event);
+    input.addEventListener("change", async () => {
+      await toggleCssTool(input);
+    });
   });
 
   const savedTab = await loadSavedTab();

@@ -1,10 +1,10 @@
 {
     "extension_name": {
-        "message": "Dev Inspector",
+        "message": "Web Dev Tools",
         "description": "The display name for the extension."
     },
     "extension_description": {
-        "message": "Dev Inspector for on-page SEO, accessibility, storage, CSS, and performance snapshots. You should tell us what your extension does here.",
+        "message": "Web Dev Tools for on-page SEO, accessibility, storage, CSS, and performance snapshots. You should tell us what your extension does here.",
         "description": "Description of what the extension does."
     }
 }

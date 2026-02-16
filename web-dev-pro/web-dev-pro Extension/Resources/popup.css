@@ -26,8 +26,7 @@ body.light-mode {
 
 html,
 body {
-  width: 360px;
-  min-width: 360px;
+  width: min(360px, 100vw);
   background: var(--bg);
 }
 
@@ -53,7 +52,6 @@ body {
   background: var(--surface);
   border-color: var(--line);
   font-size: 11px;
-  font-weight: 600;
   transition: none !important;
   transform: none !important;
 }
@@ -99,12 +97,6 @@ button.primary {
   height: 30px;
   font-size: 18px;
   line-height: 1;
-}
-
-.grid-buttons button.active {
-  border-color: var(--accent);
-  color: var(--active-chip-text);
-  background: var(--active-chip-bg);
 }
 
 .output {
