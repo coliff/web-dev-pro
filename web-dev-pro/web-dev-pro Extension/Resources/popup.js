@@ -42,36 +42,59 @@ async function sendToActiveTab(message) {
 }
 
 async function loadSavedTab() {
+  try {
+    const localValue = globalThis.localStorage?.getItem(popupTabKey);
+    if (localValue) {
+      return localValue;
+    }
+  } catch {
+    // Ignore localStorage access failures and continue to extension storage.
+  }
+
   if (!ext.storage?.local) {
     return null;
   }
 
-  if (typeof ext.storage.local.get === "function" && ext.storage.local.get.length <= 1) {
-    const result = await ext.storage.local.get(popupTabKey);
-    return result?.[popupTabKey] ?? null;
-  }
+  try {
+    if (typeof ext.storage.local.get === "function" && ext.storage.local.get.length <= 1) {
+      const result = await ext.storage.local.get(popupTabKey);
+      return result?.[popupTabKey] ?? null;
+    }
 
-  return await new Promise((resolve) => {
-    ext.storage.local.get([popupTabKey], (result) => {
-      resolve(result?.[popupTabKey] ?? null);
+    return await new Promise((resolve) => {
+      ext.storage.local.get([popupTabKey], (result) => {
+        resolve(result?.[popupTabKey] ?? null);
+      });
     });
-  });
+  } catch {
+    return null;
+  }
 }
 
 async function saveTab(tabName) {
+  try {
+    globalThis.localStorage?.setItem(popupTabKey, tabName);
+  } catch {
+    // Ignore localStorage access failures and continue to extension storage.
+  }
+
   if (!ext.storage?.local) {
     return;
   }
 
   const payload = { [popupTabKey]: tabName };
-  if (typeof ext.storage.local.set === "function" && ext.storage.local.set.length <= 1) {
-    await ext.storage.local.set(payload);
-    return;
-  }
+  try {
+    if (typeof ext.storage.local.set === "function" && ext.storage.local.set.length <= 1) {
+      await ext.storage.local.set(payload);
+      return;
+    }
 
-  await new Promise((resolve) => {
-    ext.storage.local.set(payload, () => resolve());
-  });
+    await new Promise((resolve) => {
+      ext.storage.local.set(payload, () => resolve());
+    });
+  } catch {
+    // localStorage fallback already handled above.
+  }
 }
 
 function setStatus(text, isError = false) {
@@ -189,7 +212,7 @@ function makeStorageRow(item) {
   value.textContent = item.value;
 
   const actions = document.createElement("div");
-  actions.className = "storage-actions";
+  actions.className = "storage-actions d-flex gap-1 mt-1";
 
   const copyBtn = document.createElement("button");
   copyBtn.type = "button";
@@ -373,7 +396,10 @@ async function switchTab(tabName) {
   });
 
   document.querySelectorAll("[data-panel]").forEach((panel) => {
-    panel.classList.toggle("active", panel.dataset.panel === tabName);
+    const isActive = panel.dataset.panel === tabName;
+    panel.classList.toggle("active", isActive);
+    panel.classList.toggle("d-flex", isActive);
+    panel.classList.toggle("flex-column", isActive);
   });
 
   if (tabName === "seo") {

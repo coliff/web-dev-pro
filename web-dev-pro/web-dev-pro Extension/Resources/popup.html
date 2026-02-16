@@ -11,7 +11,7 @@
   </head>
 
   <body class="m-0 p-0 h-100 d-flex flex-column overflow-hidden">
-    <main class="d-flex flex-column flex-grow-1 min-vh-0">
+    <main class="d-flex flex-column flex-grow-1">
       <nav class="nav nav-tabs nav-fill tabs mb-0" aria-label="Tools">
         <button class="nav-link tab mb-0" data-tab="a11y" type="button">A11y</button>
         <button class="nav-link tab mb-0" data-tab="css" type="button">CSS</button>
@@ -59,7 +59,7 @@
         <div id="perf-output" class="output"></div>
       </section>
 
-      <section class="tool-group tab-panel active overflow-hidden" data-panel="seo">
+      <section class="tool-group tab-panel active d-flex flex-column overflow-hidden" data-panel="seo">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h2 class="m-0 fs-6">SEO Check</h2>
         </div>
@@ -69,7 +69,7 @@
       <section class="tool-group tab-panel overflow-hidden" data-panel="storage">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h2 class="m-0 fs-6">Storage Viewer</h2>
-          <button class="primary icon-button" data-action="storage" type="button" aria-label="Refresh storage"
+          <button class="primary icon-button d-inline-flex align-items-center justify-content-center" data-action="storage" type="button" aria-label="Refresh storage"
             title="Refresh storage">
             <span aria-hidden="true">↻</span>
           </button>
