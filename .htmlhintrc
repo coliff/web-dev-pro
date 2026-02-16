@@ -8,7 +8,7 @@
   "doctype-first": true,
   "doctype-html5": true,
   "frame-title-require": true,
-  "h1-require": true,
+  "h1-require": false,
   "html-lang-require": true,
   "id-unique": true,
   "input-requires-label": true,

@@ -1,71 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
   <head>
     <meta charset="UTF-8" />
     <title>Web Dev Pro</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Extensions for iPhone Safari browser">
+    <link rel="stylesheet" href="bootstrap.min.css" />
     <link rel="stylesheet" href="popup.css" />
     <script type="module" src="popup.js"></script>
   </head>
 
-  <body>
-    <header>
-      <h1>Source Toolkit</h1>
-      <p>SEO, Storage, CSS, A11y, Performance</p>
-    </header>
-
+  <body class="m-0 p-0 h-100">
     <main>
-      <nav class="tabs" aria-label="Tools">
-        <button class="tab active" data-tab="seo">SEO</button>
-        <button class="tab" data-tab="storage">Storage</button>
-        <button class="tab" data-tab="css">CSS</button>
-        <button class="tab" data-tab="a11y">A11y</button>
-        <button class="tab" data-tab="perf">Performance</button>
+      <nav class="nav nav-tabs nav-fill tabs" aria-label="Tools">
+        <button class="nav-link tab" data-tab="a11y" type="button">A11y</button>
+        <button class="nav-link tab" data-tab="css" type="button">CSS</button>
+        <button class="nav-link tab" data-tab="perf" type="button">Performance</button>
+        <button class="nav-link tab active" data-tab="seo" type="button">SEO</button>
+        <button class="nav-link tab" data-tab="storage" type="button">Storage</button>
       </nav>
-
-      <section class="tool-group tab-panel active" data-panel="seo">
-        <div class="group-head">
-          <h2>SEO Check</h2>
-        </div>
-        <div id="seo-output" class="output"></div>
-      </section>
-
-      <section class="tool-group tab-panel" data-panel="storage">
-        <div class="group-head">
-          <h2>Storage Viewer</h2>
-          <button class="primary" data-action="storage">Refresh</button>
-        </div>
-        <div class="storage-toolbar">
-          <button data-action="storage-copy">Copy JSON</button>
-        </div>
-        <div id="storage-output" class="output"></div>
-      </section>
-
-      <section class="tool-group tab-panel" data-panel="css">
-        <div class="group-head">
-          <h2>CSS Quick Tools</h2>
-        </div>
-        <div class="grid-buttons">
-          <button data-css-tool="zIndex">Show z-index</button>
-          <button data-css-tool="overflow">Overflow issues</button>
-          <button data-css-tool="layout">Flex/Grid bounds</button>
-          <button data-css-tool="darkMode">Dark mode sim</button>
-          <button data-css-tool="noAnimations">Disable animations</button>
-          <button data-css-tool="noImages">Disable images</button>
-          <button data-css-tool="forceHover">Force hover</button>
-        </div>
-      </section>
 
       <section class="tool-group tab-panel" data-panel="a11y">
         <div class="group-head">
           <h2>Accessibility Snapshot</h2>
-          <button class="primary" data-action="a11y">Run</button>
+          <button class="primary" data-action="a11y" type="button">Run</button>
         </div>
         <div class="grid-buttons">
-          <button data-action="a11y-filter-none">Color filter: Off</button>
-          <button data-action="a11y-filter-protanopia">Protanopia</button>
-          <button data-action="a11y-filter-deuteranopia">Deuteranopia</button>
-          <button data-action="a11y-filter-tritanopia">Tritanopia</button>
+          <button data-action="a11y-filter-none" type="button">Color filter: Off</button>
+          <button data-action="a11y-filter-protanopia" type="button">Protanopia</button>
+          <button data-action="a11y-filter-deuteranopia" type="button">Deuteranopia</button>
+          <button data-action="a11y-filter-tritanopia" type="button">Tritanopia</button>
         </div>
         <div id="a11y-output" class="output"></div>
         <p class="hint">
@@ -73,11 +37,44 @@
         </p>
       </section>
 
+      <section class="tool-group tab-panel" data-panel="css">
+        <div class="group-head">
+          <h2>CSS Quick Tools</h2>
+        </div>
+        <div class="grid-buttons">
+          <button data-css-tool="zIndex" type="button">Show z-index</button>
+          <button data-css-tool="overflow" type="button">Overflow issues</button>
+          <button data-css-tool="layout" type="button">Flex/Grid bounds</button>
+          <button data-css-tool="darkMode" type="button">Dark mode sim</button>
+          <button data-css-tool="noAnimations" type="button">Disable animations</button>
+          <button data-css-tool="noImages" type="button">Disable images</button>
+          <button data-css-tool="forceHover" type="button">Force hover</button>
+        </div>
+      </section>
+
       <section class="tool-group tab-panel" data-panel="perf">
         <div class="group-head">
           <h2>Performance Snapshot</h2>
         </div>
         <div id="perf-output" class="output"></div>
+        </section>
+
+        <section class="tool-group tab-panel active" data-panel="seo">
+          <div class="group-head">
+            <h2>SEO Check</h2>
+        </div>
+        <div id="seo-output" class="output"></div>
+      </section>
+
+      <section class="tool-group tab-panel" data-panel="storage">
+        <div class="group-head">
+          <h2>Storage Viewer</h2>
+          <button class="primary" data-action="storage" type="button">Refresh</button>
+        </div>
+        <div class="storage-toolbar">
+          <button data-action="storage-copy" type="button">Copy JSON</button>
+        </div>
+        <div id="storage-output" class="output"></div>
       </section>
     </main>
 

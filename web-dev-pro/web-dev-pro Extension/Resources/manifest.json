@@ -32,6 +32,9 @@
         "default_popup": "popup.html",
         "default_icon": "images/toolbar-icon.svg"
     },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+    },
     "permissions": [
         "activeTab",
         "tabs",

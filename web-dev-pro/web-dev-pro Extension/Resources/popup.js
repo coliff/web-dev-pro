@@ -2,6 +2,8 @@ const ext = globalThis.browser ?? globalThis.chrome;
 
 let lastStoragePayload = null;
 let currentTab = "seo";
+const popupTabKey = "popup.lastActiveTab";
+const validTabs = new Set(["a11y", "css", "perf", "seo", "storage"]);
 
 async function getActiveTabId() {
   if (ext.tabs.query.length === 1) {
@@ -36,6 +38,39 @@ async function sendToActiveTab(message) {
       }
       resolve(response);
     });
+  });
+}
+
+async function loadSavedTab() {
+  if (!ext.storage?.local) {
+    return null;
+  }
+
+  if (typeof ext.storage.local.get === "function" && ext.storage.local.get.length <= 1) {
+    const result = await ext.storage.local.get(popupTabKey);
+    return result?.[popupTabKey] ?? null;
+  }
+
+  return await new Promise((resolve) => {
+    ext.storage.local.get([popupTabKey], (result) => {
+      resolve(result?.[popupTabKey] ?? null);
+    });
+  });
+}
+
+async function saveTab(tabName) {
+  if (!ext.storage?.local) {
+    return;
+  }
+
+  const payload = { [popupTabKey]: tabName };
+  if (typeof ext.storage.local.set === "function" && ext.storage.local.set.length <= 1) {
+    await ext.storage.local.set(payload);
+    return;
+  }
+
+  await new Promise((resolve) => {
+    ext.storage.local.set(payload, () => resolve());
   });
 }
 
@@ -157,6 +192,7 @@ function makeStorageRow(item) {
   actions.className = "storage-actions";
 
   const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
   copyBtn.textContent = "Copy";
   copyBtn.dataset.storageAction = "copy";
   copyBtn.dataset.kind = item.kind;
@@ -166,6 +202,7 @@ function makeStorageRow(item) {
 
   if (item.editable) {
     const editBtn = document.createElement("button");
+    editBtn.type = "button";
     editBtn.textContent = "Edit";
     editBtn.dataset.storageAction = "edit";
     editBtn.dataset.kind = item.kind;
@@ -175,6 +212,7 @@ function makeStorageRow(item) {
 
   if (item.deletable) {
     const delBtn = document.createElement("button");
+    delBtn.type = "button";
     delBtn.textContent = "Delete";
     delBtn.dataset.storageAction = "delete";
     delBtn.dataset.kind = item.kind;
@@ -262,8 +300,6 @@ async function handleStorageAction(event) {
 }
 
 async function runAction(action) {
-  setStatus(`Running ${action}...`);
-
   try {
     if (action === "a11y-filter-none") {
       await sendToActiveTab({ action: "a11y-color-filter", filter: "none" });
@@ -304,7 +340,6 @@ async function runAction(action) {
       return;
     }
 
-    setStatus(`${action} complete`);
   } catch (error) {
     setStatus(error.message || String(error), true);
   }
@@ -326,11 +361,12 @@ async function toggleCssTool(button) {
 }
 
 async function switchTab(tabName) {
-  if (!tabName) {
+  if (!tabName || !validTabs.has(tabName)) {
     return;
   }
 
   currentTab = tabName;
+  void saveTab(tabName);
 
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === tabName);
@@ -350,7 +386,7 @@ async function switchTab(tabName) {
   }
 }
 
-function bindEvents() {
+async function bindEvents() {
   document.addEventListener("click", async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
@@ -374,6 +410,13 @@ function bindEvents() {
 
     await handleStorageAction(event);
   });
+
+  const savedTab = await loadSavedTab();
+  if (savedTab && validTabs.has(savedTab)) {
+    currentTab = savedTab;
+  }
+
+  void switchTab(currentTab);
 }
 
-bindEvents();
+void bindEvents();

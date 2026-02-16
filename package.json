@@ -12,8 +12,8 @@
     "url": "https://github.com/coliff/web-dev-pro/issues"
   },
   "scripts": {
-    "prettier": "npx prettier --write docs/**/*.{html,css}",
-    "prettier:check": "npx prettier --check docs/**/*.{html,css}",
+    "prettier": "npx prettier --write docs/**/*.{html,css,json,js}",
+    "prettier:check": "npx prettier --check docs/**/*.{html,css,json,js}",
     "htmlhint": "npx htmlhint docs/**/*.html",
     "pa11y": "npx pa11y https://webdevpro-app.christianoliff.com/",
     "serve": "npx http-server -o docs/index.html -p 8080 -c-1",
