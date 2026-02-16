@@ -15,7 +15,7 @@ body {
 
 [data-bs-theme="light"] {
   .tab {
-    background-color: #ddd !important;
+    background-color: #eee !important;
   }
 }
 
@@ -45,7 +45,6 @@ body {
 }
 
 .tab-icon {
-  display: block;
   margin: 0 auto;
   filter: brightness(0) invert(0.65);
 }
