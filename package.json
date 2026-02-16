@@ -16,11 +16,14 @@
     "prettier:check": "npx prettier --check docs/**/*.{html,css,json,js}",
     "htmlhint": "npx htmlhint docs/**/*.html",
     "pa11y": "npx pa11y https://webdevpro-app.christianoliff.com/",
-    "serve": "npx http-server -o docs/index.html -p 8080 -c-1",
+    "serve": "npx http-server -o \"web-dev-pro/web-dev-pro Extension/Resources/popup.html\" -p 8080 -c-1",
+    "serve-docs": "npx http-server -o docs/index.html -p 8080 -c-1",
     "spellcheck": "npx cspell \"docs/**/*.html\" --no-progress",
-    "stylelint": "npx stylelint \"web-dev-pro/**/*.css\" --fix"
+    "stylelint": "npx stylelint \"web-dev-pro/**/*.css\" --fix",
+    "svgo": "npx svgo --folder=\"web-dev-pro/web-dev-pro Extension/Resources/icons\""
   },
   "devDependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
     "stylelint-config-standard": "^40.0.0"
   },
   "engines": {

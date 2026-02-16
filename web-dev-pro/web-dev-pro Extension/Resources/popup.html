@@ -12,14 +12,24 @@
 
   <body class="m-0 p-0 h-100 d-flex flex-column overflow-hidden">
     <main class="d-flex flex-column flex-grow-1 mx-auto">
-      <nav class="nav nav-tabs nav-fill tabs mb-0" aria-label="Tools">
-        <button class="nav-link tab mb-0" data-tab="a11y" type="button">A11y</button>
-        <button class="nav-link tab mb-0" data-tab="css" type="button">CSS</button>
-        <button class="nav-link tab mb-0" data-tab="perf" type="button">Performance</button>
-        <button class="nav-link tab active mb-0" data-tab="seo" type="button">SEO</button>
-        <button class="nav-link tab mb-0" data-tab="storage" type="button">Storage</button>
+      <nav class="nav nav-tabs nav-fill tabs mb-0 border-0" aria-label="Tools">
+        <button class="nav-link tab mb-0" data-tab="a11y" type="button" aria-label="Accessibility" title="Accessibility">
+          <img class="tab-icon" src="icons/tab-a11y.svg" alt="" width="22" height="22" />
+        </button>
+        <button class="nav-link tab mb-0" data-tab="css" type="button" aria-label="CSS" title="CSS">
+          <img class="tab-icon" src="icons/tab-css.svg" alt="" width="22" height="22" />
+        </button>
+        <button class="nav-link tab mb-0" data-tab="perf" type="button" aria-label="Performance" title="Performance">
+          <img class="tab-icon" src="icons/tab-perf.svg" alt="" width="22" height="22" />
+        </button>
+        <button class="nav-link tab active mb-0" data-tab="seo" type="button" aria-label="SEO" title="SEO">
+          <img class="tab-icon" src="icons/tab-seo.svg" alt="" width="22" height="22" />
+        </button>
+        <button class="nav-link tab mb-0" data-tab="storage" type="button" aria-label="Storage" title="Storage">
+          <img class="tab-icon" src="icons/tab-storage.svg" alt="" width="22" height="22" />
+        </button>
         <button class="nav-link tab mb-0" data-tab="settings" type="button" aria-label="Settings" title="Settings">
-          <span aria-hidden="true">⚙</span>
+          <img class="tab-icon" src="icons/tab-settings.svg" alt="" width="22" height="22" />
         </button>
       </nav>
 
@@ -47,7 +57,7 @@
         <div class="d-flex flex-column gap-2">
           <div>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-zindex-switch" data-css-tool="zIndex">
+              <input class="form-check-input" type="checkbox" role="switch" id="css-zindex-switch" data-css-tool="zIndex" switch>
               <label class="form-check-label" for="css-zindex-switch">Show z-index</label>
             </div>
             <p class="small text-secondary mb-0 ms-4">Highlights stacking levels to spot overlap and layering issues.</p>
@@ -55,7 +65,7 @@
 
           <div>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-overflow-switch" data-css-tool="overflow">
+              <input class="form-check-input" type="checkbox" role="switch" id="css-overflow-switch" data-css-tool="overflow" switch>
               <label class="form-check-label" for="css-overflow-switch">Overflow issues</label>
             </div>
             <p class="small text-secondary mb-0 ms-4">Marks clipped or scroll-conflicting elements.</p>
@@ -63,7 +73,7 @@
 
           <div>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-layout-switch" data-css-tool="layout">
+              <input class="form-check-input" type="checkbox" role="switch" id="css-layout-switch" data-css-tool="layout" switch>
               <label class="form-check-label" for="css-layout-switch">Flex/Grid bounds</label>
             </div>
             <p class="small text-secondary mb-0 ms-4">Outlines flex and grid containers to inspect layout boundaries.</p>
@@ -71,7 +81,7 @@
 
           <div>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-dark-mode-switch" data-css-tool="darkMode">
+              <input class="form-check-input" type="checkbox" role="switch" id="css-dark-mode-switch" data-css-tool="darkMode" switch>
               <label class="form-check-label" for="css-dark-mode-switch">Dark mode sim</label>
             </div>
             <p class="small text-secondary mb-0 ms-4">Applies a simulated dark theme overlay to the page.</p>
@@ -79,7 +89,7 @@
 
           <div>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-no-animations-switch" data-css-tool="noAnimations">
+              <input class="form-check-input" type="checkbox" role="switch" id="css-no-animations-switch" data-css-tool="noAnimations" switch>
               <label class="form-check-label" for="css-no-animations-switch">Disable animations</label>
             </div>
             <p class="small text-secondary mb-0 ms-4">Turns off CSS animations and transitions for motion checks.</p>
@@ -87,7 +97,7 @@
 
           <div>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-no-images-switch" data-css-tool="noImages">
+              <input class="form-check-input" type="checkbox" role="switch" id="css-no-images-switch" data-css-tool="noImages" switch>
               <label class="form-check-label" for="css-no-images-switch">Disable images</label>
             </div>
             <p class="small text-secondary mb-0 ms-4">Hides image content to evaluate structure and fallback UX.</p>
@@ -95,7 +105,7 @@
 
           <div>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="css-force-hover-switch" data-css-tool="forceHover">
+              <input class="form-check-input" type="checkbox" role="switch" id="css-force-hover-switch" data-css-tool="forceHover" switch>
               <label class="form-check-label" for="css-force-hover-switch">Force hover</label>
             </div>
             <p class="small text-secondary mb-0 ms-4">Forces hover states on interactive elements for inspection.</p>
@@ -123,7 +133,7 @@
         </div>
 
         <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" role="switch" id="dark-mode-switch" checked>
+          <input class="form-check-input" type="checkbox" role="switch" id="dark-mode-switch" checked switch>
           <label class="form-check-label" for="dark-mode-switch">Dark mode</label>
         </div>
 
