@@ -504,16 +504,122 @@ function lockAccordionWhenEmpty(details, summary, count) {
 function renderSEO(result) {
   const output = document.getElementById("seo-output");
   output.textContent = "";
+  const openGraphTags = Array.isArray(result?.openGraphTags) ? result.openGraphTags : [];
+  const structuredDataItems = Array.isArray(result?.structuredDataItems) ? result.structuredDataItems : [];
 
   renderKeyValues("seo-output", {
     "Title": result.title || "(missing)",
     "Meta description length": result.metaDescriptionLength,
     "Canonical URL": result.canonicalUrl || "Missing",
-    "Open Graph tags": result.openGraphCount,
-    "Structured data": result.structuredData.join(", ") || "None",
   });
 
-  appendBulletList(output, "Warnings", result.warnings, "text-secondary");
+  const accordion = document.createElement("div");
+  accordion.className = "accordion border-bottom-0 mt-2";
+
+  const ogDetails = document.createElement("details");
+  ogDetails.className = "accordion-item border-bottom-0";
+  ogDetails.setAttribute("name", "seo-issues");
+  const ogSummary = document.createElement("summary");
+  ogSummary.className = "accordion-button rounded-top";
+  const ogHeader = document.createElement("h2");
+  ogHeader.className = "accordion-header user-select-none fs-6 text-body";
+  ogHeader.textContent = `Open Graph tags (${openGraphTags.length})`;
+  ogSummary.append(ogHeader);
+  lockAccordionWhenEmpty(ogDetails, ogSummary, openGraphTags.length);
+  ogDetails.append(ogSummary);
+  const ogBody = document.createElement("div");
+  ogBody.className = "accordion-body border-bottom p-2";
+  const ogList = document.createElement("ul");
+  ogList.className = "small mb-0 ps-3";
+  for (const tag of openGraphTags) {
+    const li = document.createElement("li");
+    const property = typeof tag === "object" && tag
+      ? String(tag.property || "og:*")
+      : String(tag ?? "").split(": ").shift() || "og:*";
+    const content = typeof tag === "object" && tag
+      ? String(tag.content || "(empty)")
+      : String(tag ?? "").replace(/^[^:]+:\s*/, "") || "(empty)";
+
+    const propStrong = document.createElement("strong");
+    propStrong.textContent = property;
+    li.append(propStrong, document.createTextNode(": "));
+
+    if (property === "og:url" || property === "og:image") {
+      const link = document.createElement("a");
+      link.href = content;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = content;
+      li.append(link);
+    } else {
+      li.append(document.createTextNode(content));
+    }
+    ogList.append(li);
+  }
+  if (!openGraphTags.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    ogBody.append(empty);
+  } else {
+    ogBody.append(ogList);
+  }
+  ogDetails.append(ogBody);
+  accordion.append(ogDetails);
+
+  const sdDetails = document.createElement("details");
+  sdDetails.className = "accordion-item border-bottom-0";
+  sdDetails.setAttribute("name", "seo-issues");
+  const sdSummary = document.createElement("summary");
+  sdSummary.className = "accordion-button rounded-top";
+  const sdHeader = document.createElement("h2");
+  sdHeader.className = "accordion-header user-select-none fs-6 text-body";
+  sdHeader.textContent = `Structured data (${structuredDataItems.length})`;
+  sdSummary.append(sdHeader);
+  lockAccordionWhenEmpty(sdDetails, sdSummary, structuredDataItems.length);
+  sdDetails.append(sdSummary);
+  const sdBody = document.createElement("div");
+  sdBody.className = "accordion-body border-bottom p-2";
+  const sdList = document.createElement("ul");
+  sdList.className = "small mb-0 ps-3";
+  for (const item of structuredDataItems) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    sdList.append(li);
+  }
+  if (!structuredDataItems.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    sdBody.append(empty);
+  } else {
+    sdBody.append(sdList);
+  }
+  sdDetails.append(sdBody);
+  accordion.append(sdDetails);
+
+  output.append(accordion);
+
+  const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+  if (warnings.length) {
+    const warn = document.createElement("div");
+    warn.className = "alert alert-warning mt-3 mb-0 py-2 px-2";
+
+    const title = document.createElement("div");
+    title.className = "fw-semibold small mb-1";
+    title.textContent = "Warnings";
+    warn.append(title);
+
+    const list = document.createElement("ul");
+    list.className = "small mb-0 ps-3";
+    for (const message of warnings) {
+      const li = document.createElement("li");
+      li.textContent = message;
+      list.append(li);
+    }
+    warn.append(list);
+    output.append(warn);
+  }
 }
 
 function renderA11y(result) {
@@ -657,17 +763,36 @@ function renderPerf(result) {
   const externalScripts = Array.isArray(safeResult.externalScripts)
     ? safeResult.externalScripts
     : [];
+  const domNodes = safeResult.domNodes ?? 0;
+  const pageWeightKb = safeResult.pageWeightKb ?? 0;
 
   const output = document.getElementById("perf-output");
   output.textContent = "";
 
-  renderKeyValues("perf-output", {
-    "Total DOM nodes": safeResult.domNodes ?? 0,
-    "Page weight estimate": `${safeResult.pageWeightKb ?? 0} KB`,
-  });
-
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
+
+  const domDetails = document.createElement("details");
+  domDetails.className = "accordion-item border-bottom-0";
+  const domSummary = document.createElement("summary");
+  domSummary.className = "accordion-button rounded-top pe-none no-expand";
+  const domHeader = document.createElement("h2");
+  domHeader.className = "accordion-header user-select-none fs-6 text-body";
+  domHeader.textContent = `Total DOM nodes: ${domNodes}`;
+  domSummary.append(domHeader);
+  domDetails.append(domSummary);
+  accordion.append(domDetails);
+
+  const weightDetails = document.createElement("details");
+  weightDetails.className = "accordion-item border-bottom-0";
+  const weightSummary = document.createElement("summary");
+  weightSummary.className = "accordion-button rounded-top pe-none no-expand";
+  const weightHeader = document.createElement("h2");
+  weightHeader.className = "accordion-header user-select-none fs-6 text-body";
+  weightHeader.textContent = `Page weight estimate: ${pageWeightKb} KB`;
+  weightSummary.append(weightHeader);
+  weightDetails.append(weightSummary);
+  accordion.append(weightDetails);
 
   const externalDetails = document.createElement("details");
   externalDetails.className = "accordion-item border-bottom-0";
@@ -684,9 +809,24 @@ function renderPerf(result) {
   externalBody.className = "accordion-body border-bottom p-2";
   const externalList = document.createElement("ul");
   externalList.className = "small mb-0 ps-3";
-  for (const src of externalScripts) {
+  for (const scriptInfo of externalScripts) {
+    const url = typeof scriptInfo === "object" && scriptInfo
+      ? String(scriptInfo.url || "")
+      : String(scriptInfo || "");
+    const sizeKb = typeof scriptInfo === "object" && scriptInfo
+      ? scriptInfo.sizeKb
+      : null;
+    const sizeLabel = sizeKb === null || sizeKb === undefined
+      ? "size unavailable"
+      : `${sizeKb} KB`;
+
     const li = document.createElement("li");
-    li.textContent = src;
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = `${url} (${sizeLabel})`;
+    li.append(link);
     externalList.append(li);
   }
   externalBody.append(externalList);
@@ -710,7 +850,12 @@ function renderPerf(result) {
   blockingList.className = "small mb-0 ps-3";
   for (const src of blockingHeadScripts) {
     const li = document.createElement("li");
-    li.textContent = src;
+    const link = document.createElement("a");
+    link.href = src;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = src;
+    li.append(link);
     blockingList.append(li);
   }
   blockingBody.append(blockingList);
@@ -773,14 +918,24 @@ function makeStorageRow(item) {
 
 function renderStorage(payload) {
   const output = document.getElementById("storage-output");
+  const copyJsonBtn = document.querySelector('[data-action="storage-copy"]');
   output.textContent = "";
 
-  if (!payload.items.length) {
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+
+  if (!items.length) {
+    if (copyJsonBtn instanceof HTMLButtonElement) {
+      copyJsonBtn.disabled = true;
+    }
     output.textContent = "No storage items found.";
     return;
   }
 
-  for (const item of payload.items) {
+  if (copyJsonBtn instanceof HTMLButtonElement) {
+    copyJsonBtn.disabled = false;
+  }
+
+  for (const item of items) {
     output.append(makeStorageRow(item));
   }
 }
@@ -852,6 +1007,10 @@ async function runAction(action, sourceButton = null) {
     } else if (action === "storage-copy") {
       if (!lastStoragePayload) {
         await loadStorage();
+      }
+      if (!lastStoragePayload?.items?.length) {
+        setStatus("No storage items found.", true);
+        return;
       }
       await navigator.clipboard.writeText(
         JSON.stringify(lastStoragePayload, null, 2),

@@ -509,34 +509,70 @@ function computeSeoSnapshot() {
     const metaDescription = document.querySelector('meta[name="description"]')?.content || "";
     const canonicalUrl = document.querySelector('link[rel="canonical"]')?.href || "";
 
-    const openGraphCount = document.querySelectorAll('meta[property^="og:"]').length;
+    const openGraphTags = [...document.querySelectorAll('meta[property^="og:"]')]
+        .map((meta) => ({
+            property: meta.getAttribute("property") || "og:*",
+            content: meta.getAttribute("content") || "(empty)"
+        }))
+        .slice(0, 30);
+    const openGraphCount = openGraphTags.length;
 
     const structuredData = [];
+    const structuredDataItems = [];
     if (document.querySelectorAll('script[type="application/ld+json"]').length) {
         structuredData.push("JSON-LD");
+        const jsonLdScripts = [...document.querySelectorAll('script[type="application/ld+json"]')].slice(0, 12);
+        for (const script of jsonLdScripts) {
+            try {
+                const parsed = JSON.parse(script.textContent || "{}");
+                const nodes = Array.isArray(parsed) ? parsed : [parsed];
+                for (const node of nodes) {
+                    if (!node || typeof node !== "object") {
+                        continue;
+                    }
+                    const typeField = node["@type"];
+                    if (Array.isArray(typeField)) {
+                        structuredDataItems.push(`JSON-LD: ${typeField.join(", ")}`);
+                    } else if (typeof typeField === "string" && typeField.trim()) {
+                        structuredDataItems.push(`JSON-LD: ${typeField}`);
+                    } else {
+                        structuredDataItems.push("JSON-LD: (type not specified)");
+                    }
+                }
+            } catch (_error) {
+                structuredDataItems.push("JSON-LD: (unparseable)");
+            }
+        }
     }
     if (document.querySelector("[itemscope]")) {
         structuredData.push("Microdata");
+        const microdataNodes = [...document.querySelectorAll("[itemscope]")].slice(0, 10);
+        for (const node of microdataNodes) {
+            const type = node.getAttribute("itemtype") || "(type not specified)";
+            structuredDataItems.push(`Microdata: ${type}`);
+        }
     }
     if (document.querySelector("[typeof]")) {
         structuredData.push("RDFa");
+        const rdfaNodes = [...document.querySelectorAll("[typeof]")].slice(0, 10);
+        for (const node of rdfaNodes) {
+            const type = node.getAttribute("typeof") || "(type not specified)";
+            structuredDataItems.push(`RDFa: ${type}`);
+        }
     }
 
     const warnings = [];
-    if (title.length < 30 || title.length > 60) {
-        warnings.push(`Title length ${title.length} (target 30-60)`);
+    if (title.length < 10 || title.length > 100) {
+        warnings.push(`Title length ${title.length} (target 10-100)`);
     }
-    if (metaDescription.length < 70 || metaDescription.length > 160) {
-        warnings.push(`Meta description ${metaDescription.length} (target 70-160)`);
+    if (metaDescription.length < 50 || metaDescription.length > 250) {
+        warnings.push(`Meta description ${metaDescription.length} (target 50-250)`);
     }
     if (!canonicalUrl) {
         warnings.push("Canonical URL is missing");
     }
     if (openGraphCount === 0) {
         warnings.push("No Open Graph tags found");
-    }
-    if (structuredData.length === 0) {
-        warnings.push("No structured data detected");
     }
 
     return {
@@ -545,7 +581,9 @@ function computeSeoSnapshot() {
         metaDescriptionLength: metaDescription.length,
         canonicalUrl,
         openGraphCount,
+        openGraphTags,
         structuredData,
+        structuredDataItems: structuredDataItems.slice(0, 30),
         warnings
     };
 }
@@ -733,13 +771,26 @@ function computePerfSnapshot() {
         const htmlBytes = (document.documentElement?.outerHTML || "").length * 2;
         const pageWeightKb = Math.round((transferBytes + htmlBytes) / 1024);
 
-        const externalScripts = [...document.querySelectorAll("script[src]")].filter((script) => {
+        const externalScriptUrls = [...document.querySelectorAll("script[src]")].filter((script) => {
             try {
                 return new URL(script.src, location.href).origin !== location.origin;
             } catch (_error) {
                 return false;
             }
-        }).map((script) => script.src).slice(0, 20);
+        }).map((script) => script.src);
+
+        const uniqueExternalScripts = [...new Set(externalScriptUrls)].slice(0, 20);
+        const externalScripts = uniqueExternalScripts.map((url) => {
+            const normalizedUrl = normalizeUrl(url);
+            const entry = resourceIndex.get(normalizedUrl)
+                || resourceEntries.find((resource) => normalizeUrl(resource.name) === normalizedUrl);
+            const bytes = bytesFromEntry(entry);
+
+            return {
+                url,
+                sizeKb: bytes === null ? null : Math.round(bytes / 1024)
+            };
+        });
 
         const largeImages = [...document.querySelectorAll("img")]
             .map((img) => {

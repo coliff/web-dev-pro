@@ -53,6 +53,14 @@ body {
   filter: brightness(0) invert(1);
 }
 
+[data-bs-theme="light"] .tab-icon {
+  filter: brightness(0) invert(0.4);
+}
+
+[data-bs-theme="light"] .tab.active .tab-icon {
+  filter: brightness(0) invert(0.1);
+}
+
 .tool-group {
   flex: 1;
   min-height: 0;
