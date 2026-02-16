@@ -4,6 +4,7 @@
     "alpha-value-notation": null,
     "color-function-alias-notation": null,
     "color-function-notation": null,
-    "font-family-no-missing-generic-family-keyword": null
+    "font-family-no-missing-generic-family-keyword": null,
+    "no-descending-specificity": null
   }
 }

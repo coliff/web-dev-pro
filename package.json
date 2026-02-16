@@ -13,7 +13,7 @@
   },
   "scripts": {
     "lint-css": "npx stylelint \"web-dev-pro/**/*.css\" --fix",
-    "lint-html": "npx htmlhint docs/**/*.html",
+    "lint-html": "npx htmlhint **/*.html",
     "lint-js": "npx eslint@8 **/*.js --fix",
     "pa11y": "npx pa11y https://web-dev-tools-app.christianoliff.com/",
     "prettier": "npx prettier --write docs/**/*.{html,css,json,js}",

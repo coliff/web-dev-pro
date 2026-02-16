@@ -17,6 +17,7 @@ body {
   .tab {
     background-color: #eee !important;
   }
+
   .form-check-input,
   .form-select {
     border-color: #ccc;
@@ -27,9 +28,11 @@ body {
   .tab {
     background-color: #333 !important;
   }
+
   .tab.active {
     background-color: #000 !important;
   }
+
   .form-check-input,
   .form-select {
     border-color: #666;
@@ -161,7 +164,6 @@ details.accordion-item[open] .accordion-button::after {
 }
 
 details.accordion-item .accordion-header {
-  -webkit-user-select: none;
   user-select: none;
 }
 
