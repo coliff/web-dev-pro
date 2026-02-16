@@ -1,12 +1,6 @@
-/* Custom Properties */
-:root {
-  --color-dark: #2c3e50;
-  --color-grass: #7cb342;
-}
-
 /* Typography */
 body {
-  font-family: "Nunito", sans-serif;
+  font-family: "Roboto", sans-serif;
   background: linear-gradient(
     180deg,
     #87ceeb 0%,
@@ -17,42 +11,14 @@ body {
   color: var(--color-dark);
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: "Fredoka", sans-serif;
-}
-
-/* Hero Section */
-.hero-section::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      circle at 10% 20%,
-      rgba(255, 255, 255, 0.3) 0%,
-      transparent 20%
-    ),
-    radial-gradient(
-      circle at 90% 80%,
-      rgba(255, 255, 255, 0.2) 0%,
-      transparent 25%
-    ),
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(255, 230, 109, 0.2) 0%,
-      transparent 40%
-    );
-  pointer-events: none;
+main {
+    background-image: url(img/bg.svg);
+    background-repeat: no-repeat;
+    background-position: top-center;
+    background-size: contain;
 }
 
 .app-icon {
-  width: 140px;
-  height: 140px;
   animation: float 3s ease-in-out infinite;
 }
 
