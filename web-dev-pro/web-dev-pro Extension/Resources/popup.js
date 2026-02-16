@@ -584,7 +584,19 @@ function renderSEO(result) {
   sdList.className = "small mb-0 ps-3";
   for (const item of structuredDataItems) {
     const li = document.createElement("li");
-    li.textContent = item;
+    const text = String(item ?? "");
+    const match = text.match(/^Microdata:\s*(.+)$/i);
+    if (match && /^https?:\/\//i.test(match[1])) {
+      li.append(document.createTextNode("Microdata: "));
+      const link = document.createElement("a");
+      link.href = match[1];
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = match[1];
+      li.append(link);
+    } else {
+      li.textContent = text;
+    }
     sdList.append(li);
   }
   if (!structuredDataItems.length) {
@@ -876,10 +888,36 @@ function renderPerf(result) {
   const largeBody = document.createElement("div");
   largeBody.className = "accordion-body border-bottom p-2";
   const largeList = document.createElement("ul");
-  largeList.className = "small mb-0 ps-3";
-  for (const src of largeImages) {
+  largeList.className = "mb-0 ps-3";
+  for (const imageInfo of largeImages) {
+    const url = typeof imageInfo === "object" && imageInfo
+      ? String(imageInfo.url || "")
+      : String(imageInfo || "");
+    const label = typeof imageInfo === "object" && imageInfo
+      ? String(imageInfo.label || url)
+      : url;
+    const sizeText = typeof imageInfo === "object" && imageInfo
+      ? String(imageInfo.sizeText || "")
+      : "";
+
     const li = document.createElement("li");
-    li.textContent = src;
+    li.className = "small";
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = label;
+    li.append(link);
+
+    if (sizeText) {
+      li.append(document.createTextNode(" "));
+      const meta = document.createElement("span");
+      meta.className = "small opacity-75";
+      meta.textContent = `(${sizeText})`;
+      li.append(meta);
+    }
+
     largeList.append(li);
   }
   largeBody.append(largeList);

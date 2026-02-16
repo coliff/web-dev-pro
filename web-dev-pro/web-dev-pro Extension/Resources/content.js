@@ -571,10 +571,6 @@ function computeSeoSnapshot() {
     if (!canonicalUrl) {
         warnings.push("Canonical URL is missing");
     }
-    if (openGraphCount === 0) {
-        warnings.push("No Open Graph tags found");
-    }
-
     return {
         title,
         titleLength: title.length,
@@ -811,7 +807,11 @@ function computePerfSnapshot() {
                 }
 
                 const sizeText = bytes === null ? "size unavailable" : `${Math.round(bytes / 1024)}KB`;
-                return `${src.slice(0, 72)}${src.length > 72 ? "..." : ""} (${sizeText})`;
+                return {
+                    url: src,
+                    label: `${src.slice(0, 72)}${src.length > 72 ? "..." : ""}`,
+                    sizeText
+                };
             })
             .filter(Boolean)
             .slice(0, 10);
