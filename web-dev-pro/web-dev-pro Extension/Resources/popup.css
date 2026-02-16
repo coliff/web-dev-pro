@@ -24,7 +24,9 @@ body {
 
 .tab {
   border: 0;
+  border-radius: 0 !important;
   border-bottom: 3px solid transparent;
+  min-height: 40px;
 }
 
 .tab.active {
