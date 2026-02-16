@@ -53,7 +53,9 @@
     </section>
 
     <section class="tool-group tab-panel overflow-hidden" data-panel="rendering">
-
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="m-0 fs-6">Rendering</h2>
+      </div>
       <h2 class="my-2 fw-semibold small">Emulate CSS media feature prefers-color-scheme</h2>
       <p class="small opacity-50 mb-2 mt-0">Forces CSS prefers-color-scheme media feature</p>
       <select id="rendering-color-scheme-select" class="form-select form-select-sm mb-4" aria-label="prefers-color-scheme emulation">
@@ -64,7 +66,7 @@
 
       <h2 class="my-2 fw-semibold small">Emulate vision deficiencies</h2>
       <p class="small opacity-50 mb-2 mt-0">Forces vision deficiency emulation</p>
-      <select id="rendering-vision-select" class="form-select form-select-sm mb-4 border" aria-label="Vision deficiency emulation">
+      <select id="rendering-vision-select" class="form-select form-select-sm mb-4" aria-label="Vision deficiency emulation">
         <option value="none" selected>No Emulation</option>
         <option value="protanopia">Protanopia</option>
         <option value="deuteranopia">Deuteranopia</option>
@@ -76,14 +78,31 @@
         <hr class="my-2">
       </div>
 
+      <div class="py-1">
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="rendering-hide-images" data-css-tool="noImages" switch>
+          <label class="form-check-label" for="rendering-hide-images">Hide images
+            <p class="small opacity-50 mb-0">Hides image content to evaluate structure and fallback UX.</p>
+          </label>
+        </div>
+      </div>
+
+      <div class="opacity-75 my-2">
+        <hr class="my-2">
+      </div>
+
       <div class="pt-1">
         <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-avif" data-rendering-format="avif">
-          <label class="form-check-label" for="rendering-disable-avif">Disable AVIF image format</label>
+          <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-avif" data-rendering-format="avif" switch>
+          <label class="form-check-label" for="rendering-disable-avif">Disable AVIF image format
+            <p class="small opacity-50 mb-0">Disables AVIF image format to evaluate fallback UX. Enabling again requires refresh.</p>
+          </label>
         </div>
         <div class="form-check form-switch mb-0">
-          <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-webp" data-rendering-format="webp">
-          <label class="form-check-label" for="rendering-disable-webp">Disable WebP image format</label>
+          <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-webp" data-rendering-format="webp" switch>
+          <label class="form-check-label" for="rendering-disable-webp">Disable WebP image format
+            <p class="small opacity-50 mb-0">Disables WebP image format to evaluate fallback UX. Enabling again requires refresh.</p>
+          </label>
         </div>
       </div>
     </section>
@@ -129,16 +148,6 @@
               data-css-tool="noAnimations" switch>
             <label class="form-check-label" for="css-no-animations-switch">Disable animations
               <p class="small opacity-50 mb-0">Turns off CSS animations and transitions for motion checks.</p>
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input" type="checkbox" role="switch" id="css-no-images-switch"
-              data-css-tool="noImages" switch>
-            <label class="form-check-label" for="css-no-images-switch">Hide images
-              <p class="small opacity-50 mb-0">Hides image content to evaluate structure and fallback UX.</p>
             </label>
           </div>
         </div>
