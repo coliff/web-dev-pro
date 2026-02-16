@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-US">
+<html lang="en-US" data-bs-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <title>Web Dev Pro</title>
@@ -10,8 +10,8 @@
     <script type="module" src="popup.js"></script>
   </head>
 
-  <body class="m-0 p-0 h-100">
-    <main>
+  <body class="m-0 p-0 h-100 d-flex flex-column">
+    <main class="d-flex flex-column flex-grow-1 min-vh-0">
       <nav class="nav nav-tabs nav-fill tabs" aria-label="Tools">
         <button class="nav-link tab" data-tab="a11y" type="button">A11y</button>
         <button class="nav-link tab" data-tab="css" type="button">CSS</button>
@@ -21,65 +21,68 @@
       </nav>
 
       <section class="tool-group tab-panel" data-panel="a11y">
-        <div class="group-head">
-          <h2>Accessibility Snapshot</h2>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="m-0 fs-6">Accessibility Snapshot</h2>
           <button class="primary" data-action="a11y" type="button">Run</button>
         </div>
-        <div class="grid-buttons">
-          <button data-action="a11y-filter-none" type="button">Color filter: Off</button>
-          <button data-action="a11y-filter-protanopia" type="button">Protanopia</button>
-          <button data-action="a11y-filter-deuteranopia" type="button">Deuteranopia</button>
-          <button data-action="a11y-filter-tritanopia" type="button">Tritanopia</button>
+        <div class="grid-buttons row g-1">
+          <div class="col-6"><button class="w-100" data-action="a11y-filter-none" type="button">Color filter: Off</button></div>
+          <div class="col-6"><button class="w-100" data-action="a11y-filter-protanopia" type="button">Protanopia</button></div>
+          <div class="col-6"><button class="w-100" data-action="a11y-filter-deuteranopia" type="button">Deuteranopia</button></div>
+          <div class="col-6"><button class="w-100" data-action="a11y-filter-tritanopia" type="button">Tritanopia</button></div>
         </div>
         <div id="a11y-output" class="output"></div>
-        <p class="hint">
+        <p class="small text-secondary mt-1 mb-0">
           Tip: Click any page element after running to inspect ARIA attrs.
         </p>
       </section>
 
       <section class="tool-group tab-panel" data-panel="css">
-        <div class="group-head">
-          <h2>CSS Quick Tools</h2>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="m-0 fs-6">CSS Quick Tools</h2>
         </div>
-        <div class="grid-buttons">
-          <button data-css-tool="zIndex" type="button">Show z-index</button>
-          <button data-css-tool="overflow" type="button">Overflow issues</button>
-          <button data-css-tool="layout" type="button">Flex/Grid bounds</button>
-          <button data-css-tool="darkMode" type="button">Dark mode sim</button>
-          <button data-css-tool="noAnimations" type="button">Disable animations</button>
-          <button data-css-tool="noImages" type="button">Disable images</button>
-          <button data-css-tool="forceHover" type="button">Force hover</button>
+        <div class="grid-buttons row g-1">
+          <div class="col-6"><button class="w-100" data-css-tool="zIndex" type="button">Show z-index</button></div>
+          <div class="col-6"><button class="w-100" data-css-tool="overflow" type="button">Overflow issues</button></div>
+          <div class="col-6"><button class="w-100" data-css-tool="layout" type="button">Flex/Grid bounds</button></div>
+          <div class="col-6"><button class="w-100" data-css-tool="darkMode" type="button">Dark mode sim</button></div>
+          <div class="col-6"><button class="w-100" data-css-tool="noAnimations" type="button">Disable animations</button></div>
+          <div class="col-6"><button class="w-100" data-css-tool="noImages" type="button">Disable images</button></div>
+          <div class="col-6"><button class="w-100" data-css-tool="forceHover" type="button">Force hover</button></div>
         </div>
       </section>
 
       <section class="tool-group tab-panel" data-panel="perf">
-        <div class="group-head">
-          <h2>Performance Snapshot</h2>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="m-0 fs-6">Performance Snapshot</h2>
         </div>
         <div id="perf-output" class="output"></div>
-        </section>
+      </section>
 
-        <section class="tool-group tab-panel active" data-panel="seo">
-          <div class="group-head">
-            <h2>SEO Check</h2>
+      <section class="tool-group tab-panel active" data-panel="seo">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="m-0 fs-6">SEO Check</h2>
         </div>
         <div id="seo-output" class="output"></div>
       </section>
 
       <section class="tool-group tab-panel" data-panel="storage">
-        <div class="group-head">
-          <h2>Storage Viewer</h2>
-          <button class="primary" data-action="storage" type="button">Refresh</button>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="m-0 fs-6">Storage Viewer</h2>
+          <button class="primary icon-button" data-action="storage" type="button" aria-label="Refresh storage"
+            title="Refresh storage">
+            <span aria-hidden="true">↻</span>
+          </button>
         </div>
-        <div class="storage-toolbar">
+        <div class="d-flex gap-1 mb-1">
           <button data-action="storage-copy" type="button">Copy JSON</button>
         </div>
         <div id="storage-output" class="output"></div>
       </section>
     </main>
 
-    <footer>
-      <p id="status">Ready</p>
+    <footer class="small text-secondary px-2 py-2 border-top">
+      <p id="status" class="m-0">Ready</p>
     </footer>
   </body>
 </html>
