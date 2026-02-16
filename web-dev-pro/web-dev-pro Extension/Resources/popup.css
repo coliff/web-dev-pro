@@ -17,7 +17,6 @@ body {
   max-height: none;
   min-height: 560px;
   height: 560px;
-  overflow: hidden;
   font-family:
     -apple-system,
     sans-serif;
@@ -28,7 +27,6 @@ body {
 
 .tabs {
   border-bottom-color: var(--line);
-  margin-bottom: 0;
   background: #0f172a;
 }
 
@@ -38,7 +36,6 @@ body {
   border-color: var(--line);
   font-size: 11px;
   font-weight: 600;
-  margin-bottom: 0 !important;
   transition: none !important;
   transform: none !important;
 }
@@ -53,12 +50,10 @@ body {
 .tool-group {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
   padding: 10px;
   margin: 0;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
 }
 
 .tab-panel {
@@ -66,7 +61,7 @@ body {
 }
 
 .tab-panel.active {
-  display: flex;
+  display: flex !important;
   flex-direction: column;
   min-height: 0;
 }
@@ -90,11 +85,10 @@ button.primary {
 .icon-button {
   width: 30px;
   height: 30px;
-  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
 }
 
@@ -119,18 +113,6 @@ button.primary {
 
 .output .metric {
   margin-bottom: 4px;
-}
-
-.output .warn {
-  color: #b45309;
-}
-
-.output .fail {
-  color: #b91c1c;
-}
-
-.output .ok {
-  color: #15803d;
 }
 
 .storage-row {

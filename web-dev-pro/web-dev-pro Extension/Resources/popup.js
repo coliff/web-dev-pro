@@ -77,7 +77,7 @@ async function saveTab(tabName) {
 function setStatus(text, isError = false) {
   const node = document.getElementById("status");
   node.textContent = text;
-  node.className = isError ? "fail" : "";
+  node.classList.toggle("text-danger", isError);
 }
 
 function renderKeyValues(targetId, data) {
@@ -119,12 +119,12 @@ function appendList(root, title, items) {
 
   if (!items || items.length === 0) {
     const empty = document.createElement("span");
-    empty.className = "ok";
+    empty.className = "text-success";
     empty.textContent = "None";
     line.append(empty);
   } else {
     const detail = document.createElement("span");
-    detail.className = "warn";
+    detail.className = "text-warning";
     detail.textContent = items.join(" | ");
     line.append(detail);
   }
