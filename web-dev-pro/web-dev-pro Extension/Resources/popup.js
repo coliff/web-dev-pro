@@ -569,12 +569,12 @@ function renderPerf(result) {
   const externalSummary = document.createElement("summary");
   externalSummary.className = "accordion-button rounded-top";
   const externalHeader = document.createElement("h2");
-  externalHeader.className = "accordion-header user-select-none";
+  externalHeader.className = "accordion-header user-select-none fs-6 text-body";
   externalHeader.textContent = `External scripts (${externalScripts.length})`;
   externalSummary.append(externalHeader);
   externalDetails.append(externalSummary);
   const externalBody = document.createElement("div");
-  externalBody.className = "accordion-body border-bottom";
+  externalBody.className = "accordion-body border-bottom p-2";
   const externalList = document.createElement("ul");
   externalList.className = "small mb-0 ps-3";
   for (const src of externalScripts) {
@@ -592,12 +592,12 @@ function renderPerf(result) {
   const blockingSummary = document.createElement("summary");
   blockingSummary.className = "accordion-button rounded-top";
   const blockingHeader = document.createElement("h2");
-  blockingHeader.className = "accordion-header user-select-none";
+  blockingHeader.className = "accordion-header user-select-none fs-6 text-body";
   blockingHeader.textContent = `Blocking <head> scripts (${blockingHeadScripts.length})`;
   blockingSummary.append(blockingHeader);
   blockingDetails.append(blockingSummary);
   const blockingBody = document.createElement("div");
-  blockingBody.className = "accordion-body border-bottom";
+  blockingBody.className = "accordion-body border-bottom p-2";
   const blockingList = document.createElement("ul");
   blockingList.className = "small mb-0 ps-3";
   for (const src of blockingHeadScripts) {
@@ -615,12 +615,12 @@ function renderPerf(result) {
   const largeSummary = document.createElement("summary");
   largeSummary.className = "accordion-button rounded-top";
   const largeHeader = document.createElement("h2");
-  largeHeader.className = "accordion-header user-select-none";
+  largeHeader.className = "accordion-header user-select-none fs-6 text-body";
   largeHeader.textContent = `Large images (${largeImages.length})`;
   largeSummary.append(largeHeader);
   largeDetails.append(largeSummary);
   const largeBody = document.createElement("div");
-  largeBody.className = "accordion-body border-bottom";
+  largeBody.className = "accordion-body border-bottom p-2";
   const largeList = document.createElement("ul");
   largeList.className = "small mb-0 ps-3 text-secondary";
   for (const src of largeImages) {
