@@ -329,18 +329,9 @@ async function resolveNetworkDetails() {
     ip: "Unavailable",
     location: "Unavailable",
     isp: "Unavailable",
-    rttEstimateMs: null,
   };
 
   const providers = [
-    {
-      url: "https://ipapi.co/json/",
-      parse: (data) => ({
-        ip: data?.ip ? String(data.ip) : "Unavailable",
-        location: [data?.city, data?.region, data?.country_name].filter(Boolean).join(", ") || "Unavailable",
-        isp: data?.org ? String(data.org) : (data?.asn ? String(data.asn) : "Unavailable"),
-      }),
-    },
     {
       url: "https://ipwho.is/",
       parse: (data) => ({
@@ -350,41 +341,37 @@ async function resolveNetworkDetails() {
       }),
     },
     {
-      url: "https://api.ipify.org?format=json",
+      url: "https://ipapi.co/json/",
       parse: (data) => ({
         ip: data?.ip ? String(data.ip) : "Unavailable",
-        location: "Unavailable",
-        isp: "Unavailable",
+        location: [data?.city, data?.region, data?.country_name].filter(Boolean).join(", ") || "Unavailable",
+        isp: data?.org ? String(data.org) : (data?.asn ? String(data.asn) : "Unavailable"),
       }),
     },
   ];
 
   for (const provider of providers) {
     try {
-      const timeoutMs = 4500;
+      const timeoutMs = 4000;
       const controller = new AbortController();
       const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
-      const start = performance.now();
 
       const response = await fetch(provider.url, {
         cache: "no-store",
         signal: controller.signal,
       });
       globalThis.clearTimeout(timeoutId);
-
       if (!response.ok) {
         continue;
       }
 
-      const elapsed = Math.max(1, Math.round(performance.now() - start));
       const data = await response.json();
       const parsed = provider.parse(data);
       const ip = parsed.ip || "Unavailable";
       const location = parsed.location || "Unavailable";
       const isp = parsed.isp || "Unavailable";
-
       if (ip !== "Unavailable" || location !== "Unavailable" || isp !== "Unavailable") {
-        return { ip, location, isp, rttEstimateMs: elapsed };
+        return { ip, location, isp };
       }
     } catch {
       // Try next provider.
@@ -392,19 +379,6 @@ async function resolveNetworkDetails() {
   }
 
   return fallback;
-}
-
-function getEffectiveTypeFromRttEstimate(rttMs) {
-  if (!Number.isFinite(rttMs) || rttMs <= 0) {
-    return "Unavailable";
-  }
-  if (rttMs <= 150) {
-    return "4g (estimated)";
-  }
-  if (rttMs <= 300) {
-    return "3g (estimated)";
-  }
-  return "2g (estimated)";
 }
 
 async function renderDeviceInfo() {
@@ -428,9 +402,9 @@ async function renderDeviceInfo() {
   const connectionType = getConnectionTypeLabel();
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   const onlineState = navigator.onLine ? "Online" : "Offline";
-  let effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
+  const effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
     ? connection.effectiveType
-    : "Unavailable";
+    : (typeof connection?.type === "string" && connection.type ? connection.type : "Unavailable");
   const downlink = typeof connection?.downlink === "number" && Number.isFinite(connection.downlink)
     ? `${connection.downlink} Mbps`
     : "Unavailable";
@@ -497,10 +471,6 @@ async function renderDeviceInfo() {
   ipNode.textContent = network.ip;
   locationNode.textContent = network.location;
   ispNode.textContent = network.isp;
-  if (effectiveType === "Unavailable") {
-    effectiveType = getEffectiveTypeFromRttEstimate(network.rttEstimateMs);
-    effectiveTypeNode.textContent = effectiveType;
-  }
 }
 
 function buildDeviceInfoClipboardText() {
