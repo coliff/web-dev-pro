@@ -2,6 +2,10 @@
   --bs-border-color: #bbb;
 }
 
+[data-bs-theme=dark] {
+  --bs-border-color: #444;
+}
+
 html,
 body {
   min-width: 375px;
@@ -30,11 +34,6 @@ body {
 
   .tab.active {
     background-color: #000 !important;
-  }
-
-  .form-check-input,
-  .form-select {
-    border-color: #666;
   }
 }
 
