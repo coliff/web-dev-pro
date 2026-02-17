@@ -18,8 +18,9 @@
     "pa11y": "npx pa11y https://web-dev-tools-app.christianoliff.com/",
     "prettier": "npx prettier --write docs/**/*.{html,css,json,js}",
     "prettier:check": "npx prettier --check docs/**/*.{html,css,json,js}",
-    "serve": "npx http-server -o \"web-dev-pro/web-dev-pro Extension/Resources/popup.html\" -p 8080 -c-1",
+    "serve": "npx http-server -o \"web-dev-pro/web-dev-tools Extension/Resources/popup.html\" -p 8080 -c-1",
     "serve-docs": "npx http-server -o docs/index.html -p 8080 -c-1",
+    "serve-main": "npx http-server -o \"web-dev-pro/web-dev-tools/Resources/Base.lproj/Main.html\" -p 8080 -c-1",
     "spellcheck": "npx cspell \"docs/**/*.html\" --no-progress",
     "svgo": "npx svgo --folder=\"web-dev-pro/web-dev-pro Extension/Resources/icons\""
   },

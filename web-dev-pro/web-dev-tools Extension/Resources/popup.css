@@ -1,3 +1,7 @@
+:root, [data-bs-theme=light] {
+  --bs-border-color: #bbb;
+}
+
 html,
 body {
   min-width: 375px;
@@ -16,11 +20,6 @@ body {
 [data-bs-theme="light"] {
   .tab {
     background-color: #eee !important;
-  }
-
-  .form-check-input,
-  .form-select {
-    border-color: #ccc;
   }
 }
 
@@ -42,6 +41,7 @@ body {
 .tab {
   border-radius: 0 !important;
   border-bottom: 3px solid transparent;
+  max-width: 90px;
   min-height: 49px;
 }
 
