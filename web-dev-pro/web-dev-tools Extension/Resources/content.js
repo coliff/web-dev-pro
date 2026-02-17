@@ -509,6 +509,26 @@ function computeSeoSnapshot() {
     const title = document.title || "";
     const metaDescription = document.querySelector('meta[name="description"]')?.content || "";
     const canonicalUrl = document.querySelector('link[rel="canonical"]')?.href || "";
+    const authorLink = document.querySelector('link[rel~="author"]')?.getAttribute("href") || "";
+    const monetizationLink = document.querySelector('link[rel~="monetization"]')?.getAttribute("href") || "";
+    const pingbackLink = document.querySelector('link[rel~="pingback"]')?.getAttribute("href") || "";
+    const webmentionLink = document.querySelector('link[rel~="webmention"]')?.getAttribute("href") || "";
+    const alternateFeeds = [...document.querySelectorAll('link[rel~="alternate"]')]
+        .map((link) => ({
+            href: link.getAttribute("href") || "",
+            type: link.getAttribute("type") || "",
+            title: link.getAttribute("title") || ""
+        }))
+        .filter((item) => {
+            const type = item.type.toLowerCase();
+            return Boolean(item.href) && (type.includes("rss") || type.includes("atom") || type.includes("xml"));
+        })
+        .slice(0, 10);
+    const fediverseCreator = document.querySelector('meta[name="fediverse:creator"]')?.getAttribute("content") || "";
+    const generator = document.querySelector('meta[name="generator"]')?.getAttribute("content") || "";
+    const lastModified = document.querySelector('meta[name="last-modified"]')?.getAttribute("content") || "";
+    const themeColor = document.querySelector('meta[name="theme-color"]')?.getAttribute("content") || "";
+    const colorScheme = document.querySelector('meta[name="color-scheme"]')?.getAttribute("content") || "";
 
     const openGraphTags = [...document.querySelectorAll('meta[property^="og:"]')]
         .map((meta) => ({
@@ -575,8 +595,19 @@ function computeSeoSnapshot() {
     return {
         title,
         titleLength: title.length,
+        metaDescription,
         metaDescriptionLength: metaDescription.length,
         canonicalUrl,
+        authorLink,
+        monetizationLink,
+        pingbackLink,
+        webmentionLink,
+        alternateFeeds,
+        fediverseCreator,
+        generator,
+        lastModified,
+        themeColor,
+        colorScheme,
         openGraphCount,
         openGraphTags,
         structuredData,

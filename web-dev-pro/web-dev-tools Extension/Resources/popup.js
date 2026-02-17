@@ -329,35 +329,82 @@ async function resolveNetworkDetails() {
     ip: "Unavailable",
     location: "Unavailable",
     isp: "Unavailable",
+    rttEstimateMs: null,
   };
 
-  try {
-    const timeoutMs = 3500;
-    const controller = new AbortController();
-    const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  const providers = [
+    {
+      url: "https://ipapi.co/json/",
+      parse: (data) => ({
+        ip: data?.ip ? String(data.ip) : "Unavailable",
+        location: [data?.city, data?.region, data?.country_name].filter(Boolean).join(", ") || "Unavailable",
+        isp: data?.org ? String(data.org) : (data?.asn ? String(data.asn) : "Unavailable"),
+      }),
+    },
+    {
+      url: "https://ipwho.is/",
+      parse: (data) => ({
+        ip: data?.ip ? String(data.ip) : "Unavailable",
+        location: [data?.city, data?.region, data?.country].filter(Boolean).join(", ") || "Unavailable",
+        isp: data?.connection?.isp ? String(data.connection.isp) : "Unavailable",
+      }),
+    },
+    {
+      url: "https://api.ipify.org?format=json",
+      parse: (data) => ({
+        ip: data?.ip ? String(data.ip) : "Unavailable",
+        location: "Unavailable",
+        isp: "Unavailable",
+      }),
+    },
+  ];
 
-    const response = await fetch("https://ipapi.co/json/", {
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    globalThis.clearTimeout(timeoutId);
+  for (const provider of providers) {
+    try {
+      const timeoutMs = 4500;
+      const controller = new AbortController();
+      const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+      const start = performance.now();
 
-    if (!response.ok) {
-      return fallback;
+      const response = await fetch(provider.url, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      globalThis.clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const elapsed = Math.max(1, Math.round(performance.now() - start));
+      const data = await response.json();
+      const parsed = provider.parse(data);
+      const ip = parsed.ip || "Unavailable";
+      const location = parsed.location || "Unavailable";
+      const isp = parsed.isp || "Unavailable";
+
+      if (ip !== "Unavailable" || location !== "Unavailable" || isp !== "Unavailable") {
+        return { ip, location, isp, rttEstimateMs: elapsed };
+      }
+    } catch {
+      // Try next provider.
     }
-
-    const data = await response.json();
-    const ip = data?.ip ? String(data.ip) : "Unavailable";
-    const city = data?.city ? String(data.city) : "";
-    const region = data?.region ? String(data.region) : "";
-    const country = data?.country_name ? String(data.country_name) : "";
-    const location = [city, region, country].filter(Boolean).join(", ") || "Unavailable";
-    const isp = data?.org ? String(data.org) : (data?.asn ? String(data.asn) : "Unavailable");
-
-    return { ip, location, isp };
-  } catch {
-    return fallback;
   }
+
+  return fallback;
+}
+
+function getEffectiveTypeFromRttEstimate(rttMs) {
+  if (!Number.isFinite(rttMs) || rttMs <= 0) {
+    return "Unavailable";
+  }
+  if (rttMs <= 150) {
+    return "4g (estimated)";
+  }
+  if (rttMs <= 300) {
+    return "3g (estimated)";
+  }
+  return "2g (estimated)";
 }
 
 async function renderDeviceInfo() {
@@ -381,7 +428,7 @@ async function renderDeviceInfo() {
   const connectionType = getConnectionTypeLabel();
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   const onlineState = navigator.onLine ? "Online" : "Offline";
-  const effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
+  let effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
     ? connection.effectiveType
     : "Unavailable";
   const downlink = typeof connection?.downlink === "number" && Number.isFinite(connection.downlink)
@@ -450,6 +497,10 @@ async function renderDeviceInfo() {
   ipNode.textContent = network.ip;
   locationNode.textContent = network.location;
   ispNode.textContent = network.isp;
+  if (effectiveType === "Unavailable") {
+    effectiveType = getEffectiveTypeFromRttEstimate(network.rttEstimateMs);
+    effectiveTypeNode.textContent = effectiveType;
+  }
 }
 
 function buildDeviceInfoClipboardText() {
@@ -795,14 +846,252 @@ function renderSEO(result) {
   const openGraphTags = Array.isArray(result?.openGraphTags) ? result.openGraphTags : [];
   const structuredDataItems = Array.isArray(result?.structuredDataItems) ? result.structuredDataItems : [];
 
-  renderKeyValues("seo-output", {
-    "Title": result.title || "(missing)",
-    "Meta description length": result.metaDescriptionLength,
-    "Canonical URL": result.canonicalUrl || "Missing",
-  });
-
   const accordion = document.createElement("div");
-  accordion.className = "accordion border-bottom-0 mt-2";
+  accordion.className = "accordion border-bottom-0";
+
+  const metaDetails = document.createElement("details");
+  metaDetails.className = "accordion-item border-bottom-0";
+  metaDetails.setAttribute("name", "seo-issues");
+  metaDetails.open = true;
+  const metaSummary = document.createElement("summary");
+  metaSummary.className = "accordion-button rounded-top";
+  const metaHeader = document.createElement("h2");
+  metaHeader.className = "accordion-header user-select-none fs-6 text-body";
+  metaHeader.textContent = "Meta tags";
+  metaSummary.append(metaHeader);
+  metaDetails.append(metaSummary);
+
+  const metaBody = document.createElement("div");
+  metaBody.className = "accordion-body border-bottom p-2";
+  const metaList = document.createElement("ul");
+  metaList.className = "small mb-0 ps-3";
+
+  const titleItem = document.createElement("li");
+  const titleLabel = document.createElement("strong");
+  titleLabel.textContent = "Title: ";
+  titleItem.append(titleLabel, document.createTextNode(result.title || "(missing)"));
+  metaList.append(titleItem);
+
+  const descriptionItem = document.createElement("li");
+  const descriptionLabel = document.createElement("strong");
+  descriptionLabel.textContent = "Meta description: ";
+  const metaDescription = typeof result?.metaDescription === "string" ? result.metaDescription.trim() : "";
+  descriptionItem.append(descriptionLabel, document.createTextNode(metaDescription || "(missing)"));
+  metaList.append(descriptionItem);
+
+  const canonicalItem = document.createElement("li");
+  const canonicalLabel = document.createElement("strong");
+  canonicalLabel.textContent = "Canonical URL: ";
+  canonicalItem.append(canonicalLabel);
+  const canonicalUrl = typeof result?.canonicalUrl === "string" ? result.canonicalUrl.trim() : "";
+  if (/^https?:\/\//i.test(canonicalUrl)) {
+    const link = document.createElement("a");
+    link.href = canonicalUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = canonicalUrl;
+    canonicalItem.append(link);
+  } else {
+    canonicalItem.append(document.createTextNode("Missing"));
+  }
+  metaList.append(canonicalItem);
+
+  const authorLink = typeof result?.authorLink === "string" ? result.authorLink.trim() : "";
+  if (authorLink) {
+    const authorItem = document.createElement("li");
+    const authorLabel = document.createElement("strong");
+    authorLabel.textContent = "Author: ";
+    authorItem.append(authorLabel);
+    if (authorLink.startsWith("https://")) {
+      const link = document.createElement("a");
+      link.href = authorLink;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = authorLink;
+      authorItem.append(link);
+    } else {
+      authorItem.append(document.createTextNode(authorLink));
+    }
+    metaList.append(authorItem);
+  }
+
+  const monetizationLink = typeof result?.monetizationLink === "string" ? result.monetizationLink.trim() : "";
+  if (monetizationLink) {
+    const monetizationItem = document.createElement("li");
+    const monetizationLabel = document.createElement("strong");
+    monetizationLabel.textContent = "Monetization: ";
+    monetizationItem.append(monetizationLabel);
+    if (/^https?:\/\//i.test(monetizationLink)) {
+      const link = document.createElement("a");
+      link.href = monetizationLink;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = monetizationLink;
+      monetizationItem.append(link);
+    } else {
+      monetizationItem.append(document.createTextNode(monetizationLink));
+    }
+    metaList.append(monetizationItem);
+  }
+
+  const alternateFeeds = Array.isArray(result?.alternateFeeds) ? result.alternateFeeds : [];
+  if (alternateFeeds.length > 0) {
+    const alternateItem = document.createElement("li");
+    const alternateLabel = document.createElement("strong");
+    alternateLabel.textContent = "Alternate (RSS): ";
+    alternateItem.append(alternateLabel);
+
+    const feedList = document.createElement("ul");
+    feedList.className = "small mb-0 mt-1 ps-3";
+    for (const feed of alternateFeeds) {
+      const entry = document.createElement("li");
+      const href = typeof feed?.href === "string" ? feed.href.trim() : "";
+      const type = typeof feed?.type === "string" ? feed.type.trim() : "";
+      const title = typeof feed?.title === "string" ? feed.title.trim() : "";
+      const label = title || type || href || "(unknown feed)";
+
+      if (/^https?:\/\//i.test(href)) {
+        const link = document.createElement("a");
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = label;
+        entry.append(link);
+      } else {
+        entry.textContent = label;
+      }
+      feedList.append(entry);
+    }
+    alternateItem.append(feedList);
+    metaList.append(alternateItem);
+  }
+
+  const pingbackLink = typeof result?.pingbackLink === "string" ? result.pingbackLink.trim() : "";
+  if (pingbackLink) {
+    const pingbackItem = document.createElement("li");
+    const pingbackLabel = document.createElement("strong");
+    pingbackLabel.textContent = "Pingback: ";
+    pingbackItem.append(pingbackLabel);
+    if (/^https?:\/\//i.test(pingbackLink)) {
+      const link = document.createElement("a");
+      link.href = pingbackLink;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = pingbackLink;
+      pingbackItem.append(link);
+    } else {
+      pingbackItem.append(document.createTextNode(pingbackLink));
+    }
+    metaList.append(pingbackItem);
+  }
+
+  const webmentionLink = typeof result?.webmentionLink === "string" ? result.webmentionLink.trim() : "";
+  if (webmentionLink) {
+    const webmentionItem = document.createElement("li");
+    const webmentionLabel = document.createElement("strong");
+    webmentionLabel.textContent = "Webmention: ";
+    webmentionItem.append(webmentionLabel);
+    if (/^https?:\/\//i.test(webmentionLink)) {
+      const link = document.createElement("a");
+      link.href = webmentionLink;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = webmentionLink;
+      webmentionItem.append(link);
+    } else {
+      webmentionItem.append(document.createTextNode(webmentionLink));
+    }
+    metaList.append(webmentionItem);
+  }
+
+  const fediverseCreator = typeof result?.fediverseCreator === "string" ? result.fediverseCreator.trim() : "";
+  if (fediverseCreator) {
+    const fediverseItem = document.createElement("li");
+    const fediverseLabel = document.createElement("strong");
+    fediverseLabel.textContent = "Fediverse creator: ";
+    fediverseItem.append(fediverseLabel);
+
+    let profileUrl = "";
+    if (/^https?:\/\//i.test(fediverseCreator)) {
+      profileUrl = fediverseCreator;
+    } else {
+      const acct = fediverseCreator.replace(/^acct:/i, "");
+      const match = acct.match(/^@?([^@\s]+)@([^@\s]+)$/);
+      if (match) {
+        profileUrl = `https://${match[2]}/@${match[1]}`;
+      }
+    }
+
+    if (profileUrl) {
+      const link = document.createElement("a");
+      link.href = profileUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = fediverseCreator;
+      fediverseItem.append(link);
+    } else {
+      fediverseItem.append(document.createTextNode(fediverseCreator));
+    }
+    metaList.append(fediverseItem);
+  }
+
+  const generator = typeof result?.generator === "string" ? result.generator.trim() : "";
+  if (generator) {
+    const generatorItem = document.createElement("li");
+    const generatorLabel = document.createElement("strong");
+    generatorLabel.textContent = "Generator: ";
+    generatorItem.append(generatorLabel, document.createTextNode(generator));
+    metaList.append(generatorItem);
+  }
+
+  const lastModified = typeof result?.lastModified === "string" ? result.lastModified.trim() : "";
+  if (lastModified) {
+    const lastModifiedItem = document.createElement("li");
+    const lastModifiedLabel = document.createElement("strong");
+    lastModifiedLabel.textContent = "Last modified: ";
+    lastModifiedItem.append(lastModifiedLabel, document.createTextNode(lastModified));
+    metaList.append(lastModifiedItem);
+  }
+
+  const themeColor = typeof result?.themeColor === "string" ? result.themeColor.trim() : "";
+  if (themeColor) {
+    const themeColorItem = document.createElement("li");
+    const themeColorLabel = document.createElement("strong");
+    themeColorLabel.textContent = "Theme color: ";
+    themeColorItem.append(themeColorLabel);
+
+    const themeColorValue = document.createElement("code");
+    themeColorValue.className = "font-monospace";
+    themeColorValue.textContent = themeColor;
+    themeColorItem.append(themeColorValue);
+
+    if (typeof CSS !== "undefined" && typeof CSS.supports === "function" && CSS.supports("color", themeColor)) {
+      const swatch = document.createElement("span");
+      swatch.className = "d-inline-block rounded-circle border ms-2 align-middle";
+      swatch.style.width = "0.75rem";
+      swatch.style.height = "0.75rem";
+      swatch.style.backgroundColor = themeColor;
+      themeColorItem.append(swatch);
+    }
+
+    metaList.append(themeColorItem);
+  }
+
+  const colorScheme = typeof result?.colorScheme === "string" ? result.colorScheme.trim() : "";
+  if (colorScheme) {
+    const colorSchemeItem = document.createElement("li");
+    const colorSchemeLabel = document.createElement("strong");
+    colorSchemeLabel.textContent = "Color scheme: ";
+    const colorSchemeValue = document.createElement("code");
+    colorSchemeValue.className = "font-monospace";
+    colorSchemeValue.textContent = colorScheme;
+    colorSchemeItem.append(colorSchemeLabel, colorSchemeValue);
+    metaList.append(colorSchemeItem);
+  }
+
+  metaBody.append(metaList);
+  metaDetails.append(metaBody);
+  accordion.append(metaDetails);
 
   const ogDetails = document.createElement("details");
   ogDetails.className = "accordion-item border-bottom-0";
@@ -819,7 +1108,13 @@ function renderSEO(result) {
   ogBody.className = "accordion-body border-bottom p-2";
   const ogList = document.createElement("ul");
   ogList.className = "small mb-0 ps-3";
-  for (const tag of openGraphTags) {
+  const sortedOpenGraphTags = [...openGraphTags].sort((a, b) => {
+    const aKey = String((a && typeof a === "object" ? a.property : a) || "").toLowerCase();
+    const bKey = String((b && typeof b === "object" ? b.property : b) || "").toLowerCase();
+    return aKey.localeCompare(bKey);
+  });
+
+  for (const tag of sortedOpenGraphTags) {
     const li = document.createElement("li");
     const property = typeof tag === "object" && tag
       ? String(tag.property || "og:*")
@@ -855,48 +1150,42 @@ function renderSEO(result) {
   ogDetails.append(ogBody);
   accordion.append(ogDetails);
 
-  const sdDetails = document.createElement("details");
-  sdDetails.className = "accordion-item border-bottom-0";
-  sdDetails.setAttribute("name", "seo-issues");
-  const sdSummary = document.createElement("summary");
-  sdSummary.className = "accordion-button rounded-top";
-  const sdHeader = document.createElement("h2");
-  sdHeader.className = "accordion-header user-select-none fs-6 text-body";
-  sdHeader.textContent = `Structured data (${structuredDataItems.length})`;
-  sdSummary.append(sdHeader);
-  lockAccordionWhenEmpty(sdDetails, sdSummary, structuredDataItems.length);
-  sdDetails.append(sdSummary);
-  const sdBody = document.createElement("div");
-  sdBody.className = "accordion-body border-bottom p-2";
-  const sdList = document.createElement("ul");
-  sdList.className = "small mb-0 ps-3";
-  for (const item of structuredDataItems) {
-    const li = document.createElement("li");
-    const text = String(item ?? "");
-    const match = text.match(/^Microdata:\s*(.+)$/i);
-    if (match && /^https?:\/\//i.test(match[1])) {
-      li.append(document.createTextNode("Microdata: "));
-      const link = document.createElement("a");
-      link.href = match[1];
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = match[1];
-      li.append(link);
-    } else {
-      li.textContent = text;
+  if (structuredDataItems.length > 0) {
+    const sdDetails = document.createElement("details");
+    sdDetails.className = "accordion-item border-bottom-0";
+    sdDetails.setAttribute("name", "seo-issues");
+    const sdSummary = document.createElement("summary");
+    sdSummary.className = "accordion-button rounded-top";
+    const sdHeader = document.createElement("h2");
+    sdHeader.className = "accordion-header user-select-none fs-6 text-body";
+    sdHeader.textContent = `Structured data (${structuredDataItems.length})`;
+    sdSummary.append(sdHeader);
+    sdDetails.append(sdSummary);
+    const sdBody = document.createElement("div");
+    sdBody.className = "accordion-body border-bottom p-2";
+    const sdList = document.createElement("ul");
+    sdList.className = "small mb-0 ps-3";
+    for (const item of structuredDataItems) {
+      const li = document.createElement("li");
+      const text = String(item ?? "");
+      const match = text.match(/^Microdata:\s*(.+)$/i);
+      if (match && /^https?:\/\//i.test(match[1])) {
+        li.append(document.createTextNode("Microdata: "));
+        const link = document.createElement("a");
+        link.href = match[1];
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = match[1];
+        li.append(link);
+      } else {
+        li.textContent = text;
+      }
+      sdList.append(li);
     }
-    sdList.append(li);
-  }
-  if (!structuredDataItems.length) {
-    const empty = document.createElement("div");
-    empty.className = "small text-success";
-    empty.textContent = "None";
-    sdBody.append(empty);
-  } else {
     sdBody.append(sdList);
+    sdDetails.append(sdBody);
+    accordion.append(sdDetails);
   }
-  sdDetails.append(sdBody);
-  accordion.append(sdDetails);
 
   output.append(accordion);
 
