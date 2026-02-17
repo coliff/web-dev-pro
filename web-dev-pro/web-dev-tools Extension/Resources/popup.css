@@ -88,6 +88,10 @@ main {
   -webkit-overflow-scrolling: touch;
 }
 
+.accordion-button::after {
+  filter: grayscale(1);
+}
+
 .accordion-button.no-expand::after {
   display: none !important;
 }

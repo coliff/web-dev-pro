@@ -3,8 +3,14 @@ const ext = globalThis.browser ?? globalThis.chrome;
 let lastStoragePayload = null;
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
-const darkModeKey = "popup.darkModeEnabled";
+const themePreferenceKey = "popup.themePreference";
+const legacyDarkModeKey = "popup.darkModeEnabled";
 const validTabs = new Set(["a11y", "css", "perf", "rendering", "seo", "settings", "storage"]);
+const validThemePreferences = new Set(["system", "dark", "light"]);
+let activeThemePreference = "system";
+const systemThemeMediaQuery = globalThis.matchMedia
+  ? globalThis.matchMedia("(prefers-color-scheme: dark)")
+  : null;
 
 async function getActiveTabId() {
   if (ext.tabs.query.length === 1) {
@@ -106,21 +112,44 @@ async function saveTab(tabName) {
   await saveStoredValue(popupTabKey, tabName);
 }
 
-async function loadDarkModeEnabled() {
-  const stored = await loadStoredValue(darkModeKey);
-  if (stored === null) {
-    return true;
+function getSystemThemeMode() {
+  return systemThemeMediaQuery?.matches ? "dark" : "light";
+}
+
+function resolveThemeMode(preference) {
+  if (preference === "system") {
+    return getSystemThemeMode();
   }
-  return stored === "true";
+  return preference === "light" ? "light" : "dark";
 }
 
-async function saveDarkModeEnabled(enabled) {
-  await saveStoredValue(darkModeKey, String(enabled));
+async function loadThemePreference() {
+  const stored = await loadStoredValue(themePreferenceKey);
+  if (stored && validThemePreferences.has(stored)) {
+    return stored;
+  }
+
+  const legacyStored = await loadStoredValue(legacyDarkModeKey);
+  if (legacyStored === "true") {
+    return "dark";
+  }
+  if (legacyStored === "false") {
+    return "light";
+  }
+  return "system";
 }
 
-function applyTheme(isDarkMode) {
-  document.documentElement.dataset.bsTheme = isDarkMode ? "dark" : "light";
-  document.body.classList.toggle("light-mode", !isDarkMode);
+async function saveThemePreference(preference) {
+  if (!validThemePreferences.has(preference)) {
+    return;
+  }
+  await saveStoredValue(themePreferenceKey, preference);
+}
+
+function applyTheme(themePreference) {
+  const mode = resolveThemeMode(themePreference);
+  document.documentElement.dataset.bsTheme = mode;
+  document.body.classList.toggle("light-mode", mode === "light");
 }
 
 function renderBuildInfo() {
@@ -1278,17 +1307,29 @@ async function bindEvents() {
     currentTab = savedTab;
   }
 
-  const darkModeSwitch = document.getElementById("dark-mode-switch");
-  if (darkModeSwitch instanceof HTMLInputElement) {
-    const darkModeEnabled = await loadDarkModeEnabled();
-    darkModeSwitch.checked = darkModeEnabled;
-    applyTheme(darkModeEnabled);
+  const themeSelect = document.getElementById("theme-select");
+  if (themeSelect instanceof HTMLSelectElement) {
+    const savedPreference = await loadThemePreference();
+    activeThemePreference = savedPreference;
+    themeSelect.value = savedPreference;
+    applyTheme(savedPreference);
 
-    darkModeSwitch.addEventListener("change", () => {
-      const enabled = darkModeSwitch.checked;
-      applyTheme(enabled);
-      void saveDarkModeEnabled(enabled);
+    themeSelect.addEventListener("change", () => {
+      const selectedPreference = validThemePreferences.has(themeSelect.value)
+        ? themeSelect.value
+        : "system";
+      activeThemePreference = selectedPreference;
+      applyTheme(selectedPreference);
+      void saveThemePreference(selectedPreference);
     });
+
+    if (systemThemeMediaQuery) {
+      systemThemeMediaQuery.addEventListener("change", () => {
+        if (activeThemePreference === "system") {
+          applyTheme("system");
+        }
+      });
+    }
   }
 
   renderBuildInfo();

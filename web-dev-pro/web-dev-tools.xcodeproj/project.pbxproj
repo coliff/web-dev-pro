@@ -306,7 +306,7 @@
 				EXCLUDED_SOURCE_FILE_NAMES = "._*";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/App-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
+				INFOPLIST_KEY_CFBundleDisplayName = "Web DevTools+";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -350,7 +350,7 @@
 				EXCLUDED_SOURCE_FILE_NAMES = "._*";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/App-Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Web Dev Tools";
+				INFOPLIST_KEY_CFBundleDisplayName = "Web DevTools+";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
