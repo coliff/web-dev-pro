@@ -222,7 +222,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				EXCLUDED_RESOURCE_FILE_NAMES = "Info.plist App-Info.plist Extension-Info.plist ._*";
 				EXCLUDED_SOURCE_FILE_NAMES = (
@@ -260,7 +260,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 9HGSQ29955;
 				EXCLUDED_RESOURCE_FILE_NAMES = "Info.plist App-Info.plist Extension-Info.plist ._*";
 				EXCLUDED_SOURCE_FILE_NAMES = (
