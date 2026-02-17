@@ -16,28 +16,31 @@
     <nav class="nav nav-tabs nav-fill tabs mb-0 border-bottom" aria-label="Tools">
       <button class="nav-link tab mb-0 border-0" data-tab="a11y" type="button" aria-label="Accessibility"
         title="Accessibility">
-        <img class="tab-icon" src="tab-a11y.svg" alt="Accessibility" width="20" height="20" />
+        <img class="tab-icon" src="tab-a11y.svg" alt="Accessibility" width="18" height="18" />
       </button>
       <button class="nav-link tab mb-0 border-0" data-tab="css" type="button" aria-label="CSS" title="CSS">
-        <img class="tab-icon" src="tab-css.svg" alt="CSS" width="20" height="20" />
+        <img class="tab-icon" src="tab-css.svg" alt="CSS" width="18" height="18" />
+      </button>
+      <button class="nav-link tab mb-0 border-0" data-tab="css-overview" type="button" aria-label="CSS Overview" title="CSS Overview">
+        <img class="tab-icon" src="tab-css-overview.svg" alt="CSS Overview" width="18" height="18" />
       </button>
       <button class="nav-link tab mb-0 border-0" data-tab="perf" type="button" aria-label="Performance"
         title="Performance">
-        <img class="tab-icon" src="tab-perf.svg" alt="Performance" width="20" height="20" />
+        <img class="tab-icon" src="tab-perf.svg" alt="Performance" width="18" height="18" />
       </button>
       <button class="nav-link tab mb-0 border-0" data-tab="rendering" type="button" aria-label="Rendering"
         title="Rendering">
-        <img class="tab-icon" src="tab-rendering.svg" alt="Rendering" width="20" height="20" />
+        <img class="tab-icon" src="tab-rendering.svg" alt="Rendering" width="18" height="18" />
       </button>
       <button class="nav-link tab mb-0 border-0" data-tab="seo" type="button" aria-label="SEO" title="SEO">
-        <img class="tab-icon" src="tab-seo.svg" alt="SEO" width="20" height="20" />
+        <img class="tab-icon" src="tab-seo.svg" alt="SEO" width="18" height="18" />
       </button>
       <button class="nav-link tab mb-0 border-0" data-tab="storage" type="button" aria-label="Storage" title="Storage">
-        <img class="tab-icon" src="tab-storage.svg" alt="Storage" width="20" height="20" />
+        <img class="tab-icon" src="tab-storage.svg" alt="Storage" width="18" height="18" />
       </button>
       <button class="nav-link tab mb-0 border-0" data-tab="settings" type="button" aria-label="Settings"
         title="Settings">
-        <img class="tab-icon" src="tab-settings.svg" alt="Settings" width="20" height="20" />
+        <img class="tab-icon" src="tab-settings.svg" alt="Settings" width="18" height="18" />
       </button>
     </nav>
 
@@ -168,6 +171,18 @@
 
         </div>
       </div>
+    </section>
+
+    <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="css-overview">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="fs-6">CSS Overview</h2>
+      </div>
+      <nav class="nav nav-tabs nav-fill mb-2" aria-label="CSS overview sections">
+        <button class="nav-link active py-1 small" type="button" data-css-overview-view="overview">Overview</button>
+        <button class="nav-link py-1 small" type="button" data-css-overview-view="colors">Colors</button>
+        <button class="nav-link py-1 small" type="button" data-css-overview-view="font">Font Info</button>
+      </nav>
+      <div id="css-overview-output" class="output rounded-3 overflow-auto p-2 small"></div>
     </section>
 
     <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="perf">

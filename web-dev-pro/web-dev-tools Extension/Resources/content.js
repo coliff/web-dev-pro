@@ -718,7 +718,19 @@ function setAriaInspectorEnabled(enabled) {
 
 function computeA11ySnapshot() {
     const images = [...document.querySelectorAll("img")];
-    const missingAlt = images.filter((img) => !img.hasAttribute("alt") || img.getAttribute("alt") === "");
+    const missingAlt = images.filter((img) => {
+        const ariaHidden = (img.getAttribute("aria-hidden") || "").trim().toLowerCase() === "true";
+        if (ariaHidden) {
+            return false;
+        }
+
+        if (!img.hasAttribute("alt")) {
+            return true;
+        }
+
+        const alt = img.getAttribute("alt");
+        return alt === null;
+    });
 
     const textElements = [...document.querySelectorAll("body *")]
         .filter((node) => node.childElementCount === 0 && node.textContent && node.textContent.trim().length > 2)
@@ -929,6 +941,105 @@ async function computePerfSnapshot() {
     }
 }
 
+function computeCssOverviewSnapshot() {
+    const elements = [...document.querySelectorAll("*")];
+    const textColors = new Map();
+    const backgroundColors = new Map();
+    const borderColors = new Map();
+    const fontFamilies = new Map();
+    const fontSizes = new Map();
+    const fontWeights = new Map();
+    const lineHeights = new Map();
+
+    const increment = (map, value) => {
+        const key = String(value || "").trim();
+        if (!key) {
+            return;
+        }
+        map.set(key, (map.get(key) || 0) + 1);
+    };
+
+    const normalizeColor = (input) => {
+        const value = String(input || "").trim();
+        if (!value || value === "transparent") {
+            return null;
+        }
+
+        const hexMatch = value.match(/^#([0-9a-f]{3,8})$/i);
+        if (hexMatch) {
+            const raw = hexMatch[1];
+            if (raw.length === 3) {
+                return `#${raw.split("").map((ch) => ch + ch).join("").toLowerCase()}`;
+            }
+            if (raw.length === 4) {
+                return `#${raw.split("").map((ch) => ch + ch).join("").toLowerCase()}`;
+            }
+            return `#${raw.toLowerCase()}`;
+        }
+
+        const rgbMatch = value.match(/^rgba?\(([^)]+)\)$/i);
+        if (!rgbMatch) {
+            return value;
+        }
+
+        const parts = rgbMatch[1].split(",").map((part) => part.trim());
+        const r = Number(parts[0]);
+        const g = Number(parts[1]);
+        const b = Number(parts[2]);
+        if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) {
+            return value;
+        }
+
+        const toHex = (num) => Math.max(0, Math.min(255, Math.round(num))).toString(16).padStart(2, "0").toLowerCase();
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    };
+
+    for (const element of elements) {
+        const style = getComputedStyle(element);
+        increment(textColors, normalizeColor(style.color));
+        increment(backgroundColors, normalizeColor(style.backgroundColor));
+
+        const borderWidth = Number.parseFloat(style.borderTopWidth || "0");
+        if (borderWidth > 0 && style.borderTopStyle !== "none") {
+            increment(borderColors, normalizeColor(style.borderTopColor));
+        }
+
+        increment(fontFamilies, style.fontFamily);
+        increment(fontSizes, style.fontSize);
+        increment(fontWeights, style.fontWeight);
+        increment(lineHeights, style.lineHeight);
+    }
+
+    const sortEntries = (map, limit = 24) => [...map.entries()]
+        .map(([value, count]) => ({ value, count }))
+        .sort((a, b) => (b.count - a.count) || a.value.localeCompare(b.value))
+        .slice(0, limit);
+
+    return {
+        overview: {
+            totalElements: elements.length,
+            stylesheets: document.styleSheets?.length || 0,
+            inlineStyleElements: document.querySelectorAll("[style]").length,
+            uniqueTextColors: textColors.size,
+            uniqueBackgroundColors: backgroundColors.size,
+            uniqueBorderColors: borderColors.size,
+            uniqueFontFamilies: fontFamilies.size,
+            uniqueFontSizes: fontSizes.size
+        },
+        colors: {
+            text: sortEntries(textColors),
+            background: sortEntries(backgroundColors),
+            border: sortEntries(borderColors)
+        },
+        fontInfo: {
+            families: sortEntries(fontFamilies, 20),
+            sizes: sortEntries(fontSizes, 20),
+            weights: sortEntries(fontWeights, 20),
+            lineHeights: sortEntries(lineHeights, 20)
+        }
+    };
+}
+
 async function listIndexedDb() {
     if (typeof indexedDB.databases !== "function") {
         return [{ name: "indexedDB.databases() not supported", version: "-" }];
@@ -1077,6 +1188,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "perf-snapshot") {
         return Promise.resolve(computePerfSnapshot());
+    }
+
+    if (request.action === "css-overview-snapshot") {
+        return Promise.resolve(computeCssOverviewSnapshot());
     }
 
     if (request.action === "storage-snapshot") {

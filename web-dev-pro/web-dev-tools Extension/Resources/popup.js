@@ -1,13 +1,15 @@
 const ext = globalThis.browser ?? globalThis.chrome;
 
 let lastStoragePayload = null;
+let lastCssOverviewPayload = null;
 let currentStorageKind = "cookie";
+let currentCssOverviewView = "overview";
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
 const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
-const validTabs = new Set(["a11y", "css", "perf", "rendering", "seo", "settings", "storage"]);
+const validTabs = new Set(["a11y", "css", "css-overview", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
 let activeThemePreference = "system";
 const systemThemeMediaQuery = globalThis.matchMedia
@@ -1478,6 +1480,185 @@ function renderPerf(result) {
   output.append(accordion);
 }
 
+function renderCssOverviewViewTabs() {
+  document.querySelectorAll("[data-css-overview-view]").forEach((button) => {
+    if (!(button instanceof HTMLElement)) {
+      return;
+    }
+    const isActive = button.dataset.cssOverviewView === currentCssOverviewView;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+}
+
+function createCssOverviewMetric(label, value) {
+  const item = document.createElement("div");
+  item.className = "rounded-3 bg-secondary bg-opacity-25 p-2";
+
+  const title = document.createElement("div");
+  title.className = "small opacity-75";
+  title.textContent = label;
+
+  const metricValue = document.createElement("div");
+  metricValue.className = "fw-semibold";
+  metricValue.textContent = String(value);
+
+  item.append(title, metricValue);
+  return item;
+}
+
+function renderCssOverviewOverview(output, payload) {
+  const overview = payload?.overview && typeof payload.overview === "object" ? payload.overview : {};
+  const grid = document.createElement("div");
+  grid.className = "row row-cols-2 g-2";
+
+  const metrics = [
+    ["Elements", overview.totalElements ?? 0],
+    ["Stylesheets", overview.stylesheets ?? 0],
+    ["Inline styles", overview.inlineStyleElements ?? 0],
+    ["Text colors", overview.uniqueTextColors ?? 0],
+    ["Background colors", overview.uniqueBackgroundColors ?? 0],
+    ["Border colors", overview.uniqueBorderColors ?? 0],
+    ["Font families", overview.uniqueFontFamilies ?? 0],
+    ["Font sizes", overview.uniqueFontSizes ?? 0],
+  ];
+
+  for (const [label, value] of metrics) {
+    const col = document.createElement("div");
+    col.className = "col";
+    col.append(createCssOverviewMetric(label, value));
+    grid.append(col);
+  }
+
+  output.append(grid);
+}
+
+function appendColorList(output, title, entries) {
+  const wrap = document.createElement("div");
+  wrap.className = "mb-3";
+
+  const heading = document.createElement("h3");
+  heading.className = "fs-6 mb-2";
+  heading.textContent = title;
+  wrap.append(heading);
+
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "text-secondary";
+    empty.textContent = "No colors found.";
+    wrap.append(empty);
+    output.append(wrap);
+    return;
+  }
+
+  const list = document.createElement("div");
+  list.className = "d-flex flex-column gap-1";
+  for (const entry of entries) {
+    const row = document.createElement("div");
+    row.className = "d-flex align-items-center justify-content-between rounded-3 bg-secondary bg-opacity-25 px-2 py-1";
+
+    const left = document.createElement("div");
+    left.className = "d-flex align-items-center gap-2";
+
+    const swatch = document.createElement("span");
+    swatch.className = "d-inline-block rounded-circle border";
+    swatch.style.width = "0.9rem";
+    swatch.style.height = "0.9rem";
+    swatch.style.backgroundColor = entry.value;
+
+    const value = document.createElement("code");
+    value.className = "font-monospace";
+    value.textContent = entry.value;
+
+    left.append(swatch, value);
+
+    const count = document.createElement("span");
+    count.className = "opacity-75";
+    count.textContent = `${entry.count}`;
+
+    row.append(left, count);
+    list.append(row);
+  }
+
+  wrap.append(list);
+  output.append(wrap);
+}
+
+function renderCssOverviewColors(output, payload) {
+  const colors = payload?.colors && typeof payload.colors === "object" ? payload.colors : {};
+  appendColorList(output, "Text colors", Array.isArray(colors.text) ? colors.text : []);
+  appendColorList(output, "Background colors", Array.isArray(colors.background) ? colors.background : []);
+  appendColorList(output, "Border colors", Array.isArray(colors.border) ? colors.border : []);
+}
+
+function appendFontList(output, title, entries) {
+  const wrap = document.createElement("div");
+  wrap.className = "mb-3";
+
+  const heading = document.createElement("h3");
+  heading.className = "fs-6 mb-2";
+  heading.textContent = title;
+  wrap.append(heading);
+
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "text-secondary";
+    empty.textContent = "No data found.";
+    wrap.append(empty);
+    output.append(wrap);
+    return;
+  }
+
+  const list = document.createElement("ul");
+  list.className = "small mb-0 ps-3";
+  for (const entry of entries) {
+    const item = document.createElement("li");
+    const value = document.createElement("span");
+    value.className = "font-monospace";
+    value.textContent = entry.value;
+    item.append(value, document.createTextNode(` (${entry.count})`));
+    list.append(item);
+  }
+  wrap.append(list);
+  output.append(wrap);
+}
+
+function renderCssOverviewFont(output, payload) {
+  const fontInfo = payload?.fontInfo && typeof payload.fontInfo === "object" ? payload.fontInfo : {};
+  appendFontList(output, "Font families", Array.isArray(fontInfo.families) ? fontInfo.families : []);
+  appendFontList(output, "Font sizes", Array.isArray(fontInfo.sizes) ? fontInfo.sizes : []);
+  appendFontList(output, "Font weights", Array.isArray(fontInfo.weights) ? fontInfo.weights : []);
+  appendFontList(output, "Line heights", Array.isArray(fontInfo.lineHeights) ? fontInfo.lineHeights : []);
+}
+
+function renderCssOverview(payload) {
+  const output = document.getElementById("css-overview-output");
+  if (!output) {
+    return;
+  }
+
+  lastCssOverviewPayload = payload;
+  renderCssOverviewViewTabs();
+  output.textContent = "";
+
+  if (!payload || typeof payload !== "object") {
+    output.textContent = "CSS overview unavailable on this page.";
+    return;
+  }
+
+  if (currentCssOverviewView === "colors") {
+    renderCssOverviewColors(output, payload);
+    return;
+  }
+
+  if (currentCssOverviewView === "font") {
+    renderCssOverviewFont(output, payload);
+    return;
+  }
+
+  renderCssOverviewOverview(output, payload);
+}
+
 function makeStorageRow(item) {
   const row = document.createElement("div");
   row.className = "storage-row rounded-3 bg-secondary bg-opacity-25";
@@ -1608,6 +1789,9 @@ async function runAction(action, sourceButton = null) {
     if (action === "seo") {
       const result = await sendToActiveTab({ action: "seo-snapshot" });
       renderSEO(result);
+    } else if (action === "css-overview") {
+      const result = await sendToActiveTab({ action: "css-overview-snapshot" });
+      renderCssOverview(result);
     } else if (action === "a11y") {
       const result = await sendToActiveTab({ action: "a11y-snapshot" });
       renderA11y(result);
@@ -1726,6 +1910,11 @@ async function switchTab(tabName) {
     return;
   }
 
+  if (tabName === "css-overview") {
+    await runAction("css-overview");
+    return;
+  }
+
   if (tabName === "storage") {
     await runAction("storage");
     return;
@@ -1774,6 +1963,17 @@ async function bindEvents() {
         renderStorage(lastStoragePayload);
       } else {
         await loadStorage();
+      }
+      return;
+    }
+
+    const cssOverviewTab = target.closest("[data-css-overview-view]");
+    if (cssOverviewTab instanceof HTMLElement && cssOverviewTab.dataset.cssOverviewView) {
+      currentCssOverviewView = cssOverviewTab.dataset.cssOverviewView;
+      if (lastCssOverviewPayload) {
+        renderCssOverview(lastCssOverviewPayload);
+      } else {
+        await runAction("css-overview");
       }
       return;
     }
