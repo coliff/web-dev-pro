@@ -1,0 +1,15 @@
+{
+  "[javascript][typescript][json][jsonc][markdown][yaml]": {
+    "editor.defaultFormatter": "EditorConfig.EditorConfig",
+    "editor.formatOnSave": true
+  },
+  "[javascript][typescript]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "eslint.validate": ["javascript", "typescript"],
+  "css.validate": false,
+  "stylelint.enable": true,
+  "stylelint.validate": ["css"]
+}

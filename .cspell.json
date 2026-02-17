@@ -24,6 +24,7 @@
   "allowCompoundWords": true,
   "ignorePaths": [
     ".cspell.json",
+    "*.min.*",
     ".gitignore",
     "**/node_modules/**"
   ],
