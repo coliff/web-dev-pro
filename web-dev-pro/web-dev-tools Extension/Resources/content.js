@@ -17,6 +17,7 @@ const state = {
     styleNodes: new Map(),
     overlayNodes: [],
     ariaInspectorInstalled: false,
+    ariaInspectorEnabled: false,
     ariaTooltip: null,
     imageFormatObserver: null,
     mediaQueryWrappers: new Set()
@@ -645,6 +646,9 @@ function ensureAriaInspector() {
             if (!(target instanceof HTMLElement)) {
                 return;
             }
+            if (!state.ariaInspectorEnabled) {
+                return;
+            }
 
             const attrs = [];
             for (const attr of target.attributes) {
@@ -670,6 +674,15 @@ function ensureAriaInspector() {
     );
 
     state.ariaInspectorInstalled = true;
+}
+
+function setAriaInspectorEnabled(enabled) {
+    ensureAriaInspector();
+    state.ariaInspectorEnabled = Boolean(enabled);
+    if (!state.ariaInspectorEnabled && state.ariaTooltip) {
+        state.ariaTooltip.style.display = "none";
+    }
+    return { active: state.ariaInspectorEnabled };
 }
 
 function computeA11ySnapshot() {
@@ -699,8 +712,6 @@ function computeA11ySnapshot() {
     const headingTree = [...document.querySelectorAll("h1,h2,h3,h4,h5,h6")]
         .slice(0, 40)
         .map((heading) => `${heading.tagName.toLowerCase()}: ${heading.textContent.trim().slice(0, 60)}`);
-
-    ensureAriaInspector();
 
     return {
         missingAltCount: missingAlt.length,
@@ -1056,6 +1067,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "a11y-color-filter") {
         return Promise.resolve(setColorBlindFilter(request.filter));
+    }
+
+    if (request.action === "a11y-aria-inspector") {
+        return Promise.resolve(setAriaInspectorEnabled(request.enabled));
     }
 
     if (request.action === "rendering-format") {

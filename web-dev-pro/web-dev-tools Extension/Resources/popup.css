@@ -43,12 +43,20 @@ body {
   border-bottom: 3px solid transparent;
   max-width: 90px;
   min-height: 49px;
+  color: var(--bs-body-color) !important;
 }
 
 .tab.active {
   background-color: var(--bs-body-bg) !important;
   border: 0;
   border-bottom: 3px solid var(--bs-primary) !important;
+  color: var(--bs-body-color) !important;
+}
+
+.tab:hover,
+.tab:focus,
+.tab:focus-visible {
+  color: var(--bs-body-color) !important;
 }
 
 .tab-icon {
@@ -100,7 +108,7 @@ main {
   padding: 0.35rem 0.6rem;
 }
 
-button:not(.tab) {
+button:not(.tab):not(.btn-sm) {
   padding: 6px 8px;
 }
 

@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Web DevTools+</title>
-  <meta name="description" content="Extensions for iPhone and iPadSafari browser">
+  <meta name="description" content="Extensions for iPhone and iPad Safari browser">
   <link rel="stylesheet" href="bootstrap.min.css" />
   <link rel="stylesheet" href="popup.css" />
   <script type="module" src="popup.js"></script>
@@ -45,7 +45,11 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-6">Accessibility</h2>
       </div>
-      <div id="a11y-output" class="output rounded-3 overflow-auto"></div>
+      <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" role="switch" id="a11y-aria-inspect-switch" switch>
+        <label class="form-check-label" for="a11y-aria-inspect-switch">ARIA inspect</label>
+      </div>
+      <div id="a11y-output" class="output rounded-3 overflow-auto p-1"></div>
       <p class="small text-secondary mt-1 mb-0">
         Tip: Click any page element after running to inspect ARIA attrs.
       </p>
@@ -182,15 +186,13 @@
 
     <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="storage">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h2 class="fs-6">Storage Viewer</h2>
-        <button class="primary btn btn-icon d-inline-flex align-items-center justify-content-center"
-          data-action="storage" type="button" aria-label="Refresh storage" title="Refresh storage">
-          <img class="d-block" src="refresh.svg" alt="Refresh" width="18" height="18" aria-hidden="true" />
-        </button>
+        <h2 class="fs-6">Storage</h2>
       </div>
-      <div class="d-flex gap-1 mb-1">
-        <button data-action="storage-copy" type="button" class="btn btn-secondary">Copy JSON</button>
-      </div>
+      <nav class="nav nav-tabs nav-fill mb-2" aria-label="Storage types">
+        <button class="nav-link active py-1 small" type="button" data-storage-kind-tab="cookie">Cookies</button>
+        <button class="nav-link py-1 small" type="button" data-storage-kind-tab="localStorage">Local Storage</button>
+        <button class="nav-link py-1 small" type="button" data-storage-kind-tab="sessionStorage">Session Storage</button>
+      </nav>
       <div id="storage-output" class="output storage-output rounded-3 small overflow-auto p-2"></div>
     </section>
 
@@ -208,17 +210,54 @@
         </select>
       </div>
 
-      <div class="card bg-secondary bg-opacity-10 mt-3">
-        <div class="card-body p-2">
-          <h3 class="h6 mb-2 fw-bold">Device Info</h3>
-          <div class="small d-grid gap-1">
-            <div><strong>OS version:</strong> <span id="device-os-version"></span></div>
-            <div><strong>Device:</strong> <span id="device-name"></span></div>
-            <div><strong>User agent:</strong> <span id="device-user-agent" class="text-break"></span></div>
-            <div><strong>Display:</strong> <span id="device-display"></span></div>
-            <div><strong>Pixel density:</strong> <span id="device-dpr"></span></div>
+      <div class="d-flex align-items-center justify-content-between mt-3 mb-2">
+        <h3 class="h6 mb-0 fw-bold">Device Info</h3>
+        <button type="button" class="btn btn-secondary btn-sm py-0 px-2" data-action="device-copy">Copy</button>
+      </div>
+      <div class="accordion border-bottom-0">
+        <details class="accordion-item border-bottom-0" open>
+          <summary class="accordion-button rounded-top">
+            <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Browser Details</h4>
+          </summary>
+          <div class="accordion-body border-bottom p-2 small">
+            <div><strong>User Agent:</strong> <span id="device-browser-user-agent" class="text-break"></span></div>
+            <div><strong>OS Version:</strong> <span id="device-browser-os-version"></span></div>
+            <div><strong>Device:</strong> <span id="device-browser-device"></span></div>
+            <div><strong>Language:</strong> <span id="device-browser-language"></span></div>
           </div>
-        </div>
+        </details>
+
+        <details class="accordion-item border-bottom-0">
+          <summary class="accordion-button rounded-top">
+            <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Display</h4>
+          </summary>
+          <div class="accordion-body border-bottom p-2 small">
+            <div><strong>Screen resolution:</strong> <span id="device-display-resolution"></span></div>
+            <div><strong>Pixel density:</strong> <span id="device-display-dpr"></span></div>
+            <div><strong>Color depth:</strong> <span id="device-display-color-depth"></span></div>
+            <div><strong>Orientation:</strong> <span id="device-display-orientation"></span></div>
+            <div><strong>Reduced motion:</strong> <span id="device-display-reduced-motion"></span></div>
+            <div><strong>Color scheme:</strong> <span id="device-display-color-scheme"></span></div>
+          </div>
+        </details>
+
+        <details class="accordion-item border-bottom-0">
+          <summary class="accordion-button rounded-top">
+            <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Network</h4>
+          </summary>
+          <div class="accordion-body border-bottom p-2 small">
+            <div><strong>IP address:</strong> <span id="device-network-ip"></span></div>
+            <div><strong>Location:</strong> <span id="device-network-location"></span></div>
+            <div><strong>ISP:</strong> <span id="device-network-isp"></span></div>
+            <div><strong>Connection type:</strong> <span id="device-network-connection"></span></div>
+            <div><strong>Online state:</strong> <span id="device-network-online-state"></span></div>
+            <div><strong>Effective type:</strong> <span id="device-network-effective-type"></span></div>
+            <div><strong>Downlink:</strong> <span id="device-network-downlink"></span></div>
+            <div><strong>RTT:</strong> <span id="device-network-rtt"></span></div>
+            <div><strong>Data saver:</strong> <span id="device-network-data-saver"></span></div>
+            <div><strong>Timezone:</strong> <span id="device-network-timezone"></span></div>
+          </div>
+        </details>
       </div>
 
       <div class="small text-secondary opacity-75 mt-auto">

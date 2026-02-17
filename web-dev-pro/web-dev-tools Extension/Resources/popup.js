@@ -1,10 +1,12 @@
 const ext = globalThis.browser ?? globalThis.chrome;
 
 let lastStoragePayload = null;
+let currentStorageKind = "cookie";
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
+const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
 const validTabs = new Set(["a11y", "css", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
 let activeThemePreference = "system";
@@ -146,6 +148,15 @@ async function saveThemePreference(preference) {
   await saveStoredValue(themePreferenceKey, preference);
 }
 
+async function loadA11yAriaInspectEnabled() {
+  const stored = await loadStoredValue(a11yAriaInspectKey);
+  return stored === "true";
+}
+
+async function saveA11yAriaInspectEnabled(enabled) {
+  await saveStoredValue(a11yAriaInspectKey, String(Boolean(enabled)));
+}
+
 function applyTheme(themePreference) {
   const mode = resolveThemeMode(themePreference);
   document.documentElement.dataset.bsTheme = mode;
@@ -159,15 +170,12 @@ function renderBuildInfo() {
     return;
   }
 
-  const manifest = ext.runtime?.getManifest?.();
-  const version = manifest?.version ?? "unknown";
-
   const parsedDate = new Date(document.lastModified);
   const buildDate = Number.isNaN(parsedDate.getTime())
     ? new Date().toISOString().slice(0, 10)
     : parsedDate.toISOString().slice(0, 10);
 
-  versionNode.textContent = `Version ${version}`;
+  versionNode.textContent = "";
   dateNode.textContent = `Build ${buildDate}`;
 }
 
@@ -199,33 +207,284 @@ function getOsVersionFromUserAgent(userAgent) {
   return "Unknown";
 }
 
-function renderDeviceInfo() {
-  const userAgent = navigator.userAgent || "Unknown";
+function formatPlatformVersion(version) {
+  const raw = String(version || "").trim();
+  if (!raw) {
+    return "";
+  }
+  const parts = raw.split(".").filter((part) => /^\d+$/.test(part));
+  if (!parts.length) {
+    return raw;
+  }
+  const major = parts[0];
+  const minor = parts[1] && parts[1] !== "0" ? `.${parts[1]}` : "";
+  return `${major}${minor}`;
+}
+
+async function resolveOsVersion(userAgent) {
   const uaData = navigator.userAgentData;
+  if (uaData) {
+    try {
+      let platform = uaData.platform || "";
+      let platformVersion = uaData.platformVersion || "";
 
-  const osNode = document.getElementById("device-os-version");
-  const nameNode = document.getElementById("device-name");
-  const uaNode = document.getElementById("device-user-agent");
-  const displayNode = document.getElementById("device-display");
-  const dprNode = document.getElementById("device-dpr");
+      if (typeof uaData.getHighEntropyValues === "function") {
+        const highEntropy = await uaData.getHighEntropyValues(["platform", "platformVersion"]);
+        platform = highEntropy?.platform || platform;
+        platformVersion = highEntropy?.platformVersion || platformVersion;
+      }
 
-  if (!osNode || !nameNode || !uaNode || !displayNode || !dprNode) {
-    return;
+      const normalizedPlatform = String(platform).toLowerCase();
+      const normalizedVersion = formatPlatformVersion(platformVersion);
+      if (normalizedVersion) {
+        if (normalizedPlatform.includes("ipad") || normalizedPlatform.includes("ios")) {
+          return `iOS/iPadOS ${normalizedVersion}`;
+        }
+        if (normalizedPlatform.includes("mac")) {
+          return `macOS ${normalizedVersion}`;
+        }
+        if (normalizedPlatform.includes("android")) {
+          return `Android ${normalizedVersion}`;
+        }
+        if (normalizedPlatform.includes("windows")) {
+          return `Windows ${normalizedVersion}`;
+        }
+      }
+    } catch {
+      // Fall back to UA parsing below.
+    }
   }
 
+  return getOsVersionFromUserAgent(userAgent);
+}
+
+function getOrientationLabel() {
+  const orientation = screen.orientation;
+  if (orientation && typeof orientation.type === "string") {
+    const type = orientation.type.startsWith("portrait") ? "portrait" : "landscape";
+    const angle = Number.isFinite(orientation.angle) ? orientation.angle : 0;
+    return `${type} (${angle}deg)`;
+  }
+
+  if (typeof window.orientation === "number") {
+    const angle = window.orientation;
+    const type = Math.abs(angle) === 90 ? "landscape" : "portrait";
+    return `${type} (${angle}deg)`;
+  }
+
+  return "Unavailable";
+}
+
+function getReducedMotionLabel() {
+  if (!globalThis.matchMedia) {
+    return "Unavailable";
+  }
+  return globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduce" : "no-preference";
+}
+
+function getColorSchemeLabel() {
+  if (!globalThis.matchMedia) {
+    return "Unavailable";
+  }
+  if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
+    return "dark (system)";
+  }
+  if (globalThis.matchMedia("(prefers-color-scheme: light)").matches) {
+    return "light (system)";
+  }
+  return "system (no explicit preference)";
+}
+
+function getTimezoneLabel() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+  const offsetMinutes = -new Date().getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const absMinutes = Math.abs(offsetMinutes);
+  const hours = String(Math.floor(absMinutes / 60)).padStart(2, "0");
+  const minutes = String(absMinutes % 60).padStart(2, "0");
+  return `${timezone} (UTC${sign}${hours}:${minutes})`;
+}
+
+function getConnectionTypeLabel() {
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!connection) {
+    return "Unavailable";
+  }
+
+  const parts = [];
+  if (typeof connection.type === "string" && connection.type) {
+    parts.push(connection.type);
+  }
+  if (typeof connection.effectiveType === "string" && connection.effectiveType) {
+    parts.push(connection.effectiveType);
+  }
+  if (typeof connection.downlink === "number" && Number.isFinite(connection.downlink)) {
+    parts.push(`${connection.downlink} Mbps`);
+  }
+  return parts.length ? parts.join(" / ") : "Unavailable";
+}
+
+async function resolveNetworkDetails() {
+  const fallback = {
+    ip: "Unavailable",
+    location: "Unavailable",
+    isp: "Unavailable",
+  };
+
+  try {
+    const timeoutMs = 3500;
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+    const response = await fetch("https://ipapi.co/json/", {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    globalThis.clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return fallback;
+    }
+
+    const data = await response.json();
+    const ip = data?.ip ? String(data.ip) : "Unavailable";
+    const city = data?.city ? String(data.city) : "";
+    const region = data?.region ? String(data.region) : "";
+    const country = data?.country_name ? String(data.country_name) : "";
+    const location = [city, region, country].filter(Boolean).join(", ") || "Unavailable";
+    const isp = data?.org ? String(data.org) : (data?.asn ? String(data.asn) : "Unavailable");
+
+    return { ip, location, isp };
+  } catch {
+    return fallback;
+  }
+}
+
+async function renderDeviceInfo() {
+  const userAgent = navigator.userAgent || "Unknown";
+  const uaData = navigator.userAgentData;
+  const language = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages.join(", ")
+    : (navigator.language || "Unknown");
   const platform = uaData?.platform || navigator.platform || "Unknown";
   const mobileHint = uaData?.mobile === true || /iphone|ipad|android/i.test(userAgent) ? "mobile" : "desktop";
+  const osVersion = await resolveOsVersion(userAgent);
   const logicalWidth = Number.isFinite(screen.width) ? screen.width : 0;
   const logicalHeight = Number.isFinite(screen.height) ? screen.height : 0;
   const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio : 1;
   const physicalWidth = Math.round(logicalWidth * dpr);
   const physicalHeight = Math.round(logicalHeight * dpr);
+  const colorDepth = Number.isFinite(screen.colorDepth) ? `${screen.colorDepth}-bit` : "Unavailable";
+  const orientationLabel = getOrientationLabel();
+  const reducedMotion = getReducedMotionLabel();
+  const colorScheme = getColorSchemeLabel();
+  const connectionType = getConnectionTypeLabel();
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const onlineState = navigator.onLine ? "Online" : "Offline";
+  const effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
+    ? connection.effectiveType
+    : "Unavailable";
+  const downlink = typeof connection?.downlink === "number" && Number.isFinite(connection.downlink)
+    ? `${connection.downlink} Mbps`
+    : "Unavailable";
+  const rtt = typeof connection?.rtt === "number" && Number.isFinite(connection.rtt)
+    ? `${connection.rtt} ms`
+    : "Unavailable";
+  const dataSaver = typeof connection?.saveData === "boolean"
+    ? (connection.saveData ? "On" : "Off")
+    : "Unavailable";
+  const timezone = getTimezoneLabel();
 
-  osNode.textContent = getOsVersionFromUserAgent(userAgent);
-  nameNode.textContent = `${platform} (${mobileHint})`;
+  const uaNode = document.getElementById("device-browser-user-agent");
+  const osVersionNode = document.getElementById("device-browser-os-version");
+  const deviceNode = document.getElementById("device-browser-device");
+  const languageNode = document.getElementById("device-browser-language");
+  const resolutionNode = document.getElementById("device-display-resolution");
+  const dprNode = document.getElementById("device-display-dpr");
+  const colorDepthNode = document.getElementById("device-display-color-depth");
+  const orientationNode = document.getElementById("device-display-orientation");
+  const reducedMotionNode = document.getElementById("device-display-reduced-motion");
+  const colorSchemeNode = document.getElementById("device-display-color-scheme");
+  const ipNode = document.getElementById("device-network-ip");
+  const locationNode = document.getElementById("device-network-location");
+  const ispNode = document.getElementById("device-network-isp");
+  const connectionNode = document.getElementById("device-network-connection");
+  const onlineStateNode = document.getElementById("device-network-online-state");
+  const effectiveTypeNode = document.getElementById("device-network-effective-type");
+  const downlinkNode = document.getElementById("device-network-downlink");
+  const rttNode = document.getElementById("device-network-rtt");
+  const dataSaverNode = document.getElementById("device-network-data-saver");
+  const timezoneNode = document.getElementById("device-network-timezone");
+
+  if (
+    !uaNode || !osVersionNode || !deviceNode || !languageNode || !resolutionNode || !dprNode || !colorDepthNode
+    || !orientationNode || !reducedMotionNode || !colorSchemeNode
+    || !ipNode || !locationNode || !ispNode || !connectionNode
+    || !onlineStateNode || !effectiveTypeNode || !downlinkNode || !rttNode || !dataSaverNode || !timezoneNode
+  ) {
+    return;
+  }
+
   uaNode.textContent = userAgent;
-  displayNode.textContent = `${logicalWidth}x${logicalHeight} logical, ${physicalWidth}x${physicalHeight} physical`;
+  osVersionNode.textContent = osVersion;
+  deviceNode.textContent = `${platform} (${mobileHint})`;
+  languageNode.textContent = language;
+  resolutionNode.textContent = `${logicalWidth}x${logicalHeight} logical, ${physicalWidth}x${physicalHeight} physical`;
   dprNode.textContent = `${dpr.toFixed(2)}x`;
+  colorDepthNode.textContent = colorDepth;
+  orientationNode.textContent = orientationLabel;
+  reducedMotionNode.textContent = reducedMotion;
+  colorSchemeNode.textContent = colorScheme;
+  connectionNode.textContent = connectionType;
+  onlineStateNode.textContent = onlineState;
+  effectiveTypeNode.textContent = effectiveType;
+  downlinkNode.textContent = downlink;
+  rttNode.textContent = rtt;
+  dataSaverNode.textContent = dataSaver;
+  timezoneNode.textContent = timezone;
+  ipNode.textContent = "Loading...";
+  locationNode.textContent = "Loading...";
+  ispNode.textContent = "Loading...";
+
+  const network = await resolveNetworkDetails();
+  ipNode.textContent = network.ip;
+  locationNode.textContent = network.location;
+  ispNode.textContent = network.isp;
+}
+
+function buildDeviceInfoClipboardText() {
+  const read = (id) => {
+    const node = document.getElementById(id);
+    return node?.textContent?.trim() || "Unknown";
+  };
+
+  return [
+    "Browser Details",
+    `User Agent: ${read("device-browser-user-agent")}`,
+    `OS Version: ${read("device-browser-os-version")}`,
+    `Device: ${read("device-browser-device")}`,
+    `Language: ${read("device-browser-language")}`,
+    "",
+    "Display",
+    `Screen resolution: ${read("device-display-resolution")}`,
+    `Pixel density: ${read("device-display-dpr")}`,
+    `Color depth: ${read("device-display-color-depth")}`,
+    `Orientation: ${read("device-display-orientation")}`,
+    `Reduced motion: ${read("device-display-reduced-motion")}`,
+    `Color scheme: ${read("device-display-color-scheme")}`,
+    "",
+    "Network",
+    `IP address: ${read("device-network-ip")}`,
+    `Location: ${read("device-network-location")}`,
+    `ISP: ${read("device-network-isp")}`,
+    `Connection type: ${read("device-network-connection")}`,
+    `Online state: ${read("device-network-online-state")}`,
+    `Effective type: ${read("device-network-effective-type")}`,
+    `Downlink: ${read("device-network-downlink")}`,
+    `RTT: ${read("device-network-rtt")}`,
+    `Data saver: ${read("device-network-data-saver")}`,
+    `Timezone: ${read("device-network-timezone")}`,
+  ].join("\n");
 }
 
 function setStatus(text, isError = false) {
@@ -681,7 +940,7 @@ function renderA11y(result) {
   missingAltSummary.className = "accordion-button rounded-top";
   const missingAltHeader = document.createElement("h2");
   missingAltHeader.className = "accordion-header user-select-none fs-6 text-body";
-  missingAltHeader.textContent = `Missing alt samples (${missingAltSamples.length})`;
+  missingAltHeader.textContent = `Missing alt tags (${missingAltSamples.length})`;
   missingAltSummary.append(missingAltHeader);
   lockAccordionWhenEmpty(missingAltDetails, missingAltSummary, missingAltSamples.length);
   missingAltDetails.append(missingAltSummary);
@@ -788,11 +1047,6 @@ function renderA11y(result) {
   accordion.append(headingTreeDetails);
 
   output.append(accordion);
-
-  const ariaInfo = document.createElement("div");
-  ariaInfo.className = "alert alert-info py-1 px-2 small mt-3 mb-0";
-  ariaInfo.textContent = "ARIA inspect enabled: tap any page element to view ARIA attributes.";
-  output.append(ariaInfo);
 }
 
 function renderPerf(result) {
@@ -980,7 +1234,7 @@ function makeStorageRow(item) {
 
   const copyBtn = document.createElement("button");
   copyBtn.type = "button";
-  copyBtn.className = "btn btn-sm btn-secondary";
+  copyBtn.className = "btn btn-sm btn-secondary py-0 px-2";
   copyBtn.textContent = "Copy";
   copyBtn.dataset.storageAction = "copy";
   copyBtn.dataset.kind = item.kind;
@@ -992,14 +1246,29 @@ function makeStorageRow(item) {
   return row;
 }
 
+function getFilteredStorageItems(payload) {
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  return items.filter((item) => item?.kind === currentStorageKind);
+}
+
+function renderStorageKindTabs() {
+  document.querySelectorAll("[data-storage-kind-tab]").forEach((button) => {
+    const isActive = button instanceof HTMLElement && button.dataset.storageKindTab === currentStorageKind;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+}
+
 function renderStorage(payload) {
   const output = document.getElementById("storage-output");
   const copyJsonBtn = document.querySelector('[data-action="storage-copy"]');
   output.textContent = "";
+  renderStorageKindTabs();
 
-  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const allItems = Array.isArray(payload?.items) ? payload.items : [];
+  const items = getFilteredStorageItems(payload);
 
-  if (!items.length) {
+  if (!allItems.length) {
     if (copyJsonBtn instanceof HTMLButtonElement) {
       copyJsonBtn.disabled = true;
     }
@@ -1009,6 +1278,17 @@ function renderStorage(payload) {
 
   if (copyJsonBtn instanceof HTMLButtonElement) {
     copyJsonBtn.disabled = false;
+  }
+
+  if (!items.length) {
+    if (currentStorageKind === "localStorage") {
+      output.textContent = "No localStorage items found.";
+    } else if (currentStorageKind === "cookie") {
+      output.textContent = "No cookie items found.";
+    } else {
+      output.textContent = "No sessionStorage items found.";
+    }
+    return;
   }
 
   for (const item of items) {
@@ -1094,6 +1374,11 @@ async function runAction(action, sourceButton = null) {
       flashButtonLabel(sourceButton, "Copied");
       setStatus("Storage JSON copied.");
       return;
+    } else if (action === "device-copy") {
+      await navigator.clipboard.writeText(buildDeviceInfoClipboardText());
+      flashButtonLabel(sourceButton, "Copied");
+      setStatus("Device info copied.");
+      return;
     }
 
   } catch (error) {
@@ -1163,11 +1448,28 @@ async function switchTab(tabName) {
 
   if (tabName === "a11y") {
     await runAction("a11y");
+    const ariaSwitch = document.getElementById("a11y-aria-inspect-switch");
+    if (ariaSwitch instanceof HTMLInputElement) {
+      try {
+        await sendToActiveTab({
+          action: "a11y-aria-inspector",
+          enabled: ariaSwitch.checked,
+        });
+      } catch {
+        // Ignore unsupported pages.
+      }
+    }
     return;
   }
 
   if (tabName === "perf") {
     await runAction("perf");
+    return;
+  }
+
+  if (tabName === "storage") {
+    await runAction("storage");
+    return;
   }
 
   if (tabName === "rendering") {
@@ -1203,6 +1505,17 @@ async function bindEvents() {
     const storageActionButton = target.closest("[data-storage-action]");
     if (storageActionButton instanceof HTMLElement) {
       await handleStorageAction(storageActionButton);
+      return;
+    }
+
+    const storageKindTab = target.closest("[data-storage-kind-tab]");
+    if (storageKindTab instanceof HTMLElement && storageKindTab.dataset.storageKindTab) {
+      currentStorageKind = storageKindTab.dataset.storageKindTab;
+      if (lastStoragePayload) {
+        renderStorage(lastStoragePayload);
+      } else {
+        await loadStorage();
+      }
       return;
     }
 
@@ -1307,6 +1620,23 @@ async function bindEvents() {
     currentTab = savedTab;
   }
 
+  const ariaInspectSwitch = document.getElementById("a11y-aria-inspect-switch");
+  if (ariaInspectSwitch instanceof HTMLInputElement) {
+    ariaInspectSwitch.checked = await loadA11yAriaInspectEnabled();
+    ariaInspectSwitch.addEventListener("change", async () => {
+      const enabled = ariaInspectSwitch.checked;
+      await saveA11yAriaInspectEnabled(enabled);
+      try {
+        await sendToActiveTab({
+          action: "a11y-aria-inspector",
+          enabled,
+        });
+      } catch {
+        setStatus("Could not update ARIA inspect on this page.", true);
+      }
+    });
+  }
+
   const themeSelect = document.getElementById("theme-select");
   if (themeSelect instanceof HTMLSelectElement) {
     const savedPreference = await loadThemePreference();
@@ -1333,7 +1663,7 @@ async function bindEvents() {
   }
 
   renderBuildInfo();
-  renderDeviceInfo();
+  void renderDeviceInfo();
   void switchTab(currentTab);
 }
 
