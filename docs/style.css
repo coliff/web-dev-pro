@@ -1,14 +1,7 @@
 /* Typography */
 body {
   font-family: "Roboto", sans-serif;
-  background: linear-gradient(
-    180deg,
-    #87ceeb 0%,
-    #b4e7ce 50%,
-    var(--color-grass) 100%
-  );
   min-height: 100vh;
-  color: var(--color-dark);
 }
 
 main {
