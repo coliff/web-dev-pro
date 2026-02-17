@@ -1,10 +1,10 @@
 {
   "extension_name": {
-    "message": "Web Dev Tools",
+    "message": "Web DevTools+",
     "description": "Web Developer Tools for iOS."
   },
   "extension_description": {
-    "message": "Web Dev Tools for on-page SEO, accessibility, storage, CSS, and performance snapshots.",
+    "message": "Web DevTools+ for on-page SEO, accessibility, storage, CSS, and performance snapshots.",
     "description": "Web Developer Tools for iOS."
   }
 }
