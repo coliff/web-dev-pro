@@ -1082,6 +1082,38 @@ function computeCssOverviewSnapshot() {
     const styleSheets = document.styleSheets ? [...document.styleSheets] : [];
     const stylesheetUrls = styleSheets.map((sheet) => (sheet.href || "").trim()).filter(Boolean);
 
+    const mediaQueryCounts = new Map();
+    const MEDIA_RULE = 4;
+
+    function countMediaInRuleList(ruleList) {
+        if (!ruleList) {
+            return;
+        }
+        for (const rule of ruleList) {
+            if (rule.type === MEDIA_RULE && rule.media && rule.media.mediaText) {
+                const condition = rule.media.mediaText.trim();
+                if (condition) {
+                    mediaQueryCounts.set(condition, (mediaQueryCounts.get(condition) || 0) + 1);
+                }
+                countMediaInRuleList(rule.cssRules);
+            }
+        }
+    }
+
+    for (const sheet of styleSheets) {
+        try {
+            if (sheet.cssRules) {
+                countMediaInRuleList(sheet.cssRules);
+            }
+        } catch (_) {
+            // Cross-origin or inaccessible stylesheet
+        }
+    }
+
+    const mediaQueries = [...mediaQueryCounts.entries()]
+        .map(([condition, count]) => ({ condition, count }))
+        .sort((a, b) => (b.count - a.count) || a.condition.localeCompare(b.condition));
+
     return {
         overview: {
             totalElements: elements.length,
@@ -1104,7 +1136,8 @@ function computeCssOverviewSnapshot() {
             sizes: sortEntries(fontSizes, 20),
             weights: sortEntries(fontWeights, 20),
             lineHeights: sortEntries(lineHeights, 20)
-        }
+        },
+        mediaQueries
     };
 }
 

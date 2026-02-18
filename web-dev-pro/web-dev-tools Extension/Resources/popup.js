@@ -1172,7 +1172,11 @@ function renderSEO(result) {
   ogSummary.className = "accordion-button rounded-top";
   const ogHeader = document.createElement("h2");
   ogHeader.className = "accordion-header user-select-none fs-6 text-body";
-  ogHeader.textContent = `Open Graph tags (${openGraphTags.length})`;
+  ogHeader.append(document.createTextNode("Open Graph "));
+  const ogCount = document.createElement("span");
+  ogCount.className = "opacity-50";
+  ogCount.textContent = `(${openGraphTags.length})`;
+  ogHeader.append(ogCount);
   ogSummary.append(ogHeader);
   lockAccordionWhenEmpty(ogDetails, ogSummary, openGraphTags.length);
   ogDetails.append(ogSummary);
@@ -1243,7 +1247,11 @@ function renderSEO(result) {
     sdSummary.className = "accordion-button rounded-top";
     const sdHeader = document.createElement("h2");
     sdHeader.className = "accordion-header user-select-none fs-6 text-body";
-    sdHeader.textContent = `Structured data (${structuredDataItems.length})`;
+    sdHeader.append(document.createTextNode("Structured data "));
+    const sdCount = document.createElement("span");
+    sdCount.className = "opacity-50";
+    sdCount.textContent = `(${structuredDataItems.length})`;
+    sdHeader.append(sdCount);
     sdSummary.append(sdHeader);
     sdDetails.append(sdSummary);
     const sdBody = document.createElement("div");
@@ -1615,7 +1623,11 @@ function createCssOverviewStaticRow(label, value) {
   header.setAttribute("aria-disabled", "true");
   const title = document.createElement("h2");
   title.className = "accordion-header user-select-none fs-6 text-body mb-0";
-  title.textContent = `${label} (${value})`;
+  title.append(document.createTextNode(`${label} `));
+  const countSpan = document.createElement("span");
+  countSpan.className = "opacity-50";
+  countSpan.textContent = `(${value})`;
+  title.append(countSpan);
   header.append(title);
   item.append(header);
   return item;
@@ -1629,7 +1641,11 @@ function createCssOverviewExpandableRow(label, value, bodyContent) {
   summary.className = "accordion-button rounded-top";
   const title = document.createElement("h2");
   title.className = "accordion-header user-select-none fs-6 text-body mb-0";
-  title.textContent = `${label} (${value})`;
+  title.append(document.createTextNode(`${label} `));
+  const countSpan = document.createElement("span");
+  countSpan.className = "opacity-50";
+  countSpan.textContent = `(${value})`;
+  title.append(countSpan);
   summary.append(title);
   const body = document.createElement("div");
   body.className = "accordion-body border-bottom p-2";
@@ -1720,6 +1736,40 @@ function createFontListContent(entries) {
   return wrap;
 }
 
+function createMediaQueriesContent(entries) {
+  const wrap = document.createElement("div");
+  wrap.className = "d-flex flex-column gap-2";
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "text-secondary small";
+    empty.textContent = "No media queries found.";
+    wrap.append(empty);
+    return wrap;
+  }
+  const maxCount = Math.max(...entries.map((e) => e.count), 1);
+  for (const entry of entries) {
+    const row = document.createElement("div");
+    row.className = "d-flex align-items-center gap-2 flex-wrap";
+    const condition = document.createElement("code");
+    condition.className = "font-monospace small text-break";
+    condition.textContent = entry.condition;
+    const label = document.createElement("span");
+    label.className = "opacity-50 small text-nowrap";
+    label.textContent = entry.count === 1 ? "1 occurrence" : `${entry.count} occurrences`;
+    const barWrap = document.createElement("div");
+    barWrap.className = "flex-grow-1 min-w-0";
+    barWrap.style.minWidth = "4rem";
+    const bar = document.createElement("div");
+    bar.className = "rounded bg-primary";
+    bar.style.height = "0.5rem";
+    bar.style.width = `${(entry.count / maxCount) * 100}%`;
+    barWrap.append(bar);
+    row.append(condition, label, barWrap);
+    wrap.append(row);
+  }
+  return wrap;
+}
+
 function renderCssOverview(payload) {
   const output = document.getElementById("css-overview-output");
   if (!output) {
@@ -1738,6 +1788,7 @@ function renderCssOverview(payload) {
   const colors = payload?.colors && typeof payload.colors === "object" ? payload.colors : {};
   const fontInfo = payload?.fontInfo && typeof payload.fontInfo === "object" ? payload.fontInfo : {};
   const stylesheetUrls = Array.isArray(overview.stylesheetUrls) ? overview.stylesheetUrls : [];
+  const mediaQueries = Array.isArray(payload.mediaQueries) ? payload.mediaQueries : [];
 
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
@@ -1774,6 +1825,11 @@ function renderCssOverview(payload) {
       "Font sizes",
       overview.uniqueFontSizes ?? 0,
       createFontListContent(Array.isArray(fontInfo.sizes) ? fontInfo.sizes : [])
+    ),
+    createCssOverviewExpandableRow(
+      "Media queries",
+      mediaQueries.length,
+      createMediaQueriesContent(mediaQueries)
     )
   );
 
