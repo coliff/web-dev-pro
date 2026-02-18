@@ -1,4 +1,4 @@
-Web Dev Tools for iOS
+# Web DevTools+ app for iOS
 
 A powerful collection of tools for web developers to test and debug their websites on iOS and iPadOS.
 
