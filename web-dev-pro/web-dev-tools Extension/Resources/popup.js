@@ -1217,7 +1217,7 @@ function renderSEO(result) {
         img.src = content;
         img.alt = "Open Graph image";
         img.className = "shadow border rounded bg-secondary bg-opacity-25 img-fluid";
-        img.style.maxWidth = "100%";
+        img.style.maxWidth = "90%";
         img.loading = "lazy";
         img.onerror = () => { imgWrap.remove(); };
         imgWrap.append(img);
