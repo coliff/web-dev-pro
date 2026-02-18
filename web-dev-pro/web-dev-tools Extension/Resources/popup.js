@@ -5,11 +5,12 @@ let lastCssOverviewPayload = null;
 let currentStorageKind = "cookie";
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
+const cssSubtabKey = "popup.lastCssSubtab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
 const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
 const a11yAltOverlayKey = "popup.a11y.altOverlayEnabled";
-const validTabs = new Set(["a11y", "css", "css-overview", "perf", "rendering", "seo", "settings", "storage"]);
+const validTabs = new Set(["a11y", "css", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
 let activeThemePreference = "system";
 const systemThemeMediaQuery = globalThis.matchMedia
@@ -114,6 +115,42 @@ async function loadSavedTab() {
 
 async function saveTab(tabName) {
   await saveStoredValue(popupTabKey, tabName);
+}
+
+async function loadCssSubtab() {
+  const stored = await loadStoredValue(cssSubtabKey);
+  return stored === "overview" ? "overview" : "quick-tools";
+}
+
+async function saveCssSubtab(subtab) {
+  await saveStoredValue(cssSubtabKey, subtab === "overview" ? "overview" : "quick-tools");
+}
+
+function switchCssSubtab(subtabName) {
+  const isOverview = subtabName === "overview";
+  document.querySelectorAll("[data-css-subtab]").forEach((btn) => {
+    const active = (btn instanceof HTMLElement && btn.dataset.cssSubtab === subtabName);
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+    if (active) {
+      btn.dataset.current = "true";
+    } else {
+      delete btn.dataset.current;
+    }
+  });
+  document.querySelectorAll("[data-css-subpanel]").forEach((panel) => {
+    const show = panel instanceof HTMLElement && panel.dataset.cssSubpanel === subtabName;
+    panel.classList.toggle("d-none", !show);
+    if (show) {
+      panel.classList.add("d-flex", "flex-column");
+    } else {
+      panel.classList.remove("d-flex", "flex-column");
+    }
+  });
+  void saveCssSubtab(subtabName);
+  if (isOverview) {
+    void runAction("css-overview");
+  }
 }
 
 function showWelcomeScreen() {
@@ -469,7 +506,7 @@ async function renderDeviceInfo() {
   osVersionNode.textContent = osVersion;
   deviceNode.textContent = `${platform} (${mobileHint})`;
   languageNode.textContent = language;
-  resolutionNode.textContent = `${logicalWidth}x${logicalHeight} logical, ${physicalWidth}x${physicalHeight} physical`;
+  resolutionNode.innerHTML = `${logicalWidth}x${logicalHeight} logical<br>${physicalWidth}x${physicalHeight} physical`;
   dprNode.textContent = `${dpr.toFixed(2)}x`;
   colorDepthNode.textContent = colorDepth;
   orientationNode.textContent = orientationLabel;
@@ -1995,8 +2032,9 @@ async function switchTab(tabName) {
     return;
   }
 
-  if (tabName === "css-overview") {
-    await runAction("css-overview");
+  if (tabName === "css") {
+    const subtab = await loadCssSubtab();
+    switchCssSubtab(subtab);
     return;
   }
 
@@ -2049,6 +2087,12 @@ async function bindEvents() {
       } else {
         await loadStorage();
       }
+      return;
+    }
+
+    const cssSubtabButton = target.closest("[data-css-subtab]");
+    if (cssSubtabButton instanceof HTMLElement && cssSubtabButton.dataset.cssSubtab) {
+      switchCssSubtab(cssSubtabButton.dataset.cssSubtab);
       return;
     }
 
@@ -2152,7 +2196,12 @@ async function bindEvents() {
     });
   }
 
-  const savedTab = await loadSavedTab();
+  let savedTab = await loadSavedTab();
+  if (savedTab === "css-overview") {
+    savedTab = "css";
+    await saveTab("css");
+    await saveCssSubtab("overview");
+  }
   if (savedTab && validTabs.has(savedTab)) {
     currentTab = savedTab;
     showMainScreen();
