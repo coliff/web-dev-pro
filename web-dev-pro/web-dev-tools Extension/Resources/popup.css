@@ -20,6 +20,10 @@
   .tool-group {
     background-color: #000;
   }
+
+  .tool-group.tool-group-surface {
+    background-color: var(--bs-body-bg);
+  }
 }
 
 html,
@@ -227,11 +231,7 @@ details.accordion-item[open]::details-content {
 }
 
 .welcome-app-icon {
-  filter: brightness(0) invert(0.65);
-}
-
-[data-bs-theme="light"] .welcome-app-icon {
-  filter: brightness(0) invert(0.4);
+  filter: none;
 }
 
 .welcome-title {
@@ -263,4 +263,38 @@ details.accordion-item[open]::details-content {
 
 .welcome-panel.hidden {
   display: none !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 180ms;
+    animation-timing-function: ease;
+  }
+
+  ::view-transition-old(root) {
+    animation-name: fade-out;
+  }
+
+  ::view-transition-new(root) {
+    animation-name: fade-in;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }

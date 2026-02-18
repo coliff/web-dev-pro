@@ -37,13 +37,13 @@
       </button>
     </nav>
 
-    <section class="welcome-panel d-flex flex-column flex-grow-1 px-1 pt-4 overflow-auto" id="welcome-panel" aria-label="Welcome">
+    <section class="welcome-panel d-flex flex-column flex-grow-1 px-1 pt-3 overflow-auto" id="welcome-panel" aria-label="Welcome">
       <div class="welcome-hero text-center mb-3">
-        <img class="welcome-app-icon mb-3 bg-black rounded-3 shadow" src="images/icon-64.png" alt="" width="64" height="64" />
+        <img class="welcome-app-icon mb-3 bg-black rounded-3 shadow" src="icon-64.png" alt="" width="64" height="64" />
         <h1 class="welcome-title fs-5 fw-bold mb-1">Welcome to Web DevTools+</h1>
         <p class="welcome-subtitle small text-secondary mb-0 text-balance">The missing developer tools for Safari<br> on your iPhone and iPad</p>
       </div>
-      <div class="welcome-cards row g-2">
+      <div class="welcome-cards row g-2 px-3">
         <div class="col-3">
           <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="a11y">
             <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
@@ -149,60 +149,67 @@
       </div>
     </section>
 
-    <section class="tool-group pt-3 tab-panel overflow-hidden" data-panel="rendering">
+    <section class="tool-group pt-3 tab-panel overflow-hidden d-flex flex-column" data-panel="rendering">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">Rendering</h2>
       </div>
-      <h2 class="mt-2 mb-1 fw-semibold small">Emulate CSS media feature prefers-color-scheme</h2>
-      <p class="small opacity-50 mb-2 mt-0">Forces CSS prefers-color-scheme media feature</p>
-      <select id="rendering-color-scheme-select" class="form-select form-select-sm mb-4" aria-label="prefers-color-scheme emulation">
-        <option value="no-emulation" selected>No emulation</option>
-        <option value="light">prefers-color-scheme: light</option>
-        <option value="dark">prefers-color-scheme: dark</option>
-      </select>
+      <nav class="nav nav-tabs nav-fill" aria-label="Rendering tools">
+        <button class="nav-link active py-1 small text-body ms-3" type="button" data-rendering-subtab="test">Test</button>
+        <button class="nav-link py-1 small text-body me-3" type="button" data-rendering-subtab="media-queries">Media queries</button>
+      </nav>
+      <div class="rendering-subpanel pt-2 bg-body d-flex flex-column overflow-auto flex-grow-1 min-h-0 px-3" data-rendering-subpanel="test">
+        <h2 class="mt-2 mb-1 fw-semibold small">Emulate vision deficiencies</h2>
+        <p class="small opacity-50 mb-2 mt-0">Forces vision deficiency emulation</p>
+        <select id="rendering-vision-select" class="form-select form-select-sm mb-4" aria-label="Vision deficiency emulation">
+          <option value="none" selected>No Emulation</option>
+          <option value="blurred">Blurred vision</option>
+          <option value="reduced-contrast">Reduced contrast</option>
+          <option value="protanopia">Protanopia (no red)</option>
+          <option value="deuteranopia">Deuteranopia (no green)</option>
+          <option value="tritanopia">Tritanopia (no blue)</option>
+          <option value="achromatopsia">Achromatopsia (no color)</option>
+        </select>
 
-      <h2 class="mt-2 mb-1 fw-semibold small">Emulate vision deficiencies</h2>
-      <p class="small opacity-50 mb-2 mt-0">Forces vision deficiency emulation</p>
-      <select id="rendering-vision-select" class="form-select form-select-sm mb-4" aria-label="Vision deficiency emulation">
-        <option value="none" selected>No Emulation</option>
-        <option value="blurred">Blurred vision</option>
-        <option value="reduced-contrast">Reduced contrast</option>
-        <option value="protanopia">Protanopia (no red)</option>
-        <option value="deuteranopia">Deuteranopia (no green)</option>
-        <option value="tritanopia">Tritanopia (no blue)</option>
-        <option value="achromatopsia">Achromatopsia (no color)</option>
-      </select>
+        <div class="opacity-75 my-1">
+          <hr class="my-1">
+        </div>
 
-      <div class="opacity-75 my-1">
-        <hr class="my-1">
-      </div>
+        <div class="py-1">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="rendering-hide-images" data-css-tool="noImages" switch>
+            <label class="form-check-label" for="rendering-hide-images">Hide images
+              <p class="small opacity-50 mb-0">Hides image content to evaluate structure and fallback UX.</p>
+            </label>
+          </div>
+        </div>
 
-      <div class="py-1">
-        <div class="form-check form-switch mb-0">
-          <input class="form-check-input" type="checkbox" role="switch" id="rendering-hide-images" data-css-tool="noImages" switch>
-          <label class="form-check-label" for="rendering-hide-images">Hide images
-            <p class="small opacity-50 mb-0">Hides image content to evaluate structure and fallback UX.</p>
-          </label>
+        <div class="opacity-75 my-2">
+          <hr class="my-2">
+        </div>
+
+        <div class="pt-1">
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-avif" data-rendering-format="avif" switch>
+            <label class="form-check-label" for="rendering-disable-avif">Disable AVIF image format
+              <p class="small opacity-50 mb-0">Disables AVIF image format to evaluate fallback UX. Enabling again requires refresh.</p>
+            </label>
+          </div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-webp" data-rendering-format="webp" switch>
+            <label class="form-check-label" for="rendering-disable-webp">Disable WebP image format
+              <p class="small opacity-50 mb-0">Disables WebP image format to evaluate fallback UX. Enabling again requires refresh.</p>
+            </label>
+          </div>
         </div>
       </div>
-
-      <div class="opacity-75 my-2">
-        <hr class="my-2">
-      </div>
-
-      <div class="pt-1">
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-avif" data-rendering-format="avif" switch>
-          <label class="form-check-label" for="rendering-disable-avif">Disable AVIF image format
-            <p class="small opacity-50 mb-0">Disables AVIF image format to evaluate fallback UX. Enabling again requires refresh.</p>
-          </label>
-        </div>
-        <div class="form-check form-switch mb-0">
-          <input class="form-check-input" type="checkbox" role="switch" id="rendering-disable-webp" data-rendering-format="webp" switch>
-          <label class="form-check-label" for="rendering-disable-webp">Disable WebP image format
-            <p class="small opacity-50 mb-0">Disables WebP image format to evaluate fallback UX. Enabling again requires refresh.</p>
-          </label>
-        </div>
+      <div class="rendering-subpanel pt-2 bg-body d-none overflow-auto flex-grow-1 min-h-0 px-3" data-rendering-subpanel="media-queries">
+        <h2 class="mt-2 mb-1 fw-semibold small">Emulate CSS media feature prefers-color-scheme</h2>
+        <p class="small opacity-50 mb-2 mt-0">Forces CSS prefers-color-scheme media feature</p>
+        <select id="rendering-color-scheme-select" class="form-select form-select-sm mb-4" aria-label="prefers-color-scheme emulation">
+          <option value="no-emulation" selected>No emulation</option>
+          <option value="light">prefers-color-scheme: light</option>
+          <option value="dark">prefers-color-scheme: dark</option>
+        </select>
       </div>
     </section>
 
@@ -271,14 +278,16 @@
       </div>
     </section>
 
-    <section class="tool-group pt-3 tab-panel overflow-hidden" data-panel="perf">
+    <section class="tool-group tool-group-surface pt-3 tab-panel overflow-hidden d-flex flex-column" data-panel="perf">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">Performance</h2>
       </div>
-      <div id="perf-output" class="output overflow-auto"></div>
+      <div class="pt-2 bg-body overflow-auto flex-grow-1 min-h-0 px-3">
+        <div id="perf-output" class="output rounded-3 overflow-auto p-1"></div>
+      </div>
     </section>
 
-    <section class="tool-group p-3 tab-panel active d-flex flex-column overflow-hidden" data-panel="seo">
+    <section class="tool-group tool-group-surface p-3 tab-panel active d-flex flex-column overflow-hidden" data-panel="seo">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">SEO &amp; Meta</h2>
       </div>
