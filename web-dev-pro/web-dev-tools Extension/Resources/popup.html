@@ -39,7 +39,7 @@
 
     <section class="welcome-panel d-flex flex-column flex-grow-1 px-1 pt-4 overflow-auto" id="welcome-panel" aria-label="Welcome">
       <div class="welcome-hero text-center mb-3">
-        <img class="welcome-app-icon mb-3 bg-black rounded-3 shadow" src="toolbar-icon.svg" alt="" width="64" height="64" />
+        <img class="welcome-app-icon mb-3 bg-black rounded-3 shadow" src="images/icon-64.png" alt="" width="64" height="64" />
         <h1 class="welcome-title fs-5 fw-bold mb-1">Welcome to Web DevTools+</h1>
         <p class="welcome-subtitle small text-secondary mb-0 text-balance">The missing developer tools for Safari<br> on your iPhone and iPad</p>
       </div>
@@ -118,28 +118,34 @@
     </section>
 
     <div class="main-content d-flex flex-column flex-grow-1 w-100 overflow-hidden hidden" id="main-content">
-    <section class="tool-group p-3 tab-panel rounded-3 overflow-hidden" data-panel="a11y">
+    <section class="tool-group pt-3 tab-panel rounded-3 overflow-hidden d-flex flex-column" data-panel="a11y">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">Accessibility</h2>
       </div>
-      <div id="a11y-output" class="output rounded-3 overflow-auto p-1"></div>
-      <div class="a11y-switches mt-2 pt-2 border-top">
+      <nav class="nav nav-tabs nav-fill" aria-label="Accessibility tools">
+        <button class="nav-link active py-1 small text-body ms-3" type="button" data-a11y-subtab="debug">Debug</button>
+        <button class="nav-link py-1 small text-body" type="button" data-a11y-subtab="info">Info</button>
+        <button class="nav-link py-1 small text-body me-3" type="button" data-a11y-subtab="audits">Audits</button>
+      </nav>
+      <div class="a11y-subpanel pt-2 bg-body d-flex flex-column gap-2 overflow-auto flex-grow-1 min-h-0 px-3" data-a11y-subpanel="debug">
         <div class="form-check form-switch mb-2">
           <input class="form-check-input" type="checkbox" role="switch" id="a11y-alt-overlay-switch" switch>
           <label class="form-check-label" for="a11y-alt-overlay-switch">Img alt inspect
-            <p class="small text-secondary mt-0 mb-2">
-              Shows alt text over images on the current page.
-            </p>
+            <p class="small text-secondary mt-0 mb-2">Shows alt text over images on the current page.</p>
           </label>
         </div>
         <div class="form-check form-switch mb-0">
           <input class="form-check-input" type="checkbox" role="switch" id="a11y-aria-inspect-switch" switch>
           <label class="form-check-label" for="a11y-aria-inspect-switch">ARIA inspect
-            <p class="small text-secondary mt-1 mb-0">
-              Tap any page element after running to inspect ARIA attrs.
-            </p>
+            <p class="small text-secondary mt-1 mb-0">Tap any page element after running to inspect ARIA attrs.</p>
           </label>
         </div>
+      </div>
+      <div class="a11y-subpanel pt-2 bg-body d-none overflow-auto flex-grow-1 min-h-0 px-3" data-a11y-subpanel="info">
+        <div id="a11y-info-output" class="output rounded-3 overflow-auto p-1"></div>
+      </div>
+      <div class="a11y-subpanel pt-2 bg-body d-none overflow-auto flex-grow-1 min-h-0 px-3" data-a11y-subpanel="audits">
+        <div id="a11y-audits-output" class="output rounded-3 overflow-auto p-1"></div>
       </div>
     </section>
 
@@ -309,6 +315,14 @@
               <option value="dark">Dark</option>
               <option value="light">Light</option>
             </select>
+          </div>
+          <div class="pt-2 mt-1 border-top">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" role="switch" id="settings-reset-all-switch" switch>
+              <label class="form-check-label" for="settings-reset-all-switch">Reset all
+                <p class="small text-secondary mt-1 mb-0">Clears all saved app settings and returns to the Welcome screen.</p>
+              </label>
+            </div>
           </div>
           <div class="small text-secondary opacity-75 mt-auto">
             <div id="settings-build-version"></div>

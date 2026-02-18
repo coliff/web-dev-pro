@@ -6,6 +6,7 @@ let currentStorageKind = "cookie";
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const cssSubtabKey = "popup.lastCssSubtab";
+const a11ySubtabKey = "popup.lastA11ySubtab";
 const settingsSubtabKey = "popup.lastSettingsSubtab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
@@ -13,6 +14,7 @@ const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
 const a11yAltOverlayKey = "popup.a11y.altOverlayEnabled";
 const validTabs = new Set(["a11y", "css", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
+const popupStoragePrefix = "popup.";
 let activeThemePreference = "system";
 const systemThemeMediaQuery = globalThis.matchMedia
   ? globalThis.matchMedia("(prefers-color-scheme: dark)")
@@ -110,6 +112,70 @@ async function saveStoredValue(key, value) {
   }
 }
 
+async function removeStoredValues(keys) {
+  if (!Array.isArray(keys) || !keys.length) {
+    return;
+  }
+
+  try {
+    if (globalThis.localStorage) {
+      for (const key of keys) {
+        globalThis.localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // Ignore localStorage access failures and continue to extension storage.
+  }
+
+  if (!ext.storage?.local) {
+    return;
+  }
+
+  try {
+    if (typeof ext.storage.local.remove === "function" && ext.storage.local.remove.length <= 1) {
+      await ext.storage.local.remove(keys);
+      return;
+    }
+
+    await new Promise((resolve) => {
+      ext.storage.local.remove(keys, () => resolve());
+    });
+  } catch {
+    // localStorage fallback already handled above.
+  }
+}
+
+function listPopupSettingKeys() {
+  const localKeys = [];
+  try {
+    if (globalThis.localStorage) {
+      for (let i = 0; i < globalThis.localStorage.length; i += 1) {
+        const key = globalThis.localStorage.key(i);
+        if (key && key.startsWith(popupStoragePrefix)) {
+          localKeys.push(key);
+        }
+      }
+    }
+  } catch {
+    // Ignore localStorage access failures.
+  }
+
+  return [...new Set([
+    ...localKeys,
+    popupTabKey,
+    cssSubtabKey,
+    a11ySubtabKey,
+    settingsSubtabKey,
+    themePreferenceKey,
+    legacyDarkModeKey,
+    a11yAriaInspectKey,
+    a11yAltOverlayKey,
+    "popup.rendering.prefersColorScheme",
+    "popup.rendering.disableAvif",
+    "popup.rendering.disableWebp",
+  ])];
+}
+
 async function loadSavedTab() {
   return await loadStoredValue(popupTabKey);
 }
@@ -154,6 +220,33 @@ function switchCssSubtab(subtabName) {
   }
 }
 
+const validA11ySubtabs = new Set(["debug", "info", "audits"]);
+
+async function loadA11ySubtab() {
+  const stored = await loadStoredValue(a11ySubtabKey);
+  return validA11ySubtabs.has(stored) ? stored : "debug";
+}
+
+async function saveA11ySubtab(subtab) {
+  await saveStoredValue(a11ySubtabKey, validA11ySubtabs.has(subtab) ? subtab : "debug");
+}
+
+function switchA11ySubtab(subtabName) {
+  const name = validA11ySubtabs.has(subtabName) ? subtabName : "debug";
+  document.querySelectorAll("[data-a11y-subtab]").forEach((btn) => {
+    const active = btn instanceof HTMLElement && btn.dataset.a11ySubtab === name;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  document.querySelectorAll("[data-a11y-subpanel]").forEach((panel) => {
+    const show = panel instanceof HTMLElement && panel.dataset.a11ySubpanel === name;
+    panel.classList.toggle("d-none", !show);
+    panel.classList.toggle("d-flex", show);
+    panel.classList.toggle("flex-column", show);
+  });
+  void saveA11ySubtab(name);
+}
+
 const validSettingsSubtabs = new Set(["options", "credits", "device-info"]);
 
 async function loadSettingsSubtab() {
@@ -189,6 +282,59 @@ function showWelcomeScreen() {
 function showMainScreen() {
   document.getElementById("welcome-panel")?.classList.add("hidden");
   document.getElementById("main-content")?.classList.remove("hidden");
+}
+
+async function resetAllPopupSettings() {
+  const keys = listPopupSettingKeys();
+  await removeStoredValues(keys);
+
+  const themeSelect = document.getElementById("theme-select");
+  if (themeSelect instanceof HTMLSelectElement) {
+    themeSelect.value = "system";
+  }
+  activeThemePreference = "system";
+  applyTheme("system");
+
+  const ariaInspectSwitch = document.getElementById("a11y-aria-inspect-switch");
+  const altOverlaySwitch = document.getElementById("a11y-alt-overlay-switch");
+  if (ariaInspectSwitch instanceof HTMLInputElement) {
+    ariaInspectSwitch.checked = false;
+  }
+  if (altOverlaySwitch instanceof HTMLInputElement) {
+    altOverlaySwitch.checked = false;
+  }
+
+  const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
+  if (colorSchemeSelect instanceof HTMLSelectElement) {
+    colorSchemeSelect.value = "no-emulation";
+  }
+  const avifSwitch = document.getElementById("rendering-disable-avif");
+  const webpSwitch = document.getElementById("rendering-disable-webp");
+  if (avifSwitch instanceof HTMLInputElement) {
+    avifSwitch.checked = false;
+  }
+  if (webpSwitch instanceof HTMLInputElement) {
+    webpSwitch.checked = false;
+  }
+
+  const visionSelect = document.getElementById("rendering-vision-select");
+  if (visionSelect instanceof HTMLSelectElement) {
+    visionSelect.value = "none";
+  }
+
+  try {
+    await sendToActiveTab({ action: "a11y-aria-inspector", enabled: false });
+    await sendToActiveTab({ action: "a11y-alt-overlay", enabled: false });
+    await sendToActiveTab({ action: "prefers-color-scheme", value: null });
+    await sendToActiveTab({ action: "rendering-format", format: "avif", disable: false });
+    await sendToActiveTab({ action: "rendering-format", format: "webp", disable: false });
+    await sendToActiveTab({ action: "a11y-color-filter", filter: "none" });
+  } catch {
+    // Ignore pages that do not accept messages (e.g. browser internal pages).
+  }
+
+  showWelcomeScreen();
+  setStatus("All settings reset.");
 }
 
 function getSystemThemeMode() {
@@ -1244,7 +1390,7 @@ function renderSEO(result) {
         const img = document.createElement("img");
         img.src = content;
         img.alt = "Open Graph image";
-        img.className = "shadow border rounded bg-secondary bg-opacity-25 img-fluid";
+        img.className = "shadow border rounded bg-secondary bg-opacity-25 img-fluid mb-2";
         img.style.maxWidth = "90%";
         img.loading = "lazy";
         img.onerror = () => { imgWrap.remove(); };
@@ -1312,8 +1458,13 @@ function renderSEO(result) {
 }
 
 function renderA11y(result) {
-  const output = document.getElementById("a11y-output");
-  output.textContent = "";
+  const infoOutput = document.getElementById("a11y-info-output");
+  const auditsOutput = document.getElementById("a11y-audits-output");
+  if (!infoOutput || !auditsOutput) {
+    return;
+  }
+  infoOutput.textContent = "";
+  auditsOutput.textContent = "";
 
   const missingAltSamples = Array.isArray(result?.missingAltSamples) ? result.missingAltSamples : [];
   const lowContrastSamples = Array.isArray(result?.lowContrastSamples) ? result.lowContrastSamples : [];
@@ -1321,8 +1472,9 @@ function renderA11y(result) {
   const htmlLangMissing = Boolean(result?.htmlLangMissing);
   const htmlLangValue = typeof result?.htmlLangValue === "string" ? result.htmlLangValue : null;
 
-  const accordion = document.createElement("div");
-  accordion.className = "accordion border-bottom-0";
+  const auditsAccordion = document.createElement("div");
+  auditsAccordion.className = "accordion border-bottom-0";
+  let auditIssueCount = 0;
 
   if (htmlLangMissing) {
     const htmlLangDetails = document.createElement("details");
@@ -1344,94 +1496,96 @@ function renderA11y(result) {
       : "The page is missing a lang attribute on <html>. Add a valid BCP 47 language tag (e.g. en, en-US).";
     htmlLangBody.append(htmlLangText);
     htmlLangDetails.append(htmlLangBody);
-    accordion.append(htmlLangDetails);
+    auditsAccordion.append(htmlLangDetails);
+    auditIssueCount += 1;
   }
 
-  const missingAltDetails = document.createElement("details");
-  missingAltDetails.className = "accordion-item border-bottom-0";
-  missingAltDetails.setAttribute("name", "a11y-issues");
-  const missingAltSummary = document.createElement("summary");
-  missingAltSummary.className = "accordion-button rounded-top";
-  const missingAltHeader = document.createElement("h2");
-  missingAltHeader.className = "accordion-header user-select-none fs-6 text-body";
-  missingAltHeader.textContent = `Missing alt tags (${missingAltSamples.length})`;
-  missingAltSummary.append(missingAltHeader);
-  lockAccordionWhenEmpty(missingAltDetails, missingAltSummary, missingAltSamples.length);
-  missingAltDetails.append(missingAltSummary);
-  const missingAltBody = document.createElement("div");
-  missingAltBody.className = "accordion-body border-bottom p-2";
-  const missingAltList = document.createElement("ul");
-  missingAltList.className = "small mb-0 ps-3";
-  for (const sample of missingAltSamples) {
-    const li = document.createElement("li");
-    const raw = String(sample ?? "");
-    if (/^https?:\/\//i.test(raw)) {
-      const link = document.createElement("a");
-      link.href = raw;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = raw;
-      li.append(link);
-    } else {
-      li.textContent = raw;
+  if (missingAltSamples.length > 0) {
+    const missingAltDetails = document.createElement("details");
+    missingAltDetails.className = "accordion-item border-bottom-0";
+    missingAltDetails.setAttribute("name", "a11y-issues");
+    const missingAltSummary = document.createElement("summary");
+    missingAltSummary.className = "accordion-button rounded-top";
+    const missingAltHeader = document.createElement("h2");
+    missingAltHeader.className = "accordion-header user-select-none fs-6 text-body";
+    missingAltHeader.textContent = `Missing alt tags (${missingAltSamples.length})`;
+    missingAltSummary.append(missingAltHeader);
+    missingAltDetails.append(missingAltSummary);
+    const missingAltBody = document.createElement("div");
+    missingAltBody.className = "accordion-body border-bottom p-2";
+    const missingAltList = document.createElement("ul");
+    missingAltList.className = "small mb-0 ps-3";
+    for (const sample of missingAltSamples) {
+      const li = document.createElement("li");
+      const raw = String(sample ?? "");
+      if (/^https?:\/\//i.test(raw)) {
+        const link = document.createElement("a");
+        link.href = raw;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = raw;
+        li.append(link);
+      } else {
+        li.textContent = raw;
+      }
+      missingAltList.append(li);
     }
-    missingAltList.append(li);
-  }
-  if (!missingAltSamples.length) {
-    const empty = document.createElement("div");
-    empty.className = "small text-success";
-    empty.textContent = "None";
-    missingAltBody.append(empty);
-  } else {
     missingAltBody.append(missingAltList);
+    missingAltDetails.append(missingAltBody);
+    auditsAccordion.append(missingAltDetails);
+    auditIssueCount += missingAltSamples.length;
   }
-  missingAltDetails.append(missingAltBody);
-  accordion.append(missingAltDetails);
 
-  const lowContrastDetails = document.createElement("details");
-  lowContrastDetails.className = "accordion-item border-bottom-0";
-  lowContrastDetails.setAttribute("name", "a11y-issues");
-  const lowContrastSummary = document.createElement("summary");
-  lowContrastSummary.className = "accordion-button rounded-top";
-  const lowContrastHeader = document.createElement("h2");
-  lowContrastHeader.className = "accordion-header user-select-none fs-6 text-body";
-  lowContrastHeader.textContent = `Low contrast findings (${lowContrastSamples.length})`;
-  lowContrastSummary.append(lowContrastHeader);
-  lockAccordionWhenEmpty(lowContrastDetails, lowContrastSummary, lowContrastSamples.length);
-  lowContrastDetails.append(lowContrastSummary);
-  const lowContrastBody = document.createElement("div");
-  lowContrastBody.className = "accordion-body border-bottom p-2";
-  const lowContrastList = document.createElement("ul");
-  lowContrastList.className = "small mb-0 ps-3";
-  for (const sample of lowContrastSamples) {
-    const li = document.createElement("li");
-    const text = String(sample ?? "");
-    const match = text.match(/^(.*)\s(\(contrast\s[\d.]+:1\))$/i);
-    if (match) {
-      li.append(document.createTextNode(`${match[1]} `));
-      const meta = document.createElement("span");
-      meta.className = "opacity-75";
-      meta.textContent = match[2];
-      li.append(meta);
-    } else {
-      li.textContent = text;
+  if (lowContrastSamples.length > 0) {
+    const lowContrastDetails = document.createElement("details");
+    lowContrastDetails.className = "accordion-item border-bottom-0";
+    lowContrastDetails.setAttribute("name", "a11y-issues");
+    const lowContrastSummary = document.createElement("summary");
+    lowContrastSummary.className = "accordion-button rounded-top";
+    const lowContrastHeader = document.createElement("h2");
+    lowContrastHeader.className = "accordion-header user-select-none fs-6 text-body";
+    lowContrastHeader.textContent = `Low contrast findings (${lowContrastSamples.length})`;
+    lowContrastSummary.append(lowContrastHeader);
+    lowContrastDetails.append(lowContrastSummary);
+    const lowContrastBody = document.createElement("div");
+    lowContrastBody.className = "accordion-body border-bottom p-2";
+    const lowContrastList = document.createElement("ul");
+    lowContrastList.className = "small mb-0 ps-3";
+    for (const sample of lowContrastSamples) {
+      const li = document.createElement("li");
+      const text = String(sample ?? "");
+      const match = text.match(/^(.*)\s(\(contrast\s[\d.]+:1\))$/i);
+      if (match) {
+        li.append(document.createTextNode(`${match[1]} `));
+        const meta = document.createElement("span");
+        meta.className = "opacity-75";
+        meta.textContent = match[2];
+        li.append(meta);
+      } else {
+        li.textContent = text;
+      }
+      lowContrastList.append(li);
     }
-    lowContrastList.append(li);
-  }
-  if (!lowContrastSamples.length) {
-    const empty = document.createElement("div");
-    empty.className = "small text-success";
-    empty.textContent = "None";
-    lowContrastBody.append(empty);
-  } else {
     lowContrastBody.append(lowContrastList);
+    lowContrastDetails.append(lowContrastBody);
+    auditsAccordion.append(lowContrastDetails);
+    auditIssueCount += lowContrastSamples.length;
   }
-  lowContrastDetails.append(lowContrastBody);
-  accordion.append(lowContrastDetails);
 
+  if (auditIssueCount === 0) {
+    const empty = document.createElement("p");
+    empty.className = "small text-success mb-0";
+    empty.textContent = "No accessibility issues discovered.";
+    auditsOutput.append(empty);
+  } else {
+    auditsOutput.append(auditsAccordion);
+  }
+
+  const infoAccordion = document.createElement("div");
+  infoAccordion.className = "accordion border-bottom-0";
   const headingTreeDetails = document.createElement("details");
   headingTreeDetails.className = "accordion-item border-bottom-0";
-  headingTreeDetails.setAttribute("name", "a11y-issues");
+  headingTreeDetails.setAttribute("name", "a11y-info");
   const headingTreeSummary = document.createElement("summary");
   headingTreeSummary.className = "accordion-button rounded-top";
   const headingTreeHeader = document.createElement("h2");
@@ -1468,9 +1622,9 @@ function renderA11y(result) {
     headingTreeBody.append(headingTreeWrap);
   }
   headingTreeDetails.append(headingTreeBody);
-  accordion.append(headingTreeDetails);
+  infoAccordion.append(headingTreeDetails);
 
-  output.append(accordion);
+  infoOutput.append(infoAccordion);
 }
 
 function renderPerf(result) {
@@ -1647,7 +1801,7 @@ function createCssOverviewStaticRow(label, value) {
   const item = document.createElement("div");
   item.className = "accordion-item border-bottom-0";
   const header = document.createElement("div");
-  header.className = "accordion-button rounded-top no-expand";
+  header.className = "accordion-button rounded-top no-expand bg-transparent";
   header.setAttribute("aria-disabled", "true");
   const title = document.createElement("h2");
   title.className = "accordion-header user-select-none fs-6 text-body mb-0";
@@ -1706,17 +1860,20 @@ function createStylesheetUrlList(urls) {
 
 function createColorListContent(entries) {
   const wrap = document.createElement("div");
-  wrap.className = "d-flex flex-column gap-1";
+  wrap.className = "row row-cols-2 g-1";
   if (!entries.length) {
     const empty = document.createElement("div");
-    empty.className = "text-secondary small";
+    empty.className = "text-secondary small col-12";
     empty.textContent = "No colors found.";
     wrap.append(empty);
     return wrap;
   }
   for (const entry of entries) {
+    const col = document.createElement("div");
+    col.className = "col";
+
     const row = document.createElement("div");
-    row.className = "d-flex align-items-center justify-content-between rounded-3 bg-secondary bg-opacity-25 px-2 py-1";
+    row.className = "d-flex align-items-center justify-content-between rounded-3 bg-secondary bg-opacity-10 px-2 py-1 h-100";
 
     const left = document.createElement("div");
     left.className = "d-flex align-items-center gap-2";
@@ -1738,7 +1895,8 @@ function createColorListContent(entries) {
     count.textContent = `${entry.count}`;
 
     row.append(left, count);
-    wrap.append(row);
+    col.append(row);
+    wrap.append(col);
   }
   return wrap;
 }
@@ -2096,6 +2254,8 @@ async function switchTab(tabName) {
 
   if (tabName === "a11y") {
     await runAction("a11y");
+    const subtab = await loadA11ySubtab();
+    switchA11ySubtab(subtab);
     const ariaSwitch = document.getElementById("a11y-aria-inspect-switch");
     const altOverlaySwitch = document.getElementById("a11y-alt-overlay-switch");
     try {
@@ -2183,6 +2343,12 @@ async function bindEvents() {
     const cssSubtabButton = target.closest("[data-css-subtab]");
     if (cssSubtabButton instanceof HTMLElement && cssSubtabButton.dataset.cssSubtab) {
       switchCssSubtab(cssSubtabButton.dataset.cssSubtab);
+      return;
+    }
+
+    const a11ySubtabButton = target.closest("[data-a11y-subtab]");
+    if (a11ySubtabButton instanceof HTMLElement && a11ySubtabButton.dataset.a11ySubtab) {
+      switchA11ySubtab(a11ySubtabButton.dataset.a11ySubtab);
       return;
     }
 
@@ -2350,6 +2516,23 @@ async function bindEvents() {
       } catch {
         setStatus("Could not update ARIA inspect on this page.", true);
       }
+    });
+  }
+
+  const resetAllSwitch = document.getElementById("settings-reset-all-switch");
+  if (resetAllSwitch instanceof HTMLInputElement) {
+    resetAllSwitch.checked = false;
+    resetAllSwitch.addEventListener("change", async () => {
+      if (!resetAllSwitch.checked) {
+        return;
+      }
+      const approved = await showConfirmDialog("Reset all saved settings and return to the Welcome screen?");
+      if (!approved) {
+        resetAllSwitch.checked = false;
+        return;
+      }
+      await resetAllPopupSettings();
+      resetAllSwitch.checked = false;
     });
   }
 

@@ -1080,7 +1080,9 @@ function computeCssOverviewSnapshot() {
         .slice(0, limit);
 
     const styleSheets = document.styleSheets ? [...document.styleSheets] : [];
-    const stylesheetUrls = styleSheets.map((sheet) => (sheet.href || "").trim()).filter(Boolean);
+    const stylesheetUrls = [...new Set(
+        styleSheets.map((sheet) => (sheet.href || "").trim()).filter(Boolean)
+    )];
 
     const mediaQueryCounts = new Map();
     const MEDIA_RULE = 4;
@@ -1117,7 +1119,7 @@ function computeCssOverviewSnapshot() {
     return {
         overview: {
             totalElements: elements.length,
-            stylesheets: styleSheets.length,
+            stylesheets: stylesheetUrls.length,
             stylesheetUrls,
             inlineStyleElements: document.querySelectorAll("[style]").length,
             uniqueTextColors: textColors.size,
