@@ -6,6 +6,7 @@ let currentStorageKind = "cookie";
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const cssSubtabKey = "popup.lastCssSubtab";
+const settingsSubtabKey = "popup.lastSettingsSubtab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
 const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
@@ -151,6 +152,33 @@ function switchCssSubtab(subtabName) {
   if (isOverview) {
     void runAction("css-overview");
   }
+}
+
+const validSettingsSubtabs = new Set(["options", "credits", "device-info"]);
+
+async function loadSettingsSubtab() {
+  const stored = await loadStoredValue(settingsSubtabKey);
+  return validSettingsSubtabs.has(stored) ? stored : "options";
+}
+
+async function saveSettingsSubtab(subtab) {
+  await saveStoredValue(settingsSubtabKey, validSettingsSubtabs.has(subtab) ? subtab : "options");
+}
+
+function switchSettingsSubtab(subtabName) {
+  const name = validSettingsSubtabs.has(subtabName) ? subtabName : "options";
+  document.querySelectorAll("[data-settings-subtab]").forEach((btn) => {
+    const active = btn instanceof HTMLElement && btn.dataset.settingsSubtab === name;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  document.querySelectorAll("[data-settings-subpanel]").forEach((panel) => {
+    const show = panel instanceof HTMLElement && panel.dataset.settingsSubpanel === name;
+    panel.classList.toggle("d-none", !show);
+    panel.classList.toggle("d-flex", show);
+    panel.classList.toggle("flex-column", show);
+  });
+  void saveSettingsSubtab(name);
 }
 
 function showWelcomeScreen() {
@@ -2094,6 +2122,12 @@ async function switchTab(tabName) {
     return;
   }
 
+  if (tabName === "settings") {
+    const subtab = await loadSettingsSubtab();
+    switchSettingsSubtab(subtab);
+    return;
+  }
+
   if (tabName === "storage") {
     await runAction("storage");
     return;
@@ -2149,6 +2183,12 @@ async function bindEvents() {
     const cssSubtabButton = target.closest("[data-css-subtab]");
     if (cssSubtabButton instanceof HTMLElement && cssSubtabButton.dataset.cssSubtab) {
       switchCssSubtab(cssSubtabButton.dataset.cssSubtab);
+      return;
+    }
+
+    const settingsSubtabButton = target.closest("[data-settings-subtab]");
+    if (settingsSubtabButton instanceof HTMLElement && settingsSubtabButton.dataset.settingsSubtab) {
+      switchSettingsSubtab(settingsSubtabButton.dataset.settingsSubtab);
       return;
     }
 

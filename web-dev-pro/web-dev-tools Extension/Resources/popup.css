@@ -16,6 +16,10 @@
   .tab.active {
     background-color: #000 !important;
   }
+
+  .tool-group {
+    background-color: #000;
+  }
 }
 
 html,
@@ -160,6 +164,13 @@ button:not(.tab):not(.btn-sm) {
   overscroll-behavior: contain;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+}
+
+.accordion-button,
+.accordion-button:focus,
+.accordion-button:focus-visible,
+.accordion-button:hover {
+  filter: grayscale(1);
 }
 
 details.accordion-item:not([open]) .accordion-button {

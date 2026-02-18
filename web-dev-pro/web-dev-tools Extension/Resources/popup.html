@@ -204,11 +204,11 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">CSS</h2>
       </div>
-      <nav class="nav nav-tabs nav-fill mb-2" aria-label="CSS tools">
+      <nav class="nav nav-tabs nav-fill" aria-label="CSS tools">
         <button class="nav-link active py-1 small text-body ms-3" type="button" data-css-subtab="quick-tools">Quick Tools</button>
         <button class="nav-link py-1 small text-body me-3" type="button" data-css-subtab="overview">CSS Overview</button>
       </nav>
-      <div class="css-subpanel d-flex flex-column gap-2 overflow-auto flex-grow-1 min-h-0 px-3" data-css-subpanel="quick-tools">
+      <div class="css-subpanel pt-2 bg-body d-flex flex-column gap-2 overflow-auto flex-grow-1 min-h-0 px-3" data-css-subpanel="quick-tools">
         <div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input" type="checkbox" role="switch" id="css-zindex-switch" data-css-tool="zIndex"
@@ -260,7 +260,7 @@
 
         </div>
       </div>
-      <div class="css-subpanel overflow-auto flex-grow-1 min-h-0 d-none" data-css-subpanel="overview">
+      <div class="css-subpanel pt-2 bg-body overflow-auto flex-grow-1 min-h-0 d-none" data-css-subpanel="overview">
         <div id="css-overview-output" class="output rounded-3 overflow-auto p-2 small"></div>
       </div>
     </section>
@@ -283,92 +283,103 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">Storage</h2>
       </div>
-      <nav class="nav nav-tabs nav-fill mb-2" aria-label="Storage types">
+      <nav class="nav nav-tabs nav-fill" aria-label="Storage types">
         <button class="nav-link active py-1 small text-body ms-3" type="button" data-storage-kind-tab="cookie">Cookies</button>
         <button class="nav-link py-1 small text-body" type="button" data-storage-kind-tab="localStorage">Local Storage</button>
         <button class="nav-link py-1 small text-body me-3" type="button" data-storage-kind-tab="sessionStorage">Session Storage</button>
       </nav>
-      <div id="storage-output" class="output storage-output rounded-3 small overflow-auto p-2"></div>
+      <div id="storage-output" class="output storage-output rounded-3 small overflow-auto p-2 bg-body pt-3"></div>
     </section>
 
-    <section class="tool-group pt-3 tab-panel overflow-hidden" data-panel="settings">
+    <section class="tool-group pt-3 tab-panel overflow-hidden d-flex flex-column" data-panel="settings">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">Settings</h2>
       </div>
-
-      <div class="mb-2">
-        <label class="form-label small mb-1" for="theme-select">Theme</label>
-        <select id="theme-select" class="form-select form-select-sm">
-          <option value="system">System default</option>
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
-        </select>
-      </div>
-
-      <div class="d-flex align-items-center justify-content-between mt-3 mb-2">
-        <h3 class="fs-6 mb-0 fw-bold">Device Info</h3>
-        <button type="button" class="btn btn-secondary btn-sm py-0 px-2" data-action="device-copy">Copy</button>
-      </div>
-      <div class="accordion border-bottom-0">
-        <details class="accordion-item border-bottom-0" name="d" open>
-          <summary class="accordion-button rounded-top">
-            <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Browser Details</h4>
-          </summary>
-          <div class="accordion-body border-bottom p-2 small">
-            <table class="table-sm table-borderless mb-0 small">
-              <tbody>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">User Agent</th><td id="device-browser-user-agent" class="text-break"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">OS Version</th><td id="device-browser-os-version"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Device</th><td id="device-browser-device"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Language</th><td id="device-browser-language"></td></tr>
-              </tbody>
-            </table>
+      <nav class="nav nav-tabs nav-fill px-3" aria-label="Settings">
+        <button class="nav-link active py-1 small text-body" type="button" data-settings-subtab="options">Options</button>
+        <button class="nav-link py-1 small text-body" type="button" data-settings-subtab="credits">Credits</button>
+        <button class="nav-link py-1 small text-body" type="button" data-settings-subtab="device-info">Device Info</button>
+      </nav>
+      <div class="px-3 bg-body flex-grow-1 min-h-0 d-flex flex-column overflow-hidden">
+        <div class="settings-subpanel pt-3 d-flex flex-column overflow-auto flex-grow-1" data-settings-subpanel="options">
+          <div class="mb-2">
+            <label class="form-label small mb-1" for="theme-select">Theme</label>
+            <select id="theme-select" class="form-select form-select-sm">
+              <option value="system">System default</option>
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
           </div>
-        </details>
-
-        <details class="accordion-item border-bottom-0" name="d">
-          <summary class="accordion-button rounded-top">
-            <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Display</h4>
-          </summary>
-          <div class="accordion-body border-bottom p-2 small">
-            <table class="table-sm table-borderless mb-0 small">
-              <tbody>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Screen resolution</th><td id="device-display-resolution"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Pixel density</th><td id="device-display-dpr"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Color depth</th><td id="device-display-color-depth"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Orientation</th><td id="device-display-orientation"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Reduced motion</th><td id="device-display-reduced-motion"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Color scheme</th><td id="device-display-color-scheme"></td></tr>
-              </tbody>
-            </table>
+          <div class="small text-secondary opacity-75 mt-auto">
+            <div id="settings-build-version"></div>
+            <div id="settings-build-date"></div>
           </div>
-        </details>
-
-        <details class="accordion-item border-bottom-0" name="d">
-          <summary class="accordion-button rounded-top">
-            <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Network</h4>
-          </summary>
-          <div class="accordion-body border-bottom p-2 small">
-            <table class="table-sm table-borderless mb-0 small">
-              <tbody>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">IP address</th><td id="device-network-ip"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Location</th><td id="device-network-location"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">ISP</th><td id="device-network-isp"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Connection type</th><td id="device-network-connection"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Effective type</th><td id="device-network-effective-type"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Downlink</th><td id="device-network-downlink"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">RTT</th><td id="device-network-rtt"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Data saver</th><td id="device-network-data-saver"></td></tr>
-                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Timezone</th><td id="device-network-timezone"></td></tr>
-              </tbody>
-            </table>
+        </div>
+        <div class="settings-subpanel pt-3 d-none overflow-auto flex-grow-1" data-settings-subpanel="credits">
+          <p class="small text-body mb-0">App built with &lt;3 in Osaka, Japan by Christian Oliff.</p>
+        </div>
+        <div class="settings-subpanel pt-3 d-none d-flex flex-column overflow-auto flex-grow-1 min-h-0" data-settings-subpanel="device-info">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h3 class="fs-6 mb-0 fw-bold opacity-0">Device Info</h3>
+            <button type="button" class="btn btn-secondary btn-sm py-0 px-2" data-action="device-copy">Copy</button>
           </div>
-        </details>
-      </div>
+          <div class="accordion border-bottom-0">
+            <details class="accordion-item border-bottom-0" name="d" open>
+              <summary class="accordion-button rounded-top">
+                <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Browser Details</h4>
+              </summary>
+              <div class="accordion-body border-bottom p-2 small">
+                <table class="table-sm table-borderless mb-0 small">
+                  <tbody>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">User Agent</th><td id="device-browser-user-agent" class="text-break"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">OS Version</th><td id="device-browser-os-version"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Device</th><td id="device-browser-device"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Language</th><td id="device-browser-language"></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
 
-      <div class="small text-secondary opacity-75 mt-auto">
-        <div id="settings-build-version"></div>
-        <div id="settings-build-date"></div>
+            <details class="accordion-item border-bottom-0" name="d">
+              <summary class="accordion-button rounded-top">
+                <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Display</h4>
+              </summary>
+              <div class="accordion-body border-bottom p-2 small">
+                <table class="table-sm table-borderless mb-0 small">
+                  <tbody>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Screen resolution</th><td id="device-display-resolution"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Pixel density</th><td id="device-display-dpr"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Color depth</th><td id="device-display-color-depth"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Orientation</th><td id="device-display-orientation"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Reduced motion</th><td id="device-display-reduced-motion"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Color scheme</th><td id="device-display-color-scheme"></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <details class="accordion-item border-bottom-0" name="d">
+              <summary class="accordion-button rounded-top">
+                <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Network</h4>
+              </summary>
+              <div class="accordion-body border-bottom p-2 small">
+                <table class="table-sm table-borderless mb-0 small">
+                  <tbody>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">IP address</th><td id="device-network-ip"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Location</th><td id="device-network-location"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">ISP</th><td id="device-network-isp"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Connection type</th><td id="device-network-connection"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Effective type</th><td id="device-network-effective-type"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Downlink</th><td id="device-network-downlink"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">RTT</th><td id="device-network-rtt"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Data saver</th><td id="device-network-data-saver"></td></tr>
+                    <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Timezone</th><td id="device-network-timezone"></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+        </div>
       </div>
     </section>
 
