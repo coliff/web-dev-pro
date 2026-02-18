@@ -7,6 +7,7 @@ let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const cssSubtabKey = "popup.lastCssSubtab";
 const a11ySubtabKey = "popup.lastA11ySubtab";
+const renderingSubtabKey = "popup.lastRenderingSubtab";
 const settingsSubtabKey = "popup.lastSettingsSubtab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
@@ -165,6 +166,7 @@ function listPopupSettingKeys() {
     popupTabKey,
     cssSubtabKey,
     a11ySubtabKey,
+    renderingSubtabKey,
     settingsSubtabKey,
     themePreferenceKey,
     legacyDarkModeKey,
@@ -247,6 +249,33 @@ function switchA11ySubtab(subtabName) {
   void saveA11ySubtab(name);
 }
 
+const validRenderingSubtabs = new Set(["test", "media-queries"]);
+
+async function loadRenderingSubtab() {
+  const stored = await loadStoredValue(renderingSubtabKey);
+  return validRenderingSubtabs.has(stored) ? stored : "test";
+}
+
+async function saveRenderingSubtab(subtab) {
+  await saveStoredValue(renderingSubtabKey, validRenderingSubtabs.has(subtab) ? subtab : "test");
+}
+
+function switchRenderingSubtab(subtabName) {
+  const name = validRenderingSubtabs.has(subtabName) ? subtabName : "test";
+  document.querySelectorAll("[data-rendering-subtab]").forEach((btn) => {
+    const active = btn instanceof HTMLElement && btn.dataset.renderingSubtab === name;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  document.querySelectorAll("[data-rendering-subpanel]").forEach((panel) => {
+    const show = panel instanceof HTMLElement && panel.dataset.renderingSubpanel === name;
+    panel.classList.toggle("d-none", !show);
+    panel.classList.toggle("d-flex", show);
+    panel.classList.toggle("flex-column", show);
+  });
+  void saveRenderingSubtab(name);
+}
+
 const validSettingsSubtabs = new Set(["options", "credits", "device-info"]);
 
 async function loadSettingsSubtab() {
@@ -277,6 +306,12 @@ function switchSettingsSubtab(subtabName) {
 function showWelcomeScreen() {
   document.getElementById("welcome-panel")?.classList.remove("hidden");
   document.getElementById("main-content")?.classList.add("hidden");
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    button.classList.remove("active");
+  });
+  document.querySelectorAll("[data-panel]").forEach((panel) => {
+    panel.classList.remove("active", "d-flex", "flex-column");
+  });
 }
 
 function showMainScreen() {
@@ -758,16 +793,14 @@ function flashButtonLabel(button, nextLabel, timeoutMs = 900) {
 function showDialogShell(title) {
   const overlay = document.createElement("div");
   overlay.className = "position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-2";
-  overlay.style.background = "rgba(2, 6, 23, 0.7)";
+  overlay.style.background = "rgba(2, 6, 23, 0.45)";
   overlay.style.zIndex = "2147483647";
 
   const panel = document.createElement("div");
-  panel.className = "rounded-3 p-2";
+  panel.className = "rounded-3 p-2 bg-body border text-body shadow-sm";
   panel.style.width = "100%";
   panel.style.maxWidth = "330px";
-  panel.style.background = "var(--panel)";
-  panel.style.border = "1px solid var(--line)";
-  panel.style.color = "var(--text)";
+  panel.style.borderColor = "var(--bs-border-color)";
 
   const heading = document.createElement("div");
   heading.className = "small fw-semibold mb-2";
@@ -1667,53 +1700,54 @@ function renderPerf(result) {
   weightDetails.append(weightSummary);
   accordion.append(weightDetails);
 
-  const externalDetails = document.createElement("details");
-  externalDetails.className = "accordion-item border-bottom-0";
-  externalDetails.setAttribute("name", "accordion");
-  const externalSummary = document.createElement("summary");
-  externalSummary.className = "accordion-button rounded-top";
-  const externalHeader = document.createElement("h2");
-  externalHeader.className = "accordion-header user-select-none fs-6 text-body";
-  externalHeader.textContent = `External scripts (${externalScripts.length})`;
-  externalSummary.append(externalHeader);
-  lockAccordionWhenEmpty(externalDetails, externalSummary, externalScripts.length);
-  externalDetails.append(externalSummary);
-  const externalBody = document.createElement("div");
-  externalBody.className = "accordion-body border-bottom p-2";
-  const externalList = document.createElement("ul");
-  externalList.className = "small mb-0 ps-3";
-  for (const scriptInfo of externalScripts) {
-    const rawUrl = typeof scriptInfo === "object" && scriptInfo
-      ? String(scriptInfo.url || "")
-      : String(scriptInfo || "");
-    const url = rawUrl;
-    const sizeKb = typeof scriptInfo === "object" && scriptInfo
-      ? scriptInfo.sizeKb
-      : null;
-    const sizeLabel = sizeKb === null || sizeKb === undefined
-      ? "size unavailable"
-      : `${sizeKb} KB`;
+  if (externalScripts.length > 0) {
+    const externalDetails = document.createElement("details");
+    externalDetails.className = "accordion-item border-bottom-0";
+    externalDetails.setAttribute("name", "accordion");
+    const externalSummary = document.createElement("summary");
+    externalSummary.className = "accordion-button rounded-top";
+    const externalHeader = document.createElement("h2");
+    externalHeader.className = "accordion-header user-select-none fs-6 text-body";
+    externalHeader.textContent = `External scripts (${externalScripts.length})`;
+    externalSummary.append(externalHeader);
+    externalDetails.append(externalSummary);
+    const externalBody = document.createElement("div");
+    externalBody.className = "accordion-body border-bottom p-2";
+    const externalList = document.createElement("ul");
+    externalList.className = "small mb-0 ps-3";
+    for (const scriptInfo of externalScripts) {
+      const rawUrl = typeof scriptInfo === "object" && scriptInfo
+        ? String(scriptInfo.url || "")
+        : String(scriptInfo || "");
+      const url = rawUrl;
+      const sizeKb = typeof scriptInfo === "object" && scriptInfo
+        ? scriptInfo.sizeKb
+        : null;
+      const sizeLabel = sizeKb === null || sizeKb === undefined
+        ? "size unavailable"
+        : `${sizeKb} KB`;
 
-    const li = document.createElement("li");
-    if (url) {
-      const link = document.createElement("a");
-      link.href = url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = url;
-      li.append(link);
-    } else {
-      li.textContent = "(unknown script URL)";
+      const li = document.createElement("li");
+      if (url) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = url;
+        li.append(link);
+      } else {
+        li.textContent = "(unknown script URL)";
+      }
+      const size = document.createElement("span");
+      size.className = "opacity-75 small";
+      size.textContent = ` (${sizeLabel})`;
+      li.append(size);
+      externalList.append(li);
     }
-    const size = document.createElement("span");
-    size.className = "opacity-75 small";
-    size.textContent = ` (${sizeLabel})`;
-    li.append(size);
-    externalList.append(li);
+    externalBody.append(externalList);
+    externalDetails.append(externalBody);
+    accordion.append(externalDetails);
   }
-  externalBody.append(externalList);
-  externalDetails.append(externalBody);
-  accordion.append(externalDetails);
 
   const blockingDetails = document.createElement("details");
   blockingDetails.className = "accordion-item border-bottom-0";
@@ -1744,55 +1778,56 @@ function renderPerf(result) {
   blockingDetails.append(blockingBody);
   accordion.append(blockingDetails);
 
-  const largeDetails = document.createElement("details");
-  largeDetails.className = "accordion-item border-bottom-0";
-  largeDetails.setAttribute("name", "accordion");
-  const largeSummary = document.createElement("summary");
-  largeSummary.className = "accordion-button rounded-top";
-  const largeHeader = document.createElement("h2");
-  largeHeader.className = "accordion-header user-select-none fs-6 text-body";
-  largeHeader.textContent = `Large images (${largeImages.length})`;
-  largeSummary.append(largeHeader);
-  lockAccordionWhenEmpty(largeDetails, largeSummary, largeImages.length);
-  largeDetails.append(largeSummary);
-  const largeBody = document.createElement("div");
-  largeBody.className = "accordion-body border-bottom p-2";
-  const largeList = document.createElement("ul");
-  largeList.className = "mb-0 ps-3";
-  for (const imageInfo of largeImages) {
-    const url = typeof imageInfo === "object" && imageInfo
-      ? String(imageInfo.url || "")
-      : String(imageInfo || "");
-    const label = typeof imageInfo === "object" && imageInfo
-      ? String(imageInfo.label || url)
-      : url;
-    const sizeText = typeof imageInfo === "object" && imageInfo
-      ? String(imageInfo.sizeText || "")
-      : "";
+  if (largeImages.length > 0) {
+    const largeDetails = document.createElement("details");
+    largeDetails.className = "accordion-item border-bottom-0";
+    largeDetails.setAttribute("name", "accordion");
+    const largeSummary = document.createElement("summary");
+    largeSummary.className = "accordion-button rounded-top";
+    const largeHeader = document.createElement("h2");
+    largeHeader.className = "accordion-header user-select-none fs-6 text-body";
+    largeHeader.textContent = `Large images (${largeImages.length})`;
+    largeSummary.append(largeHeader);
+    largeDetails.append(largeSummary);
+    const largeBody = document.createElement("div");
+    largeBody.className = "accordion-body border-bottom p-2";
+    const largeList = document.createElement("ul");
+    largeList.className = "mb-0 ps-3";
+    for (const imageInfo of largeImages) {
+      const url = typeof imageInfo === "object" && imageInfo
+        ? String(imageInfo.url || "")
+        : String(imageInfo || "");
+      const label = typeof imageInfo === "object" && imageInfo
+        ? String(imageInfo.label || url)
+        : url;
+      const sizeText = typeof imageInfo === "object" && imageInfo
+        ? String(imageInfo.sizeText || "")
+        : "";
 
-    const li = document.createElement("li");
-    li.className = "small";
+      const li = document.createElement("li");
+      li.className = "small";
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = label;
-    li.append(link);
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = label;
+      li.append(link);
 
-    if (sizeText) {
-      li.append(document.createTextNode(" "));
-      const meta = document.createElement("span");
-      meta.className = "small opacity-75";
-      meta.textContent = `(${sizeText})`;
-      li.append(meta);
+      if (sizeText) {
+        li.append(document.createTextNode(" "));
+        const meta = document.createElement("span");
+        meta.className = "small opacity-75";
+        meta.textContent = `(${sizeText})`;
+        li.append(meta);
+      }
+
+      largeList.append(li);
     }
-
-    largeList.append(li);
+    largeBody.append(largeList);
+    largeDetails.append(largeBody);
+    accordion.append(largeDetails);
   }
-  largeBody.append(largeList);
-  largeDetails.append(largeBody);
-  accordion.append(largeDetails);
 
   output.append(accordion);
 }
@@ -2075,7 +2110,10 @@ function renderStorage(payload) {
     if (copyJsonBtn instanceof HTMLButtonElement) {
       copyJsonBtn.disabled = true;
     }
-    output.textContent = "No storage items found.";
+    const empty = document.createElement("p");
+    empty.className = "text-center mb-0";
+    empty.textContent = "No storage items found.";
+    output.append(empty);
     return;
   }
 
@@ -2228,14 +2266,7 @@ async function toggleCssTool(control) {
   }
 }
 
-async function switchTab(tabName) {
-  if (!tabName || !validTabs.has(tabName)) {
-    return;
-  }
-
-  currentTab = tabName;
-  void saveTab(tabName);
-
+function applyTabSelection(tabName) {
   document.querySelectorAll("[data-tab]").forEach((button) => {
     button.classList.toggle("active", button.dataset.tab === tabName);
   });
@@ -2246,6 +2277,43 @@ async function switchTab(tabName) {
     panel.classList.toggle("d-flex", isActive);
     panel.classList.toggle("flex-column", isActive);
   });
+}
+
+async function runWithTopTabViewTransition(updateUi) {
+  if (typeof document.startViewTransition !== "function") {
+    updateUi();
+    return;
+  }
+  if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    updateUi();
+    return;
+  }
+
+  const transition = document.startViewTransition(() => {
+    updateUi();
+  });
+  try {
+    await transition.finished;
+  } catch {
+    // Continue even if transition is cancelled.
+  }
+}
+
+async function switchTab(tabName, options = {}) {
+  if (!tabName || !validTabs.has(tabName)) {
+    return;
+  }
+
+  currentTab = tabName;
+  void saveTab(tabName);
+
+  if (options.animate === true) {
+    await runWithTopTabViewTransition(() => {
+      applyTabSelection(tabName);
+    });
+  } else {
+    applyTabSelection(tabName);
+  }
 
   if (tabName === "seo") {
     await runAction("seo");
@@ -2294,6 +2362,8 @@ async function switchTab(tabName) {
   }
 
   if (tabName === "rendering") {
+    const subtab = await loadRenderingSubtab();
+    switchRenderingSubtab(subtab);
     const avifSwitch = document.getElementById("rendering-disable-avif");
     const webpSwitch = document.getElementById("rendering-disable-webp");
     const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
@@ -2352,6 +2422,12 @@ async function bindEvents() {
       return;
     }
 
+    const renderingSubtabButton = target.closest("[data-rendering-subtab]");
+    if (renderingSubtabButton instanceof HTMLElement && renderingSubtabButton.dataset.renderingSubtab) {
+      switchRenderingSubtab(renderingSubtabButton.dataset.renderingSubtab);
+      return;
+    }
+
     const settingsSubtabButton = target.closest("[data-settings-subtab]");
     if (settingsSubtabButton instanceof HTMLElement && settingsSubtabButton.dataset.settingsSubtab) {
       switchSettingsSubtab(settingsSubtabButton.dataset.settingsSubtab);
@@ -2361,10 +2437,12 @@ async function bindEvents() {
     const tabButton = target.closest("[data-tab]");
     if (tabButton instanceof HTMLElement && tabButton.dataset.tab) {
       const tabName = tabButton.dataset.tab;
-      if (validTabs.has(tabName) && document.getElementById("main-content")?.classList.contains("hidden")) {
+      const wasOnWelcome = document.getElementById("main-content")?.classList.contains("hidden") === true;
+      if (validTabs.has(tabName) && wasOnWelcome) {
         showMainScreen();
       }
-      await switchTab(tabName);
+      const shouldAnimate = tabButton.classList.contains("tab") && !wasOnWelcome;
+      await switchTab(tabName, { animate: shouldAnimate });
       return;
     }
 
