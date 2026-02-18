@@ -9,3 +9,4 @@
 - All GitHub Actions should use SHA-1 pinned versions.
 - All should be formatted with Prettier.
 - If using `actions/checkout`, it should have `persist-credentials: false` set.
+- GitHub Actions should have a cooldown period of 7 days.

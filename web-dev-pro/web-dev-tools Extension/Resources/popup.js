@@ -9,6 +9,7 @@ const popupTabKey = "popup.lastActiveTab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
 const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
+const a11yAltOverlayKey = "popup.a11y.altOverlayEnabled";
 const validTabs = new Set(["a11y", "css", "css-overview", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
 let activeThemePreference = "system";
@@ -157,6 +158,15 @@ async function loadA11yAriaInspectEnabled() {
 
 async function saveA11yAriaInspectEnabled(enabled) {
   await saveStoredValue(a11yAriaInspectKey, String(Boolean(enabled)));
+}
+
+async function loadA11yAltOverlayEnabled() {
+  const stored = await loadStoredValue(a11yAltOverlayKey);
+  return stored === "true";
+}
+
+async function saveA11yAltOverlayEnabled(enabled) {
+  await saveStoredValue(a11yAltOverlayKey, String(Boolean(enabled)));
 }
 
 function applyTheme(themePreference) {
@@ -840,12 +850,14 @@ function renderSEO(result) {
   titleItem.append(titleLabel, document.createTextNode(result.title || "(missing)"));
   metaList.append(titleItem);
 
-  const descriptionItem = document.createElement("li");
-  const descriptionLabel = document.createElement("strong");
-  descriptionLabel.textContent = "Meta description: ";
   const metaDescription = typeof result?.metaDescription === "string" ? result.metaDescription.trim() : "";
-  descriptionItem.append(descriptionLabel, document.createTextNode(metaDescription || "(missing)"));
-  metaList.append(descriptionItem);
+  if (metaDescription) {
+    const descriptionItem = document.createElement("li");
+    const descriptionLabel = document.createElement("strong");
+    descriptionLabel.textContent = "Meta description: ";
+    descriptionItem.append(descriptionLabel, document.createTextNode(metaDescription));
+    metaList.append(descriptionItem);
+  }
 
   const canonicalItem = document.createElement("li");
   const canonicalLabel = document.createElement("strong");
@@ -1057,7 +1069,53 @@ function renderSEO(result) {
     metaList.append(colorSchemeItem);
   }
 
+  const metaRobots = typeof result?.metaRobots === "string" ? result.metaRobots.trim() : "";
+  if (metaRobots) {
+    const metaRobotsItem = document.createElement("li");
+    const metaRobotsLabel = document.createElement("strong");
+    metaRobotsLabel.textContent = "Meta robots: ";
+    const metaRobotsValue = document.createElement("code");
+    metaRobotsValue.className = "font-monospace";
+    metaRobotsValue.textContent = metaRobots;
+    metaRobotsItem.append(metaRobotsLabel, metaRobotsValue);
+    metaList.append(metaRobotsItem);
+  }
+
+  const metaReferrer = typeof result?.metaReferrer === "string" ? result.metaReferrer.trim() : "";
+  if (metaReferrer) {
+    const metaReferrerItem = document.createElement("li");
+    const metaReferrerLabel = document.createElement("strong");
+    metaReferrerLabel.textContent = "Meta referrer: ";
+    const metaReferrerValue = document.createElement("code");
+    metaReferrerValue.className = "font-monospace";
+    metaReferrerValue.textContent = metaReferrer;
+    metaReferrerItem.append(metaReferrerLabel, metaReferrerValue);
+    metaList.append(metaReferrerItem);
+  }
+
   metaBody.append(metaList);
+
+  const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+  if (warnings.length) {
+    const warn = document.createElement("div");
+    warn.className = "alert alert-warning mt-2 mb-0 py-2 px-2";
+
+    const warnTitle = document.createElement("div");
+    warnTitle.className = "fw-semibold small mb-1";
+    warnTitle.textContent = "Warnings";
+    warn.append(warnTitle);
+
+    const warnList = document.createElement("ul");
+    warnList.className = "small mb-0 ps-3";
+    for (const message of warnings) {
+      const li = document.createElement("li");
+      li.textContent = message;
+      warnList.append(li);
+    }
+    warn.append(warnList);
+    metaBody.append(warn);
+  }
+
   metaDetails.append(metaBody);
   accordion.append(metaDetails);
 
@@ -1169,27 +1227,6 @@ function renderSEO(result) {
   }
 
   output.append(accordion);
-
-  const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
-  if (warnings.length) {
-    const warn = document.createElement("div");
-    warn.className = "alert alert-warning mt-3 mb-0 py-2 px-2";
-
-    const title = document.createElement("div");
-    title.className = "fw-semibold small mb-1";
-    title.textContent = "Warnings";
-    warn.append(title);
-
-    const list = document.createElement("ul");
-    list.className = "small mb-0 ps-3";
-    for (const message of warnings) {
-      const li = document.createElement("li");
-      li.textContent = message;
-      list.append(li);
-    }
-    warn.append(list);
-    output.append(warn);
-  }
 }
 
 function renderA11y(result) {
@@ -1199,9 +1236,34 @@ function renderA11y(result) {
   const missingAltSamples = Array.isArray(result?.missingAltSamples) ? result.missingAltSamples : [];
   const lowContrastSamples = Array.isArray(result?.lowContrastSamples) ? result.lowContrastSamples : [];
   const headingTree = Array.isArray(result?.headingTree) ? result.headingTree : [];
+  const htmlLangMissing = Boolean(result?.htmlLangMissing);
+  const htmlLangValue = typeof result?.htmlLangValue === "string" ? result.htmlLangValue : null;
 
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
+
+  if (htmlLangMissing) {
+    const htmlLangDetails = document.createElement("details");
+    htmlLangDetails.className = "accordion-item border-bottom-0";
+    htmlLangDetails.setAttribute("name", "a11y-issues");
+    const htmlLangSummary = document.createElement("summary");
+    htmlLangSummary.className = "accordion-button rounded-top";
+    const htmlLangHeader = document.createElement("h2");
+    htmlLangHeader.className = "accordion-header user-select-none fs-6 text-body";
+    htmlLangHeader.textContent = "Missing HTML lang attribute";
+    htmlLangSummary.append(htmlLangHeader);
+    htmlLangDetails.append(htmlLangSummary);
+    const htmlLangBody = document.createElement("div");
+    htmlLangBody.className = "accordion-body border-bottom p-2";
+    const htmlLangText = document.createElement("p");
+    htmlLangText.className = "small mb-0";
+    htmlLangText.textContent = htmlLangValue
+      ? `The page has an invalid or empty lang attribute: "${htmlLangValue}". Use a valid BCP 47 language tag (e.g. en, en-US) on <html>.`
+      : "The page is missing a lang attribute on <html>. Add a valid BCP 47 language tag (e.g. en, en-US).";
+    htmlLangBody.append(htmlLangText);
+    htmlLangDetails.append(htmlLangBody);
+    accordion.append(htmlLangDetails);
+  }
 
   const missingAltDetails = document.createElement("details");
   missingAltDetails.className = "accordion-item border-bottom-0";
@@ -1220,7 +1282,17 @@ function renderA11y(result) {
   missingAltList.className = "small mb-0 ps-3";
   for (const sample of missingAltSamples) {
     const li = document.createElement("li");
-    li.textContent = sample;
+    const raw = String(sample ?? "");
+    if (/^https?:\/\//i.test(raw)) {
+      const link = document.createElement("a");
+      link.href = raw;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = raw;
+      li.append(link);
+    } else {
+      li.textContent = raw;
+    }
     missingAltList.append(li);
   }
   if (!missingAltSamples.length) {
@@ -1901,15 +1973,16 @@ async function switchTab(tabName) {
   if (tabName === "a11y") {
     await runAction("a11y");
     const ariaSwitch = document.getElementById("a11y-aria-inspect-switch");
-    if (ariaSwitch instanceof HTMLInputElement) {
-      try {
-        await sendToActiveTab({
-          action: "a11y-aria-inspector",
-          enabled: ariaSwitch.checked,
-        });
-      } catch {
-        // Ignore unsupported pages.
+    const altOverlaySwitch = document.getElementById("a11y-alt-overlay-switch");
+    try {
+      if (altOverlaySwitch instanceof HTMLInputElement && altOverlaySwitch.checked) {
+        await sendToActiveTab({ action: "a11y-alt-overlay", enabled: true });
       }
+      if (ariaSwitch instanceof HTMLInputElement && ariaSwitch.checked) {
+        await sendToActiveTab({ action: "a11y-aria-inspector", enabled: true });
+      }
+    } catch {
+      // Ignore unsupported pages.
     }
     return;
   }
@@ -2089,11 +2162,42 @@ async function bindEvents() {
   }
 
   const ariaInspectSwitch = document.getElementById("a11y-aria-inspect-switch");
+  const altOverlaySwitch = document.getElementById("a11y-alt-overlay-switch");
+  if (altOverlaySwitch instanceof HTMLInputElement) {
+    altOverlaySwitch.checked = await loadA11yAltOverlayEnabled();
+    altOverlaySwitch.addEventListener("change", async () => {
+      const enabled = altOverlaySwitch.checked;
+      await saveA11yAltOverlayEnabled(enabled);
+      if (enabled && ariaInspectSwitch instanceof HTMLInputElement && ariaInspectSwitch.checked) {
+        ariaInspectSwitch.checked = false;
+        await saveA11yAriaInspectEnabled(false);
+        try {
+          await sendToActiveTab({ action: "a11y-aria-inspector", enabled: false });
+        } catch {
+          // Ignore.
+        }
+      }
+      try {
+        await sendToActiveTab({ action: "a11y-alt-overlay", enabled });
+      } catch {
+        setStatus("Could not update img alt overlay on this page.", true);
+      }
+    });
+  }
   if (ariaInspectSwitch instanceof HTMLInputElement) {
     ariaInspectSwitch.checked = await loadA11yAriaInspectEnabled();
     ariaInspectSwitch.addEventListener("change", async () => {
       const enabled = ariaInspectSwitch.checked;
       await saveA11yAriaInspectEnabled(enabled);
+      if (enabled && altOverlaySwitch instanceof HTMLInputElement && altOverlaySwitch.checked) {
+        altOverlaySwitch.checked = false;
+        await saveA11yAltOverlayEnabled(false);
+        try {
+          await sendToActiveTab({ action: "a11y-alt-overlay", enabled: false });
+        } catch {
+          // Ignore.
+        }
+      }
       try {
         await sendToActiveTab({
           action: "a11y-aria-inspector",

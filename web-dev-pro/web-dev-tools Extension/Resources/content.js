@@ -19,6 +19,8 @@ const state = {
     ariaInspectorInstalled: false,
     ariaInspectorEnabled: false,
     ariaTooltip: null,
+    altOverlayEnabled: false,
+    altOverlayNodes: [],
     imageFormatObserver: null,
     mediaQueryWrappers: new Set()
 };
@@ -529,6 +531,8 @@ function computeSeoSnapshot() {
     const lastModified = document.querySelector('meta[name="last-modified"]')?.getAttribute("content") || "";
     const themeColor = document.querySelector('meta[name="theme-color"]')?.getAttribute("content") || "";
     const colorScheme = document.querySelector('meta[name="color-scheme"]')?.getAttribute("content") || "";
+    const metaRobots = document.querySelector('meta[name="robots"]')?.getAttribute("content") || "";
+    const metaReferrer = document.querySelector('meta[name="referrer"]')?.getAttribute("content") || "";
 
     const openGraphTags = [...document.querySelectorAll('meta[property^="og:"]')]
         .map((meta) => ({
@@ -586,8 +590,10 @@ function computeSeoSnapshot() {
     if (title.length < 10 || title.length > 100) {
         warnings.push(`Title length ${title.length} (target 10-100)`);
     }
-    if (metaDescription.length < 50 || metaDescription.length > 250) {
-        warnings.push(`Meta description ${metaDescription.length} (target 50-250)`);
+    if (!metaDescription.trim()) {
+        warnings.push("Meta description is missing");
+    } else if (metaDescription.length < 50 || metaDescription.length > 250) {
+        warnings.push(`Meta description length ${metaDescription.length}`);
     }
     if (!canonicalUrl) {
         warnings.push("Canonical URL is missing");
@@ -597,6 +603,8 @@ function computeSeoSnapshot() {
         titleLength: title.length,
         metaDescription,
         metaDescriptionLength: metaDescription.length,
+        metaRobots,
+        metaReferrer,
         canonicalUrl,
         authorLink,
         monetizationLink,
@@ -713,7 +721,57 @@ function setAriaInspectorEnabled(enabled) {
     if (!state.ariaInspectorEnabled && state.ariaTooltip) {
         state.ariaTooltip.style.display = "none";
     }
+    if (state.ariaInspectorEnabled && state.altOverlayEnabled) {
+        setAltOverlayEnabled(false);
+    }
     return { active: state.ariaInspectorEnabled };
+}
+
+function clearAltOverlays() {
+    for (const entry of state.altOverlayNodes) {
+        const wrapper = entry.wrapper;
+        const img = entry.img;
+        if (wrapper.parentNode && img.parentNode === wrapper) {
+            wrapper.parentNode.insertBefore(img, wrapper);
+            wrapper.remove();
+        }
+    }
+    state.altOverlayNodes = [];
+}
+
+function setAltOverlayEnabled(enabled) {
+    if (state.altOverlayEnabled && !enabled) {
+        clearAltOverlays();
+        state.altOverlayEnabled = false;
+        return { active: false };
+    }
+    if (!enabled) {
+        return { active: false };
+    }
+    if (state.ariaInspectorEnabled) {
+        setAriaInspectorEnabled(false);
+    }
+    clearAltOverlays();
+    const images = [...document.querySelectorAll("img")];
+    for (const img of images) {
+        const alt = img.getAttribute("alt");
+        const text = alt === null || alt === undefined ? "(no alt)" : (String(alt).trim() || "(empty)");
+        const wrapper = document.createElement("span");
+        wrapper.style.cssText = "position:relative;display:inline-block;max-width:100%;";
+        if (img.parentNode) {
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+        }
+        const overlay = document.createElement("div");
+        overlay.setAttribute("aria-hidden", "true");
+        overlay.style.cssText =
+            "position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);color:#fff;font:11px -apple-system,sans-serif;padding:4px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;";
+        overlay.textContent = text;
+        wrapper.appendChild(overlay);
+        state.altOverlayNodes.push({ wrapper, img });
+    }
+    state.altOverlayEnabled = true;
+    return { active: true };
 }
 
 function computeA11ySnapshot() {
@@ -756,12 +814,18 @@ function computeA11ySnapshot() {
         .slice(0, 40)
         .map((heading) => `${heading.tagName.toLowerCase()}: ${heading.textContent.trim().slice(0, 60)}`);
 
+    const htmlLang = (document.documentElement.getAttribute("lang") || "").trim();
+    const validLangPattern = /^[a-z]{2,3}(-[A-Za-z0-9]+)*$/;
+    const htmlLangValid = htmlLang.length > 0 && validLangPattern.test(htmlLang);
+
     return {
         missingAltCount: missingAlt.length,
         missingAltSamples: missingAlt.slice(0, 8).map((img) => img.currentSrc || img.src || "(inline image)"),
         lowContrastCount,
         lowContrastSamples,
-        headingTree
+        headingTree,
+        htmlLangMissing: !htmlLangValid,
+        htmlLangValue: htmlLang || null
     };
 }
 
@@ -1217,6 +1281,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "a11y-aria-inspector") {
         return Promise.resolve(setAriaInspectorEnabled(request.enabled));
+    }
+
+    if (request.action === "a11y-alt-overlay") {
+        return Promise.resolve(setAltOverlayEnabled(request.enabled));
     }
 
     if (request.action === "rendering-format") {

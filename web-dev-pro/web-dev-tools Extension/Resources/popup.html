@@ -49,13 +49,22 @@
         <h2 class="fs-6">Accessibility</h2>
       </div>
       <div id="a11y-output" class="output rounded-3 overflow-auto p-1"></div>
-      <div class="form-check form-switch mt-2 mb-0">
-        <input class="form-check-input" type="checkbox" role="switch" id="a11y-aria-inspect-switch" switch>
-        <label class="form-check-label" for="a11y-aria-inspect-switch">ARIA inspect</label>
+      <div class="a11y-switches mt-2 pt-2 border-top">
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" role="switch" id="a11y-alt-overlay-switch" switch>
+          <label class="form-check-label" for="a11y-alt-overlay-switch">Img alt inspect</label>
+        </div>
+        <p class="small text-secondary mt-0 mb-2">
+          Shows alt text over all images on the page.
+        </p>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="a11y-aria-inspect-switch" switch>
+          <label class="form-check-label" for="a11y-aria-inspect-switch">ARIA inspect</label>
+        </div>
+        <p class="small text-secondary mt-1 mb-0">
+          Tip: Click any page element after running to inspect ARIA attrs.
+        </p>
       </div>
-      <p class="small text-secondary mt-1 mb-0">
-        Tip: Click any page element after running to inspect ARIA attrs.
-      </p>
     </section>
 
     <section class="tool-group p-3 tab-panel overflow-hidden" data-panel="rendering">

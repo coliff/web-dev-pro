@@ -12,6 +12,7 @@
     "url": "https://github.com/coliff/web-dev-pro/issues"
   },
   "scripts": {
+    "lint": "npm run lint-css && npm run lint-html && npm run lint-js",
     "lint-css": "npx stylelint \"web-dev-pro/**/*.css\" --fix",
     "lint-html": "npx htmlhint **/*.html",
     "lint-js": "npx eslint@8 **/*.js --fix",
