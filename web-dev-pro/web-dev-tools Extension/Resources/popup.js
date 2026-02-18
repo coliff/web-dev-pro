@@ -116,6 +116,16 @@ async function saveTab(tabName) {
   await saveStoredValue(popupTabKey, tabName);
 }
 
+function showWelcomeScreen() {
+  document.getElementById("welcome-panel")?.classList.remove("hidden");
+  document.getElementById("main-content")?.classList.add("hidden");
+}
+
+function showMainScreen() {
+  document.getElementById("welcome-panel")?.classList.add("hidden");
+  document.getElementById("main-content")?.classList.remove("hidden");
+}
+
 function getSystemThemeMode() {
   return systemThemeMediaQuery?.matches ? "dark" : "light";
 }
@@ -2044,7 +2054,11 @@ async function bindEvents() {
 
     const tabButton = target.closest("[data-tab]");
     if (tabButton instanceof HTMLElement && tabButton.dataset.tab) {
-      await switchTab(tabButton.dataset.tab);
+      const tabName = tabButton.dataset.tab;
+      if (validTabs.has(tabName) && document.getElementById("main-content")?.classList.contains("hidden")) {
+        showMainScreen();
+      }
+      await switchTab(tabName);
       return;
     }
 
@@ -2141,6 +2155,9 @@ async function bindEvents() {
   const savedTab = await loadSavedTab();
   if (savedTab && validTabs.has(savedTab)) {
     currentTab = savedTab;
+    showMainScreen();
+  } else {
+    showWelcomeScreen();
   }
 
   const ariaInspectSwitch = document.getElementById("a11y-aria-inspect-switch");
@@ -2230,7 +2247,9 @@ async function bindEvents() {
 
   renderBuildInfo();
   void renderDeviceInfo();
-  void switchTab(currentTab);
+  if (document.getElementById("main-content")?.classList.contains("hidden") === false) {
+    void switchTab(currentTab);
+  }
 }
 
 void bindEvents();

@@ -206,3 +206,47 @@ details.accordion-item::details-content {
 details.accordion-item[open]::details-content {
   block-size: auto;
 }
+
+/* Welcome (first-run) screen */
+.welcome-panel {
+  min-height: 0;
+}
+
+.welcome-app-icon {
+  filter: brightness(0) invert(0.65);
+}
+
+[data-bs-theme="light"] .welcome-app-icon {
+  filter: brightness(0) invert(0.4);
+}
+
+.welcome-title {
+  line-height: 1.25;
+}
+
+.welcome-cards .card:hover,
+.welcome-cards .card:focus-visible {
+  background-color: var(--bs-secondary-bg);
+  border-color: var(--bs-border-color) !important;
+  color: var(--bs-body-color);
+}
+
+.welcome-cards .card-footer {
+  font-size: 11.9px;
+}
+
+.welcome-card-icon {
+  filter: brightness(0) invert(0.65);
+}
+
+[data-bs-theme="light"] .welcome-card-icon {
+  filter: brightness(0) invert(0.4);
+}
+
+.main-content.hidden {
+  display: none !important;
+}
+
+.welcome-panel.hidden {
+  display: none !important;
+}

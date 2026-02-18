@@ -14,36 +14,123 @@
 <body class="m-0 p-0 h-100 d-flex flex-column overflow-hidden w-100">
   <main class="d-flex flex-column flex-grow-1 w-100">
     <nav class="nav nav-tabs nav-fill tabs mb-0 border-bottom" aria-label="Tools">
-      <button class="nav-link tab mb-0 border-0" data-tab="a11y" type="button" aria-label="Accessibility"
-        title="Accessibility">
+      <button class="nav-link tab mb-0 border-0" data-tab="a11y" type="button" aria-label="Accessibility">
         <img class="tab-icon" src="tab-a11y.svg" alt="Accessibility" width="18" height="18" />
       </button>
-      <button class="nav-link tab mb-0 border-0" data-tab="css" type="button" aria-label="CSS" title="CSS">
-        <img class="tab-icon" src="tab-css.svg" alt="CSS" width="18" height="18" />
+      <button class="nav-link tab mb-0 border-0" data-tab="css" type="button" aria-label="CSS">
+        <img class="tab-icon" src="tab-css.svg" alt="CSS" width="22" height="22" />
       </button>
-      <button class="nav-link tab mb-0 border-0" data-tab="css-overview" type="button" aria-label="CSS Overview" title="CSS Overview">
+      <button class="nav-link tab mb-0 border-0" data-tab="css-overview" type="button" aria-label="CSS Overview">
         <img class="tab-icon" src="tab-css-overview.svg" alt="CSS Overview" width="18" height="18" />
       </button>
-      <button class="nav-link tab mb-0 border-0" data-tab="perf" type="button" aria-label="Performance"
-        title="Performance">
+      <button class="nav-link tab mb-0 border-0" data-tab="perf" type="button" aria-label="Performance">
         <img class="tab-icon" src="tab-perf.svg" alt="Performance" width="18" height="18" />
       </button>
-      <button class="nav-link tab mb-0 border-0" data-tab="rendering" type="button" aria-label="Rendering"
-        title="Rendering">
+      <button class="nav-link tab mb-0 border-0" data-tab="rendering" type="button" aria-label="Rendering">
         <img class="tab-icon" src="tab-rendering.svg" alt="Rendering" width="18" height="18" />
       </button>
-      <button class="nav-link tab mb-0 border-0" data-tab="seo" type="button" aria-label="SEO" title="SEO">
+      <button class="nav-link tab mb-0 border-0" data-tab="seo" type="button" aria-label="SEO">
         <img class="tab-icon" src="tab-seo.svg" alt="SEO" width="18" height="18" />
       </button>
-      <button class="nav-link tab mb-0 border-0" data-tab="storage" type="button" aria-label="Storage" title="Storage">
+      <button class="nav-link tab mb-0 border-0" data-tab="storage" type="button" aria-label="Storage">
         <img class="tab-icon" src="tab-storage.svg" alt="Storage" width="18" height="18" />
       </button>
-      <button class="nav-link tab mb-0 border-0" data-tab="settings" type="button" aria-label="Settings"
-        title="Settings">
+      <button class="nav-link tab mb-0 border-0" data-tab="settings" type="button" aria-label="Settings">
         <img class="tab-icon" src="tab-settings.svg" alt="Settings" width="18" height="18" />
       </button>
     </nav>
 
+    <section class="welcome-panel d-flex flex-column flex-grow-1 px-1 pt-4 overflow-auto" id="welcome-panel" aria-label="Welcome">
+      <div class="welcome-hero text-center mb-3">
+        <img class="welcome-app-icon mb-3 bg-black rounded-3 shadow" src="toolbar-icon.svg" alt="" width="64" height="64" />
+        <h1 class="welcome-title fs-5 fw-bold mb-1">Welcome to Web DevTools+</h1>
+        <p class="welcome-subtitle small text-secondary mb-0 text-balance">The missing developer tools for Safari<br> on your iPhone and iPad</p>
+      </div>
+      <div class="welcome-cards row g-2">
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="a11y">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-a11y.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent">
+              <small>Accessibility</small>
+            </div>
+          </button>
+        </div>
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="css">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-css.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent">
+              <small>CSS</small>
+            </div>
+          </button>
+        </div>
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="css-overview">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-css-overview.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent">
+              <small>CSS Overview</small>
+            </div>
+          </button>
+        </div>
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="perf">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-perf.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent">
+              <small>Performance</small>
+            </div>
+          </button>
+        </div>
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="rendering">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-rendering.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent">
+              <small>Rendering</small>
+            </div>
+          </button>
+        </div>
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="seo">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-seo.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent">
+              <small>SEO &amp; Meta</small>
+            </div>
+          </button>
+        </div>
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="storage">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-storage.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent">
+              <small>Storage</small>
+            </div>
+          </button>
+        </div>
+        <div class="col-3">
+          <button type="button" class="card btn w-100 h-100 d-flex flex-column p-0 rounded-3 border" data-tab="settings">
+            <div class="card-body d-flex align-items-center justify-content-center flex-grow-1 p-2">
+              <img class="welcome-card-icon" src="tab-settings.svg" alt="" width="24" height="24" />
+            </div>
+            <div class="card-footer border-0 pt-0 px-2 pb-2 bg-transparent text-center">
+              <small>Settings</small>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="main-content d-flex flex-column flex-grow-1 w-100 overflow-hidden hidden" id="main-content">
     <section class="tool-group p-3 tab-panel rounded-3 overflow-hidden" data-panel="a11y">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-6">Accessibility</h2>
@@ -52,18 +139,20 @@
       <div class="a11y-switches mt-2 pt-2 border-top">
         <div class="form-check form-switch mb-2">
           <input class="form-check-input" type="checkbox" role="switch" id="a11y-alt-overlay-switch" switch>
-          <label class="form-check-label" for="a11y-alt-overlay-switch">Img alt inspect</label>
+          <label class="form-check-label" for="a11y-alt-overlay-switch">Img alt inspect
+            <p class="small text-secondary mt-0 mb-2">
+              Shows alt text over images on the current page.
+            </p>
+          </label>
         </div>
-        <p class="small text-secondary mt-0 mb-2">
-          Shows alt text over all images on the page.
-        </p>
         <div class="form-check form-switch mb-0">
           <input class="form-check-input" type="checkbox" role="switch" id="a11y-aria-inspect-switch" switch>
-          <label class="form-check-label" for="a11y-aria-inspect-switch">ARIA inspect</label>
+          <label class="form-check-label" for="a11y-aria-inspect-switch">ARIA inspect
+            <p class="small text-secondary mt-1 mb-0">
+              Tap any page element after running to inspect ARIA attrs.
+            </p>
+          </label>
         </div>
-        <p class="small text-secondary mt-1 mb-0">
-          Tip: Click any page element after running to inspect ARIA attrs.
-        </p>
       </div>
     </section>
 
@@ -241,10 +330,10 @@
           <div class="accordion-body border-bottom p-2 small">
             <table class="table-sm table-borderless mb-0 small">
               <tbody>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">User Agent</th><td id="device-browser-user-agent" class="text-break"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">OS Version</th><td id="device-browser-os-version"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Device</th><td id="device-browser-device"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Language</th><td id="device-browser-language"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">User Agent</th><td id="device-browser-user-agent" class="text-break"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">OS Version</th><td id="device-browser-os-version"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Device</th><td id="device-browser-device"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Language</th><td id="device-browser-language"></td></tr>
               </tbody>
             </table>
           </div>
@@ -257,12 +346,12 @@
           <div class="accordion-body border-bottom p-2 small">
             <table class="table-sm table-borderless mb-0 small">
               <tbody>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Screen resolution</th><td id="device-display-resolution"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Pixel density</th><td id="device-display-dpr"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Color depth</th><td id="device-display-color-depth"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Orientation</th><td id="device-display-orientation"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Reduced motion</th><td id="device-display-reduced-motion"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Color scheme</th><td id="device-display-color-scheme"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Screen resolution</th><td id="device-display-resolution"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Pixel density</th><td id="device-display-dpr"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Color depth</th><td id="device-display-color-depth"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Orientation</th><td id="device-display-orientation"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Reduced motion</th><td id="device-display-reduced-motion"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Color scheme</th><td id="device-display-color-scheme"></td></tr>
               </tbody>
             </table>
           </div>
@@ -275,15 +364,15 @@
           <div class="accordion-body border-bottom p-2 small">
             <table class="table-sm table-borderless mb-0 small">
               <tbody>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">IP address</th><td id="device-network-ip"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Location</th><td id="device-network-location"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">ISP</th><td id="device-network-isp"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Connection type</th><td id="device-network-connection"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Effective type</th><td id="device-network-effective-type"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Downlink</th><td id="device-network-downlink"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">RTT</th><td id="device-network-rtt"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Data saver</th><td id="device-network-data-saver"></td></tr>
-                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Timezone</th><td id="device-network-timezone"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">IP address</th><td id="device-network-ip"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Location</th><td id="device-network-location"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">ISP</th><td id="device-network-isp"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Connection type</th><td id="device-network-connection"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Effective type</th><td id="device-network-effective-type"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Downlink</th><td id="device-network-downlink"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">RTT</th><td id="device-network-rtt"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Data saver</th><td id="device-network-data-saver"></td></tr>
+                <tr><th class="align-top text-nowrap opacity-75 pe-2" scope="row">Timezone</th><td id="device-network-timezone"></td></tr>
               </tbody>
             </table>
           </div>
@@ -296,6 +385,7 @@
       </div>
     </section>
 
+    </div>
   </main>
 
   <footer class="d-none small text-secondary p-2 border-top">
