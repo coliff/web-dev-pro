@@ -25,3 +25,8 @@ Accordions are built with details/summary elements but use Bootstrap's CSS. The 
     </details>
   </div>
 ```
+
+## SVGs
+
+- SVG files should be optimized using SVGO.
+- SVGs should be formatted with Prettier.

@@ -1102,6 +1102,19 @@ function renderSEO(result) {
       link.rel = "noopener noreferrer";
       link.textContent = content;
       li.append(link);
+      if (property === "og:image" && content && content !== "(empty)") {
+        const imgWrap = document.createElement("div");
+        imgWrap.className = "mt-2";
+        const img = document.createElement("img");
+        img.src = content;
+        img.alt = "Open Graph image";
+        img.className = "shadow border rounded bg-secondary bg-opacity-25 img-fluid";
+        img.style.maxWidth = "100%";
+        img.loading = "lazy";
+        img.onerror = () => { imgWrap.remove(); };
+        imgWrap.append(img);
+        li.append(imgWrap);
+      }
     } else {
       li.append(document.createTextNode(content));
     }
