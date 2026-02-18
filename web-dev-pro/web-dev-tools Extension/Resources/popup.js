@@ -3,7 +3,6 @@ const ext = globalThis.browser ?? globalThis.chrome;
 let lastStoragePayload = null;
 let lastCssOverviewPayload = null;
 let currentStorageKind = "cookie";
-let currentCssOverviewView = "overview";
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const themePreferenceKey = "popup.themePreference";
@@ -1561,79 +1560,69 @@ function renderPerf(result) {
   output.append(accordion);
 }
 
-function renderCssOverviewViewTabs() {
-  document.querySelectorAll("[data-css-overview-view]").forEach((button) => {
-    if (!(button instanceof HTMLElement)) {
-      return;
-    }
-    const isActive = button.dataset.cssOverviewView === currentCssOverviewView;
-    button.classList.toggle("active", isActive);
-    button.setAttribute("aria-selected", isActive ? "true" : "false");
-  });
-}
-
-function createCssOverviewMetric(label, value) {
+function createCssOverviewStaticRow(label, value) {
   const item = document.createElement("div");
-  item.className = "rounded-3 bg-secondary bg-opacity-25 p-2";
-
-  const title = document.createElement("div");
-  title.className = "small opacity-75";
-  title.textContent = label;
-
-  const metricValue = document.createElement("div");
-  metricValue.className = "fw-semibold";
-  metricValue.textContent = String(value);
-
-  item.append(title, metricValue);
+  item.className = "accordion-item border-bottom-0";
+  const header = document.createElement("div");
+  header.className = "accordion-button rounded-top no-expand";
+  header.setAttribute("aria-disabled", "true");
+  const title = document.createElement("h2");
+  title.className = "accordion-header user-select-none fs-6 text-body mb-0";
+  title.textContent = `${label} (${value})`;
+  header.append(title);
+  item.append(header);
   return item;
 }
 
-function renderCssOverviewOverview(output, payload) {
-  const overview = payload?.overview && typeof payload.overview === "object" ? payload.overview : {};
-  const grid = document.createElement("div");
-  grid.className = "row row-cols-2 g-2";
-
-  const metrics = [
-    ["Elements", overview.totalElements ?? 0],
-    ["Stylesheets", overview.stylesheets ?? 0],
-    ["Inline styles", overview.inlineStyleElements ?? 0],
-    ["Text colors", overview.uniqueTextColors ?? 0],
-    ["Background colors", overview.uniqueBackgroundColors ?? 0],
-    ["Border colors", overview.uniqueBorderColors ?? 0],
-    ["Font families", overview.uniqueFontFamilies ?? 0],
-    ["Font sizes", overview.uniqueFontSizes ?? 0],
-  ];
-
-  for (const [label, value] of metrics) {
-    const col = document.createElement("div");
-    col.className = "col";
-    col.append(createCssOverviewMetric(label, value));
-    grid.append(col);
-  }
-
-  output.append(grid);
+function createCssOverviewExpandableRow(label, value, bodyContent) {
+  const details = document.createElement("details");
+  details.className = "accordion-item border-bottom-0";
+  details.setAttribute("name", "accordion");
+  const summary = document.createElement("summary");
+  summary.className = "accordion-button rounded-top";
+  const title = document.createElement("h2");
+  title.className = "accordion-header user-select-none fs-6 text-body mb-0";
+  title.textContent = `${label} (${value})`;
+  summary.append(title);
+  const body = document.createElement("div");
+  body.className = "accordion-body border-bottom p-2";
+  body.append(bodyContent);
+  details.append(summary, body);
+  return details;
 }
 
-function appendColorList(output, title, entries) {
+function createStylesheetUrlList(urls) {
   const wrap = document.createElement("div");
-  wrap.className = "mb-3";
+  wrap.className = "d-flex flex-column gap-1";
+  if (!urls.length) {
+    const empty = document.createElement("div");
+    empty.className = "text-secondary small";
+    empty.textContent = "No external stylesheets.";
+    wrap.append(empty);
+    return wrap;
+  }
+  for (const url of urls) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.className = "small text-break";
+    a.textContent = url;
+    wrap.append(a);
+  }
+  return wrap;
+}
 
-  const heading = document.createElement("h3");
-  heading.className = "fs-6 mb-2";
-  heading.textContent = title;
-  wrap.append(heading);
-
+function createColorListContent(entries) {
+  const wrap = document.createElement("div");
+  wrap.className = "d-flex flex-column gap-1";
   if (!entries.length) {
     const empty = document.createElement("div");
-    empty.className = "text-secondary";
+    empty.className = "text-secondary small";
     empty.textContent = "No colors found.";
     wrap.append(empty);
-    output.append(wrap);
-    return;
+    return wrap;
   }
-
-  const list = document.createElement("div");
-  list.className = "d-flex flex-column gap-1";
   for (const entry of entries) {
     const row = document.createElement("div");
     row.className = "d-flex align-items-center justify-content-between rounded-3 bg-secondary bg-opacity-25 px-2 py-1";
@@ -1648,68 +1637,40 @@ function appendColorList(output, title, entries) {
     swatch.style.backgroundColor = entry.value;
 
     const value = document.createElement("code");
-    value.className = "font-monospace";
+    value.className = "font-monospace small";
     value.textContent = entry.value;
 
     left.append(swatch, value);
 
     const count = document.createElement("span");
-    count.className = "opacity-75";
+    count.className = "opacity-75 small";
     count.textContent = `${entry.count}`;
 
     row.append(left, count);
-    list.append(row);
+    wrap.append(row);
   }
-
-  wrap.append(list);
-  output.append(wrap);
+  return wrap;
 }
 
-function renderCssOverviewColors(output, payload) {
-  const colors = payload?.colors && typeof payload.colors === "object" ? payload.colors : {};
-  appendColorList(output, "Text colors", Array.isArray(colors.text) ? colors.text : []);
-  appendColorList(output, "Background colors", Array.isArray(colors.background) ? colors.background : []);
-  appendColorList(output, "Border colors", Array.isArray(colors.border) ? colors.border : []);
-}
-
-function appendFontList(output, title, entries) {
-  const wrap = document.createElement("div");
-  wrap.className = "mb-3";
-
-  const heading = document.createElement("h3");
-  heading.className = "fs-6 mb-2";
-  heading.textContent = title;
-  wrap.append(heading);
-
+function createFontListContent(entries) {
+  const wrap = document.createElement("ul");
+  wrap.className = "small mb-0 ps-3";
   if (!entries.length) {
-    const empty = document.createElement("div");
+    const empty = document.createElement("li");
     empty.className = "text-secondary";
     empty.textContent = "No data found.";
     wrap.append(empty);
-    output.append(wrap);
-    return;
+    return wrap;
   }
-
-  const list = document.createElement("ul");
-  list.className = "small mb-0 ps-3";
   for (const entry of entries) {
     const item = document.createElement("li");
     const value = document.createElement("span");
     value.className = "font-monospace";
     value.textContent = entry.value;
     item.append(value, document.createTextNode(` (${entry.count})`));
-    list.append(item);
+    wrap.append(item);
   }
-  wrap.append(list);
-  output.append(wrap);
-}
-
-function renderCssOverviewFont(output, payload) {
-  const fontInfo = payload?.fontInfo && typeof payload.fontInfo === "object" ? payload.fontInfo : {};
-  appendFontList(output, "Font families", Array.isArray(fontInfo.families) ? fontInfo.families : []);
-  appendFontList(output, "Font sizes", Array.isArray(fontInfo.sizes) ? fontInfo.sizes : []);
-  appendFontList(output, "Font weights", Array.isArray(fontInfo.weights) ? fontInfo.weights : []);
-  appendFontList(output, "Line heights", Array.isArray(fontInfo.lineHeights) ? fontInfo.lineHeights : []);
+  return wrap;
 }
 
 function renderCssOverview(payload) {
@@ -1719,7 +1680,6 @@ function renderCssOverview(payload) {
   }
 
   lastCssOverviewPayload = payload;
-  renderCssOverviewViewTabs();
   output.textContent = "";
 
   if (!payload || typeof payload !== "object") {
@@ -1727,17 +1687,50 @@ function renderCssOverview(payload) {
     return;
   }
 
-  if (currentCssOverviewView === "colors") {
-    renderCssOverviewColors(output, payload);
-    return;
-  }
+  const overview = payload?.overview && typeof payload.overview === "object" ? payload.overview : {};
+  const colors = payload?.colors && typeof payload.colors === "object" ? payload.colors : {};
+  const fontInfo = payload?.fontInfo && typeof payload.fontInfo === "object" ? payload.fontInfo : {};
+  const stylesheetUrls = Array.isArray(overview.stylesheetUrls) ? overview.stylesheetUrls : [];
 
-  if (currentCssOverviewView === "font") {
-    renderCssOverviewFont(output, payload);
-    return;
-  }
+  const accordion = document.createElement("div");
+  accordion.className = "accordion border-bottom-0";
 
-  renderCssOverviewOverview(output, payload);
+  accordion.append(
+    createCssOverviewStaticRow("Elements", overview.totalElements ?? 0),
+    createCssOverviewExpandableRow(
+      "Stylesheets",
+      overview.stylesheets ?? 0,
+      createStylesheetUrlList(stylesheetUrls)
+    ),
+    createCssOverviewStaticRow("Inline Styles", overview.inlineStyleElements ?? 0),
+    createCssOverviewExpandableRow(
+      "Text colors",
+      overview.uniqueTextColors ?? 0,
+      createColorListContent(Array.isArray(colors.text) ? colors.text : [])
+    ),
+    createCssOverviewExpandableRow(
+      "Background colors",
+      overview.uniqueBackgroundColors ?? 0,
+      createColorListContent(Array.isArray(colors.background) ? colors.background : [])
+    ),
+    createCssOverviewExpandableRow(
+      "Border colors",
+      overview.uniqueBorderColors ?? 0,
+      createColorListContent(Array.isArray(colors.border) ? colors.border : [])
+    ),
+    createCssOverviewExpandableRow(
+      "Font families",
+      overview.uniqueFontFamilies ?? 0,
+      createFontListContent(Array.isArray(fontInfo.families) ? fontInfo.families : [])
+    ),
+    createCssOverviewExpandableRow(
+      "Font sizes",
+      overview.uniqueFontSizes ?? 0,
+      createFontListContent(Array.isArray(fontInfo.sizes) ? fontInfo.sizes : [])
+    )
+  );
+
+  output.append(accordion);
 }
 
 function makeStorageRow(item) {
@@ -2049,17 +2042,6 @@ async function bindEvents() {
       return;
     }
 
-    const cssOverviewTab = target.closest("[data-css-overview-view]");
-    if (cssOverviewTab instanceof HTMLElement && cssOverviewTab.dataset.cssOverviewView) {
-      currentCssOverviewView = cssOverviewTab.dataset.cssOverviewView;
-      if (lastCssOverviewPayload) {
-        renderCssOverview(lastCssOverviewPayload);
-      } else {
-        await runAction("css-overview");
-      }
-      return;
-    }
-
     const tabButton = target.closest("[data-tab]");
     if (tabButton instanceof HTMLElement && tabButton.dataset.tab) {
       await switchTab(tabButton.dataset.tab);
@@ -2232,6 +2214,18 @@ async function bindEvents() {
         }
       });
     }
+  }
+
+  function updateOrientationDisplay() {
+    const orientationNode = document.getElementById("device-display-orientation");
+    if (orientationNode) {
+      orientationNode.textContent = getOrientationLabel();
+    }
+  }
+
+  window.addEventListener("orientationchange", updateOrientationDisplay);
+  if (screen.orientation && typeof screen.orientation.addEventListener === "function") {
+    screen.orientation.addEventListener("change", updateOrientationDisplay);
   }
 
   renderBuildInfo();

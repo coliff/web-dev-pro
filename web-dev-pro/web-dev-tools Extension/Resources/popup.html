@@ -186,11 +186,6 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-6">CSS Overview</h2>
       </div>
-      <nav class="nav nav-tabs nav-fill mb-2" aria-label="CSS overview sections">
-        <button class="nav-link active py-1 small" type="button" data-css-overview-view="overview">Overview</button>
-        <button class="nav-link py-1 small" type="button" data-css-overview-view="colors">Colors</button>
-        <button class="nav-link py-1 small" type="button" data-css-overview-view="font">Font Info</button>
-      </nav>
       <div id="css-overview-output" class="output rounded-3 overflow-auto p-2 small"></div>
     </section>
 
@@ -244,10 +239,14 @@
             <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Browser Details</h4>
           </summary>
           <div class="accordion-body border-bottom p-2 small">
-            <div><strong>User Agent:</strong> <span id="device-browser-user-agent" class="text-break"></span></div>
-            <div><strong>OS Version:</strong> <span id="device-browser-os-version"></span></div>
-            <div><strong>Device:</strong> <span id="device-browser-device"></span></div>
-            <div><strong>Language:</strong> <span id="device-browser-language"></span></div>
+            <table class="table-sm table-borderless mb-0 small">
+              <tbody>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">User Agent</th><td id="device-browser-user-agent" class="text-break"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">OS Version</th><td id="device-browser-os-version"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Device</th><td id="device-browser-device"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Language</th><td id="device-browser-language"></td></tr>
+              </tbody>
+            </table>
           </div>
         </details>
 
@@ -256,12 +255,16 @@
             <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Display</h4>
           </summary>
           <div class="accordion-body border-bottom p-2 small">
-            <div><strong>Screen resolution:</strong> <span id="device-display-resolution"></span></div>
-            <div><strong>Pixel density:</strong> <span id="device-display-dpr"></span></div>
-            <div><strong>Color depth:</strong> <span id="device-display-color-depth"></span></div>
-            <div><strong>Orientation:</strong> <span id="device-display-orientation"></span></div>
-            <div><strong>Reduced motion:</strong> <span id="device-display-reduced-motion"></span></div>
-            <div><strong>Color scheme:</strong> <span id="device-display-color-scheme"></span></div>
+            <table class="table-sm table-borderless mb-0 small">
+              <tbody>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Screen resolution</th><td id="device-display-resolution"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Pixel density</th><td id="device-display-dpr"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Color depth</th><td id="device-display-color-depth"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Orientation</th><td id="device-display-orientation"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Reduced motion</th><td id="device-display-reduced-motion"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Color scheme</th><td id="device-display-color-scheme"></td></tr>
+              </tbody>
+            </table>
           </div>
         </details>
 
@@ -270,15 +273,19 @@
             <h4 class="accordion-header user-select-none fs-6 text-body mb-0">Network</h4>
           </summary>
           <div class="accordion-body border-bottom p-2 small">
-            <div><strong>IP address:</strong> <span id="device-network-ip"></span></div>
-            <div><strong>Location:</strong> <span id="device-network-location"></span></div>
-            <div><strong>ISP:</strong> <span id="device-network-isp"></span></div>
-            <div><strong>Connection type:</strong> <span id="device-network-connection"></span></div>
-            <div><strong>Effective type:</strong> <span id="device-network-effective-type"></span></div>
-            <div><strong>Downlink:</strong> <span id="device-network-downlink"></span></div>
-            <div><strong>RTT:</strong> <span id="device-network-rtt"></span></div>
-            <div><strong>Data saver:</strong> <span id="device-network-data-saver"></span></div>
-            <div><strong>Timezone:</strong> <span id="device-network-timezone"></span></div>
+            <table class="table-sm table-borderless mb-0 small">
+              <tbody>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">IP address</th><td id="device-network-ip"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Location</th><td id="device-network-location"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">ISP</th><td id="device-network-isp"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Connection type</th><td id="device-network-connection"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Effective type</th><td id="device-network-effective-type"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Downlink</th><td id="device-network-downlink"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">RTT</th><td id="device-network-rtt"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Data saver</th><td id="device-network-data-saver"></td></tr>
+                <tr><th class="text-nowrap opacity-75 pe-2" scope="row">Timezone</th><td id="device-network-timezone"></td></tr>
+              </tbody>
+            </table>
           </div>
         </details>
       </div>

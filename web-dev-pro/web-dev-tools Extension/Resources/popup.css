@@ -98,6 +98,10 @@ main {
   filter: grayscale(1);
 }
 
+.accordion-button.no-expand {
+  cursor: default;
+}
+
 .accordion-button.no-expand::after {
   display: none !important;
 }

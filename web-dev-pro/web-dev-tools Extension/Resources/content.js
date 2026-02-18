@@ -1079,10 +1079,14 @@ function computeCssOverviewSnapshot() {
         .sort((a, b) => (b.count - a.count) || a.value.localeCompare(b.value))
         .slice(0, limit);
 
+    const styleSheets = document.styleSheets ? [...document.styleSheets] : [];
+    const stylesheetUrls = styleSheets.map((sheet) => (sheet.href || "").trim()).filter(Boolean);
+
     return {
         overview: {
             totalElements: elements.length,
-            stylesheets: document.styleSheets?.length || 0,
+            stylesheets: styleSheets.length,
+            stylesheetUrls,
             inlineStyleElements: document.querySelectorAll("[style]").length,
             uniqueTextColors: textColors.size,
             uniqueBackgroundColors: backgroundColors.size,
