@@ -403,7 +403,6 @@ async function renderDeviceInfo() {
   const colorScheme = getColorSchemeLabel();
   const connectionType = getConnectionTypeLabel();
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const onlineState = navigator.onLine ? "Online" : "Offline";
   const effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
     ? connection.effectiveType
     : (typeof connection?.type === "string" && connection.type ? connection.type : "Unavailable");
@@ -432,7 +431,6 @@ async function renderDeviceInfo() {
   const locationNode = document.getElementById("device-network-location");
   const ispNode = document.getElementById("device-network-isp");
   const connectionNode = document.getElementById("device-network-connection");
-  const onlineStateNode = document.getElementById("device-network-online-state");
   const effectiveTypeNode = document.getElementById("device-network-effective-type");
   const downlinkNode = document.getElementById("device-network-downlink");
   const rttNode = document.getElementById("device-network-rtt");
@@ -443,7 +441,7 @@ async function renderDeviceInfo() {
     !uaNode || !osVersionNode || !deviceNode || !languageNode || !resolutionNode || !dprNode || !colorDepthNode
     || !orientationNode || !reducedMotionNode || !colorSchemeNode
     || !ipNode || !locationNode || !ispNode || !connectionNode
-    || !onlineStateNode || !effectiveTypeNode || !downlinkNode || !rttNode || !dataSaverNode || !timezoneNode
+    || !effectiveTypeNode || !downlinkNode || !rttNode || !dataSaverNode || !timezoneNode
   ) {
     return;
   }
@@ -459,7 +457,6 @@ async function renderDeviceInfo() {
   reducedMotionNode.textContent = reducedMotion;
   colorSchemeNode.textContent = colorScheme;
   connectionNode.textContent = connectionType;
-  onlineStateNode.textContent = onlineState;
   effectiveTypeNode.textContent = effectiveType;
   downlinkNode.textContent = downlink;
   rttNode.textContent = rtt;
@@ -501,7 +498,6 @@ function buildDeviceInfoClipboardText() {
     `Location: ${read("device-network-location")}`,
     `ISP: ${read("device-network-isp")}`,
     `Connection type: ${read("device-network-connection")}`,
-    `Online state: ${read("device-network-online-state")}`,
     `Effective type: ${read("device-network-effective-type")}`,
     `Downlink: ${read("device-network-downlink")}`,
     `RTT: ${read("device-network-rtt")}`,
