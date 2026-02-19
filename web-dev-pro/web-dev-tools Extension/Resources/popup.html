@@ -332,6 +332,7 @@
         <button class="nav-link active py-1 small text-body" type="button" data-settings-subtab="options">Options</button>
         <button class="nav-link py-1 small text-body" type="button" data-settings-subtab="credits">Credits</button>
         <button class="nav-link py-1 small text-body" type="button" data-settings-subtab="device-info">Device Info</button>
+        <button class="nav-link py-1 small text-body" type="button" data-settings-subtab="more-tools">More Tools</button>
       </nav>
       <div class="px-3 bg-body flex-grow-1 min-h-0 d-flex flex-column overflow-hidden">
         <div class="settings-subpanel pt-3 d-flex flex-column overflow-auto flex-grow-1" data-settings-subpanel="options">
@@ -358,6 +359,13 @@
         </div>
         <div class="settings-subpanel pt-3 d-none overflow-auto flex-grow-1" data-settings-subpanel="credits">
           <p class="small text-body mb-0">App built with &lt;3 in Osaka, Japan by Christian Oliff.</p>
+        </div>
+        <div class="settings-subpanel pt-3 d-none d-flex flex-column overflow-auto flex-grow-1 min-h-0" data-settings-subpanel="more-tools">
+          <div class="alert alert-info small mb-3 py-2" role="note">Note: these tools send the current page to an external website in a new tab.</div>
+          <div class="d-flex flex-column gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" data-more-tools="lighthouse">Lighthouse</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-more-tools="nu-validator">Nu HTML Checker</button>
+          </div>
         </div>
         <div class="settings-subpanel pt-3 d-none d-flex flex-column overflow-auto flex-grow-1 min-h-0" data-settings-subpanel="device-info">
           <div class="d-flex align-items-center justify-content-between mb-2">

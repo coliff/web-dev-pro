@@ -34,6 +34,41 @@ async function getActiveTabId() {
   });
 }
 
+async function getActiveTabUrl() {
+  if (ext.tabs.query.length === 1) {
+    const tabs = await ext.tabs.query({ active: true, currentWindow: true });
+    return tabs?.[0]?.url ?? "";
+  }
+  return await new Promise((resolve) => {
+    ext.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      resolve(tabs?.[0]?.url ?? "");
+    });
+  });
+}
+
+function openInNewTab(url) {
+  if (ext.tabs?.create) {
+    ext.tabs.create({ url });
+  } else {
+    globalThis.open(url, "_blank", "noopener");
+  }
+}
+
+async function openMoreTools(tool) {
+  const pageUrl = await getActiveTabUrl();
+  if (!pageUrl || pageUrl.startsWith("chrome:") || pageUrl.startsWith("edge:") || pageUrl.startsWith("about:")) {
+    return;
+  }
+  const encoded = encodeURIComponent(pageUrl);
+  if (tool === "lighthouse") {
+    openInNewTab(
+      `https://googlechrome.github.io/lighthouse/viewer/?psiurl=${encoded}&strategy=desktop&category=performance&category=accessibility&category=best-practices&locale=en-GB&utm_source=lh-chrome-ext`
+    );
+  } else if (tool === "nu-validator") {
+    openInNewTab(`https://validator.w3.org/nu/?doc=${encoded}`);
+  }
+}
+
 async function sendToActiveTab(message) {
   const tabId = await getActiveTabId();
 
@@ -278,7 +313,7 @@ function switchRenderingSubtab(subtabName) {
   void saveRenderingSubtab(name);
 }
 
-const validSettingsSubtabs = new Set(["options", "credits", "device-info"]);
+const validSettingsSubtabs = new Set(["options", "credits", "device-info", "more-tools"]);
 
 async function loadSettingsSubtab() {
   const stored = await loadStoredValue(settingsSubtabKey);
@@ -2492,6 +2527,12 @@ async function bindEvents() {
       }
       const shouldAnimate = tabButton.classList.contains("tab") && !wasOnWelcome;
       await switchTab(tabName, { animate: shouldAnimate });
+      return;
+    }
+
+    const moreToolsButton = target.closest("[data-more-tools]");
+    if (moreToolsButton instanceof HTMLElement && moreToolsButton.dataset.moreTools) {
+      await openMoreTools(moreToolsButton.dataset.moreTools);
       return;
     }
 
