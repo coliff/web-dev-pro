@@ -66,6 +66,10 @@ async function openMoreTools(tool) {
     );
   } else if (tool === "nu-validator") {
     openInNewTab(`https://validator.w3.org/nu/?doc=${encoded}`);
+  } else if (tool === "security-headers") {
+    openInNewTab(`https://securityheaders.com/?q=${encoded}&hide=on&followRedirects=on`);
+  } else if (tool === "pagespeed") {
+    openInNewTab(`https://pagespeed.web.dev/analysis?url=${encoded}&form_factor=mobile`);
   }
 }
 
