@@ -8,6 +8,7 @@ const state = {
         darkMode: false,
         noAnimations: false,
         noImages: false,
+        noBackgroundImages: false,
         forceHover: false,
         colorBlind: "none",
         disableAvif: false,
@@ -336,6 +337,19 @@ function toggleNoImages(active) {
         );
     } else {
         removeStyle("no-images-style");
+    }
+}
+
+function toggleNoBackgroundImages(active) {
+    if (active) {
+        addStyle(
+            "no-background-images-style",
+            `* {
+                background-image: none !important;
+            }`
+        );
+    } else {
+        removeStyle("no-background-images-style");
     }
 }
 
@@ -1356,6 +1370,8 @@ function toggleCssTool(tool) {
         toggleNoAnimations(active);
     } else if (tool === "noImages") {
         toggleNoImages(active);
+    } else if (tool === "noBackgroundImages") {
+        toggleNoBackgroundImages(active);
     } else if (tool === "forceHover") {
         toggleForceHover(active);
     }
