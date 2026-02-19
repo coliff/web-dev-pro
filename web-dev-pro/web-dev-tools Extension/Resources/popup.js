@@ -502,6 +502,13 @@ function getOsVersionFromUserAgent(userAgent) {
     return "Unknown";
   }
 
+  // Check for new iOS 26+ format: "(iPhone; 26.3 Mobile)" or "(iPad; 26.3 Mobile)"
+  const iosNewMatch = userAgent.match(/\((?:iPhone|iPad);\s*(\d+(?:\.\d+)*)\s+Mobile\)/i);
+  if (iosNewMatch?.[1]) {
+    return `iOS/iPadOS ${iosNewMatch[1]}`;
+  }
+
+  // Check for older iOS format: "OS 15_0 like Mac OS X"
   const iosMatch = userAgent.match(/OS (\d+(?:[_\.]\d+)*) like Mac OS X/i);
   if (iosMatch?.[1]) {
     return `iOS/iPadOS ${iosMatch[1].replace(/_/g, ".")}`;
