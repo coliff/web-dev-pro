@@ -27,6 +27,7 @@
     ".cspell.json",
     "*.min.*",
     ".gitignore",
+    "popup.css",
     "**/node_modules/**"
   ],
   "useGitignore": true

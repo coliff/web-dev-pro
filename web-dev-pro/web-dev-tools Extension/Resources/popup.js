@@ -1589,7 +1589,10 @@ function renderA11y(result) {
     lowContrastSummary.className = "accordion-button rounded-top";
     const lowContrastHeader = document.createElement("h2");
     lowContrastHeader.className = "accordion-header user-select-none fs-6 text-body";
-    lowContrastHeader.textContent = `Low contrast findings (${lowContrastSamples.length})`;
+    lowContrastHeader.append(
+      "Low contrast findings ",
+      Object.assign(document.createElement("span"), { className: "opacity-75", textContent: `(${lowContrastSamples.length})` })
+    );
     lowContrastSummary.append(lowContrastHeader);
     lowContrastDetails.append(lowContrastSummary);
     const lowContrastBody = document.createElement("div");
