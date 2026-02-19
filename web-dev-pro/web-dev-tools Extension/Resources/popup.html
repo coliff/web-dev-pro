@@ -211,6 +211,23 @@
           <option value="light">prefers-color-scheme: light</option>
           <option value="dark">prefers-color-scheme: dark</option>
         </select>
+
+        <h2 class="mt-2 mb-1 fw-semibold small">Emulate CSS media feature prefers-reduced-motion</h2>
+        <p class="small opacity-50 mb-2 mt-0">Forces CSS prefers-reduced-motion media feature</p>
+        <select id="rendering-reduced-motion-select" class="form-select form-select-sm mb-4" aria-label="prefers-reduced-motion emulation">
+          <option value="no-emulation" selected>No emulation</option>
+          <option value="reduce">prefers-reduced-motion: reduce</option>
+          <option value="no-preference">prefers-reduced-motion: no-preference</option>
+        </select>
+
+        <h2 class="mt-2 mb-1 fw-semibold small">Emulate CSS media feature prefers-contrast</h2>
+        <p class="small opacity-50 mb-2 mt-0">Forces CSS prefers-contrast media feature</p>
+        <select id="rendering-contrast-select" class="form-select form-select-sm mb-4" aria-label="prefers-contrast emulation">
+          <option value="no-emulation" selected>No emulation</option>
+          <option value="more">prefers-contrast: more</option>
+          <option value="less">prefers-contrast: less</option>
+          <option value="no-preference">prefers-contrast: no-preference</option>
+        </select>
       </div>
     </section>
 

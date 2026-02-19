@@ -173,6 +173,8 @@ function listPopupSettingKeys() {
     a11yAriaInspectKey,
     a11yAltOverlayKey,
     "popup.rendering.prefersColorScheme",
+    "popup.rendering.prefersReducedMotion",
+    "popup.rendering.prefersContrast",
     "popup.rendering.disableAvif",
     "popup.rendering.disableWebp",
   ])];
@@ -343,6 +345,14 @@ async function resetAllPopupSettings() {
   if (colorSchemeSelect instanceof HTMLSelectElement) {
     colorSchemeSelect.value = "no-emulation";
   }
+  const reducedMotionSelect = document.getElementById("rendering-reduced-motion-select");
+  if (reducedMotionSelect instanceof HTMLSelectElement) {
+    reducedMotionSelect.value = "no-emulation";
+  }
+  const contrastSelect = document.getElementById("rendering-contrast-select");
+  if (contrastSelect instanceof HTMLSelectElement) {
+    contrastSelect.value = "no-emulation";
+  }
   const avifSwitch = document.getElementById("rendering-disable-avif");
   const webpSwitch = document.getElementById("rendering-disable-webp");
   if (avifSwitch instanceof HTMLInputElement) {
@@ -361,6 +371,8 @@ async function resetAllPopupSettings() {
     await sendToActiveTab({ action: "a11y-aria-inspector", enabled: false });
     await sendToActiveTab({ action: "a11y-alt-overlay", enabled: false });
     await sendToActiveTab({ action: "prefers-color-scheme", value: null });
+    await sendToActiveTab({ action: "prefers-reduced-motion", value: null });
+    await sendToActiveTab({ action: "prefers-contrast", value: null });
     await sendToActiveTab({ action: "rendering-format", format: "avif", disable: false });
     await sendToActiveTab({ action: "rendering-format", format: "webp", disable: false });
     await sendToActiveTab({ action: "a11y-color-filter", filter: "none" });
@@ -1619,11 +1631,16 @@ function renderA11y(result) {
   const headingTreeDetails = document.createElement("details");
   headingTreeDetails.className = "accordion-item border-bottom-0";
   headingTreeDetails.setAttribute("name", "a11y-info");
+  headingTreeDetails.open = true;
   const headingTreeSummary = document.createElement("summary");
   headingTreeSummary.className = "accordion-button rounded-top";
   const headingTreeHeader = document.createElement("h2");
   headingTreeHeader.className = "accordion-header user-select-none fs-6 text-body";
-  headingTreeHeader.textContent = `Heading tree (${headingTree.length})`;
+  headingTreeHeader.append(document.createTextNode("Heading tree "));
+  const headingTreeCount = document.createElement("span");
+  headingTreeCount.className = "opacity-75";
+  headingTreeCount.textContent = `(${headingTree.length})`;
+  headingTreeHeader.append(headingTreeCount);
   headingTreeSummary.append(headingTreeHeader);
   lockAccordionWhenEmpty(headingTreeDetails, headingTreeSummary, headingTree.length);
   headingTreeDetails.append(headingTreeSummary);
@@ -1836,7 +1853,7 @@ function createCssOverviewStaticRow(label, value) {
   const item = document.createElement("div");
   item.className = "accordion-item border-bottom-0";
   const header = document.createElement("div");
-  header.className = "accordion-button rounded-top no-expand bg-transparent";
+  header.className = "accordion-button rounded-top no-expand";
   header.setAttribute("aria-disabled", "true");
   const title = document.createElement("h2");
   title.className = "accordion-header user-select-none fs-6 text-body mb-0";
@@ -1871,23 +1888,35 @@ function createCssOverviewExpandableRow(label, value, bodyContent) {
   return details;
 }
 
-function createStylesheetUrlList(urls) {
+function createStylesheetUrlList(entries) {
   const wrap = document.createElement("div");
   wrap.className = "d-flex flex-column gap-1";
-  if (!urls.length) {
+  if (!entries.length) {
     const empty = document.createElement("div");
     empty.className = "text-secondary small";
     empty.textContent = "No external stylesheets.";
     wrap.append(empty);
     return wrap;
   }
-  for (const url of urls) {
+  for (const entry of entries) {
+    const url = typeof entry === "string" ? entry : String(entry?.url || "");
+    if (!url) {
+      continue;
+    }
+    const sizeKbRaw = typeof entry === "string" ? null : entry?.sizeKb;
+    const sizeKb = Number.isFinite(Number(sizeKbRaw)) && Number(sizeKbRaw) > 0
+      ? Number(sizeKbRaw)
+      : null;
     const a = document.createElement("a");
     a.href = url;
     a.target = "_blank";
     a.rel = "noopener noreferrer";
     a.className = "small text-break";
     a.textContent = url;
+    if (sizeKb !== null) {
+      const rounded = sizeKb >= 100 ? Math.round(sizeKb) : Number(sizeKb.toFixed(1));
+      a.append(document.createTextNode(` (${rounded} KB)`));
+    }
     wrap.append(a);
   }
   return wrap;
@@ -2009,6 +2038,9 @@ function renderCssOverview(payload) {
   const colors = payload?.colors && typeof payload.colors === "object" ? payload.colors : {};
   const fontInfo = payload?.fontInfo && typeof payload.fontInfo === "object" ? payload.fontInfo : {};
   const stylesheetUrls = Array.isArray(overview.stylesheetUrls) ? overview.stylesheetUrls : [];
+  const stylesheetEntries = Array.isArray(overview.stylesheetEntries)
+    ? overview.stylesheetEntries
+    : stylesheetUrls.map((url) => ({ url, sizeKb: null }));
   const mediaQueries = Array.isArray(payload.mediaQueries) ? payload.mediaQueries : [];
 
   const accordion = document.createElement("div");
@@ -2019,7 +2051,7 @@ function renderCssOverview(payload) {
     createCssOverviewExpandableRow(
       "Stylesheets",
       overview.stylesheets ?? 0,
-      createStylesheetUrlList(stylesheetUrls)
+      createStylesheetUrlList(stylesheetEntries)
     ),
     createCssOverviewStaticRow("Inline Styles", overview.inlineStyleElements ?? 0),
     createCssOverviewExpandableRow(
@@ -2367,6 +2399,8 @@ async function switchTab(tabName, options = {}) {
     const avifSwitch = document.getElementById("rendering-disable-avif");
     const webpSwitch = document.getElementById("rendering-disable-webp");
     const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
+    const reducedMotionSelect = document.getElementById("rendering-reduced-motion-select");
+    const contrastSelect = document.getElementById("rendering-contrast-select");
     try {
       if (avifSwitch instanceof HTMLInputElement && avifSwitch.checked) {
         await sendToActiveTab({ action: "rendering-format", format: "avif", disable: true });
@@ -2378,6 +2412,18 @@ async function switchTab(tabName, options = {}) {
         await sendToActiveTab({
           action: "prefers-color-scheme",
           value: colorSchemeSelect.value,
+        });
+      }
+      if (reducedMotionSelect instanceof HTMLSelectElement && reducedMotionSelect.value !== "no-emulation") {
+        await sendToActiveTab({
+          action: "prefers-reduced-motion",
+          value: reducedMotionSelect.value,
+        });
+      }
+      if (contrastSelect instanceof HTMLSelectElement && contrastSelect.value !== "no-emulation") {
+        await sendToActiveTab({
+          action: "prefers-contrast",
+          value: contrastSelect.value,
         });
       }
     } catch {
@@ -2484,6 +2530,8 @@ async function bindEvents() {
   }
 
   const colorSchemeKey = "popup.rendering.prefersColorScheme";
+  const reducedMotionKey = "popup.rendering.prefersReducedMotion";
+  const contrastKey = "popup.rendering.prefersContrast";
   const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
   if (colorSchemeSelect instanceof HTMLSelectElement) {
     const stored = await loadStoredValue(colorSchemeKey);
@@ -2500,6 +2548,44 @@ async function bindEvents() {
         });
       } catch (error) {
         setStatus("Could not apply prefers-color-scheme.", true);
+      }
+    });
+  }
+  const reducedMotionSelect = document.getElementById("rendering-reduced-motion-select");
+  if (reducedMotionSelect instanceof HTMLSelectElement) {
+    const stored = await loadStoredValue(reducedMotionKey);
+    if (stored === "reduce" || stored === "no-preference" || stored === "no-emulation") {
+      reducedMotionSelect.value = stored;
+    }
+    reducedMotionSelect.addEventListener("change", async () => {
+      const value = reducedMotionSelect.value;
+      await saveStoredValue(reducedMotionKey, value);
+      try {
+        await sendToActiveTab({
+          action: "prefers-reduced-motion",
+          value: value === "no-emulation" ? null : value,
+        });
+      } catch {
+        setStatus("Could not apply prefers-reduced-motion.", true);
+      }
+    });
+  }
+  const contrastSelect = document.getElementById("rendering-contrast-select");
+  if (contrastSelect instanceof HTMLSelectElement) {
+    const stored = await loadStoredValue(contrastKey);
+    if (stored === "more" || stored === "less" || stored === "no-preference" || stored === "no-emulation") {
+      contrastSelect.value = stored;
+    }
+    contrastSelect.addEventListener("change", async () => {
+      const value = contrastSelect.value;
+      await saveStoredValue(contrastKey, value);
+      try {
+        await sendToActiveTab({
+          action: "prefers-contrast",
+          value: value === "no-emulation" ? null : value,
+        });
+      } catch {
+        setStatus("Could not apply prefers-contrast.", true);
       }
     });
   }

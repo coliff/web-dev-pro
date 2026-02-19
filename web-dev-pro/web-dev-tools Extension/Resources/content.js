@@ -14,6 +14,8 @@ const state = {
         disableWebp: false
     },
     prefersColorSchemeEmulation: null,
+    prefersReducedMotionEmulation: null,
+    prefersContrastEmulation: null,
     styleNodes: new Map(),
     overlayNodes: [],
     ariaInspectorInstalled: false,
@@ -27,35 +29,71 @@ const state = {
 
 const originalMatchMedia = window.matchMedia.bind(window);
 
-function parseColorSchemeQuery(query) {
+function parseMediaFeatureQuery(query) {
     if (typeof query !== "string") {
-        return { isDark: false, isLight: false };
+        return {
+            isDark: false,
+            isLight: false,
+            isReducedMotion: false,
+            isNoPreferenceMotion: false,
+            isContrastMore: false,
+            isContrastLess: false,
+            isContrastNoPreference: false
+        };
     }
     const q = query.replace(/\s+/g, " ").trim().toLowerCase();
     return {
         isDark: q.includes("prefers-color-scheme: dark") || q.includes("(prefers-color-scheme:dark)"),
-        isLight: q.includes("prefers-color-scheme: light") || q.includes("(prefers-color-scheme:light)")
+        isLight: q.includes("prefers-color-scheme: light") || q.includes("(prefers-color-scheme:light)"),
+        isReducedMotion: q.includes("prefers-reduced-motion: reduce") || q.includes("(prefers-reduced-motion:reduce)"),
+        isNoPreferenceMotion: q.includes("prefers-reduced-motion: no-preference") || q.includes("(prefers-reduced-motion:no-preference)"),
+        isContrastMore: q.includes("prefers-contrast: more") || q.includes("(prefers-contrast:more)"),
+        isContrastLess: q.includes("prefers-contrast: less") || q.includes("(prefers-contrast:less)"),
+        isContrastNoPreference: q.includes("prefers-contrast: no-preference") || q.includes("(prefers-contrast:no-preference)")
     };
 }
 
 function getEmulatedMatch(query, fallback) {
-    const emulated = state.prefersColorSchemeEmulation;
-    if (!emulated) {
-        return fallback;
+    const {
+        isDark,
+        isLight,
+        isReducedMotion,
+        isNoPreferenceMotion,
+        isContrastMore,
+        isContrastLess,
+        isContrastNoPreference
+    } = parseMediaFeatureQuery(query);
+
+    if (state.prefersColorSchemeEmulation && (isDark || isLight)) {
+        return (isDark && state.prefersColorSchemeEmulation === "dark")
+            || (isLight && state.prefersColorSchemeEmulation === "light");
     }
 
-    const { isDark, isLight } = parseColorSchemeQuery(query);
-    if (!isDark && !isLight) {
-        return fallback;
+    if (state.prefersReducedMotionEmulation && (isReducedMotion || isNoPreferenceMotion)) {
+        return (isReducedMotion && state.prefersReducedMotionEmulation === "reduce")
+            || (isNoPreferenceMotion && state.prefersReducedMotionEmulation === "no-preference");
     }
 
-    return (isDark && emulated === "dark") || (isLight && emulated === "light");
+    if (state.prefersContrastEmulation && (isContrastMore || isContrastLess || isContrastNoPreference)) {
+        return (isContrastMore && state.prefersContrastEmulation === "more")
+            || (isContrastLess && state.prefersContrastEmulation === "less")
+            || (isContrastNoPreference && state.prefersContrastEmulation === "no-preference");
+    }
+
+    return fallback;
 }
 
 window.matchMedia = function (query) {
     const mql = originalMatchMedia(query);
-    const { isDark, isLight } = parseColorSchemeQuery(query);
-    if (!isDark && !isLight) {
+    const parsed = parseMediaFeatureQuery(query);
+    const targetsEmulatableFeature = parsed.isDark
+        || parsed.isLight
+        || parsed.isReducedMotion
+        || parsed.isNoPreferenceMotion
+        || parsed.isContrastMore
+        || parsed.isContrastLess
+        || parsed.isContrastNoPreference;
+    if (!targetsEmulatableFeature) {
         return mql;
     }
 
@@ -117,7 +155,7 @@ window.matchMedia = function (query) {
     return wrapper;
 };
 
-function notifyColorSchemeMqls() {
+function notifyMediaQueryMqls() {
     state.mediaQueryWrappers.forEach((wrapper) => {
         if (wrapper && typeof wrapper.__notify === "function") {
             wrapper.__notify();
@@ -395,8 +433,20 @@ function setPrefersColorSchemeEmulation(value) {
         root.style.removeProperty("color-scheme");
         root.removeAttribute("data-prefers-color-scheme");
     }
-    notifyColorSchemeMqls();
+    notifyMediaQueryMqls();
     return { value: state.prefersColorSchemeEmulation };
+}
+
+function setPrefersReducedMotionEmulation(value) {
+    state.prefersReducedMotionEmulation = value === "reduce" || value === "no-preference" ? value : null;
+    notifyMediaQueryMqls();
+    return { value: state.prefersReducedMotionEmulation };
+}
+
+function setPrefersContrastEmulation(value) {
+    state.prefersContrastEmulation = value === "more" || value === "less" || value === "no-preference" ? value : null;
+    notifyMediaQueryMqls();
+    return { value: state.prefersContrastEmulation };
 }
 
 function fallbackUrlForFormat(url, format) {
@@ -1083,6 +1133,38 @@ function computeCssOverviewSnapshot() {
     const stylesheetUrls = [...new Set(
         styleSheets.map((sheet) => (sheet.href || "").trim()).filter(Boolean)
     )];
+    const stylesheetUrlSet = new Set(stylesheetUrls);
+    const stylesheetSizesByUrl = new Map();
+    const resourceEntries = typeof performance?.getEntriesByType === "function"
+        ? performance.getEntriesByType("resource")
+        : [];
+
+    for (const entry of resourceEntries) {
+        const name = typeof entry?.name === "string" ? entry.name.trim() : "";
+        if (!name || !stylesheetUrlSet.has(name)) {
+            continue;
+        }
+        const transferSize = Number(entry.transferSize);
+        const decodedBodySize = Number(entry.decodedBodySize);
+        const encodedBodySize = Number(entry.encodedBodySize);
+        const sizeBytes = Number.isFinite(transferSize) && transferSize > 0
+            ? transferSize
+            : (Number.isFinite(decodedBodySize) && decodedBodySize > 0
+                ? decodedBodySize
+                : (Number.isFinite(encodedBodySize) && encodedBodySize > 0 ? encodedBodySize : 0));
+        if (sizeBytes <= 0) {
+            continue;
+        }
+        const sizeKb = Math.round((sizeBytes / 1024) * 10) / 10;
+        const existing = stylesheetSizesByUrl.get(name);
+        if (!Number.isFinite(existing) || sizeKb > existing) {
+            stylesheetSizesByUrl.set(name, sizeKb);
+        }
+    }
+    const stylesheetEntries = stylesheetUrls.map((url) => ({
+        url,
+        sizeKb: Number.isFinite(stylesheetSizesByUrl.get(url)) ? stylesheetSizesByUrl.get(url) : null
+    }));
 
     const mediaQueryCounts = new Map();
     const MEDIA_RULE = 4;
@@ -1121,6 +1203,7 @@ function computeCssOverviewSnapshot() {
             totalElements: elements.length,
             stylesheets: stylesheetUrls.length,
             stylesheetUrls,
+            stylesheetEntries,
             inlineStyleElements: document.querySelectorAll("[style]").length,
             uniqueTextColors: textColors.size,
             uniqueBackgroundColors: backgroundColors.size,
@@ -1332,6 +1415,14 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "prefers-color-scheme") {
         return Promise.resolve(setPrefersColorSchemeEmulation(request.value));
+    }
+
+    if (request.action === "prefers-reduced-motion") {
+        return Promise.resolve(setPrefersReducedMotionEmulation(request.value));
+    }
+
+    if (request.action === "prefers-contrast") {
+        return Promise.resolve(setPrefersContrastEmulation(request.value));
     }
 
     return undefined;
