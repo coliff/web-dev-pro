@@ -855,6 +855,7 @@ async function renderDeviceInfo() {
     ? (connection.saveData ? "On" : "Off")
     : "Unavailable";
   const timezone = getTimezoneLabel();
+  const isMacIntelDesktop = String(platform).trim().toLowerCase() === "macintel" && mobileHint === "desktop";
 
   const uaNode = document.getElementById("device-browser-user-agent");
   const osVersionNode = document.getElementById("device-browser-os-version");
@@ -891,7 +892,7 @@ async function renderDeviceInfo() {
 
   uaNode.textContent = userAgent;
   osVersionNode.textContent = osVersion;
-  deviceNode.textContent = `${platform} (${mobileHint})`;
+  deviceNode.textContent = isMacIntelDesktop ? "" : `${platform} (${mobileHint})`;
   languageNode.textContent = language;
   resolutionNode.innerHTML = `${logicalWidth}x${logicalHeight} logical<br>${physicalWidth}x${physicalHeight} physical`;
   dprNode.textContent = `${dpr.toFixed(2)}x`;
@@ -1254,6 +1255,112 @@ function lockAccordionWhenEmpty(details, summary, count) {
     if (details.open) {
       details.open = false;
     }
+  });
+}
+
+class AccordionAnimator {
+  constructor(details) {
+    this.details = details;
+    this.summary = details.querySelector("summary");
+    this.content = details.querySelector(".accordion-body");
+    this.animation = null;
+    this.isClosing = false;
+    this.isExpanding = false;
+    if (!(this.summary instanceof HTMLElement) || !(this.content instanceof HTMLElement)) {
+      return;
+    }
+    this.summary.addEventListener("click", (event) => this.onClick(event));
+  }
+
+  onClick(event) {
+    if (!(this.summary instanceof HTMLElement) || !(this.content instanceof HTMLElement)) {
+      return;
+    }
+    if (this.summary.classList.contains("pe-none") || this.summary.classList.contains("no-expand")) {
+      return;
+    }
+    if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+      return;
+    }
+    event.preventDefault();
+    this.details.style.overflow = "hidden";
+    if (this.isClosing || !this.details.open) {
+      this.open();
+      return;
+    }
+    if (this.isExpanding || this.details.open) {
+      this.shrink();
+    }
+  }
+
+  shrink() {
+    this.isClosing = true;
+    const startHeight = `${this.details.offsetHeight}px`;
+    const endHeight = `${this.summary.offsetHeight}px`;
+
+    if (this.animation) {
+      this.animation.cancel();
+    }
+    this.animation = this.details.animate(
+      { height: [startHeight, endHeight] },
+      { duration: 220, easing: "ease-in-out" }
+    );
+    this.animation.onfinish = () => this.onAnimationFinish(false);
+    this.animation.oncancel = () => {
+      this.isClosing = false;
+    };
+  }
+
+  open() {
+    this.details.style.height = `${this.details.offsetHeight}px`;
+    this.details.open = true;
+    globalThis.requestAnimationFrame(() => this.expand());
+  }
+
+  expand() {
+    if (!(this.summary instanceof HTMLElement) || !(this.content instanceof HTMLElement)) {
+      return;
+    }
+    this.isExpanding = true;
+    const startHeight = `${this.details.offsetHeight}px`;
+    const endHeight = `${this.summary.offsetHeight + this.content.offsetHeight}px`;
+    if (this.animation) {
+      this.animation.cancel();
+    }
+    this.animation = this.details.animate(
+      { height: [startHeight, endHeight] },
+      { duration: 320, easing: "ease-out" }
+    );
+    this.animation.onfinish = () => this.onAnimationFinish(true);
+    this.animation.oncancel = () => {
+      this.isExpanding = false;
+    };
+  }
+
+  onAnimationFinish(open) {
+    this.details.open = open;
+    this.animation = null;
+    this.isClosing = false;
+    this.isExpanding = false;
+    this.details.style.height = "";
+    this.details.style.overflow = "";
+  }
+}
+
+function initializeAccordionAnimations(root = document) {
+  if (!(root instanceof ParentNode)) {
+    return;
+  }
+  root.querySelectorAll("details.accordion-item").forEach((details) => {
+    if (!(details instanceof HTMLDetailsElement)) {
+      return;
+    }
+    if (details.dataset.waapiAccordion === "true") {
+      return;
+    }
+    details.dataset.waapiAccordion = "true";
+    // eslint-disable-next-line no-new
+    new AccordionAnimator(details);
   });
 }
 
@@ -1805,6 +1912,10 @@ function renderSEO(result) {
         infoCell.append(line);
       };
       appendInfoLine("Filename", icon?.filename);
+      const dimensions = String(icon?.sizes || "").trim();
+      if (dimensions) {
+        appendInfoLine("Dimensions", dimensions);
+      }
       const sizeValue = formatSize(icon?.sizeKb);
       if (sizeValue.toLowerCase() !== "unavailable") {
         appendInfoLine("Size", sizeValue);
@@ -1823,6 +1934,7 @@ function renderSEO(result) {
   accordion.append(iconsDetails);
 
   output.append(accordion);
+  initializeAccordionAnimations(output);
 }
 
 function renderA11y(result) {
@@ -1859,9 +1971,27 @@ function renderA11y(result) {
     htmlLangBody.className = "accordion-body border-bottom p-2";
     const htmlLangText = document.createElement("p");
     htmlLangText.className = "small mb-0";
-    htmlLangText.textContent = htmlLangValue
-      ? `The page has an invalid or empty lang attribute: "${htmlLangValue}". Use a valid BCP 47 language tag (e.g. en, en-US) on <html>.`
-      : "The page is missing a lang attribute on <html>. Add a valid BCP 47 language tag (e.g. en, en-US).";
+    if (htmlLangValue) {
+      htmlLangText.append("The page has an invalid or empty ");
+      const langCode = document.createElement("code");
+      langCode.className = "font-monospace";
+      langCode.textContent = "lang";
+      htmlLangText.append(langCode, ` attribute: "${htmlLangValue}". Use a valid BCP 47 language tag (e.g. en, en-US) on `);
+      const htmlCode = document.createElement("code");
+      htmlCode.className = "font-monospace";
+      htmlCode.textContent = "<html>";
+      htmlLangText.append(htmlCode, ".");
+    } else {
+      htmlLangText.append("The page is missing a ");
+      const langCode = document.createElement("code");
+      langCode.className = "font-monospace";
+      langCode.textContent = "lang";
+      htmlLangText.append(langCode, " attribute on ");
+      const htmlCode = document.createElement("code");
+      htmlCode.className = "font-monospace";
+      htmlCode.textContent = "<html>";
+      htmlLangText.append(htmlCode, ". Add a valid BCP 47 language tag (e.g. en, en-US).");
+    }
     htmlLangBody.append(htmlLangText);
     htmlLangDetails.append(htmlLangBody);
     auditsAccordion.append(htmlLangDetails);
@@ -2009,6 +2139,8 @@ function renderA11y(result) {
   infoAccordion.append(headingTreeDetails);
 
   infoOutput.append(infoAccordion);
+  initializeAccordionAnimations(auditsOutput);
+  initializeAccordionAnimations(infoOutput);
 }
 
 function renderPerf(result) {
@@ -2201,6 +2333,7 @@ function renderPerf(result) {
   }
 
   output.append(accordion);
+  initializeAccordionAnimations(output);
 }
 
 function formatNetworkSizeKb(sizeKb) {
@@ -2293,7 +2426,7 @@ function showNetworkAssetDetails(item) {
   panel.style.maxHeight = "92vh";
   panel.style.overflow = "auto";
 
-  const heading = panel.querySelector(":scope > .small.fw-semibold.mb-2");
+  const heading = panel.querySelector(".small.fw-semibold.mb-2");
   if (heading instanceof HTMLElement) {
     const header = document.createElement("div");
     header.className = "d-flex align-items-start justify-content-between mb-2";
@@ -2444,17 +2577,20 @@ function createNetworkTypeIcon(item) {
 function renderNetwork(payload) {
   const output = document.getElementById("network-output");
   const sortWrap = document.getElementById("network-sort-wrap");
+  const filterWrap = document.getElementById("network-filter-wrap");
   if (!output) {
     return;
   }
   output.textContent = "";
 
   const items = Array.isArray(payload?.items) ? payload.items : [];
+  const isDocTab = currentNetworkSubtab === "doc";
+  const applyThirdPartyFilter = currentNetworkFilter === "third-party" && !isDocTab;
   const filtered = items.filter((item) => {
     if (item?.type !== currentNetworkSubtab) {
       return false;
     }
-    if (currentNetworkFilter === "third-party") {
+    if (applyThirdPartyFilter) {
       return item?.isThirdParty === true;
     }
     return true;
@@ -2497,6 +2633,7 @@ function renderNetwork(payload) {
   if (!filtered.length) {
     lastRenderedNetworkItems = [];
     sortWrap?.classList.add("d-none");
+    filterWrap?.classList.add("d-none");
     const empty = document.createElement("p");
     empty.className = "small text-secondary text-center mb-0";
     empty.textContent = "No matching requests found.";
@@ -2518,7 +2655,13 @@ function renderNetwork(payload) {
     output.append(info);
   }
 
-  sortWrap?.classList.remove("d-none");
+  if (isDocTab) {
+    sortWrap?.classList.add("d-none");
+    filterWrap?.classList.add("d-none");
+  } else {
+    sortWrap?.classList.remove("d-none");
+    filterWrap?.classList.remove("d-none");
+  }
   lastRenderedNetworkItems = filtered;
 
   const tableWrap = document.createElement("div");
@@ -2666,17 +2809,25 @@ function createStylesheetUrlList(entries) {
     const sizeKb = Number.isFinite(Number(sizeKbRaw)) && Number(sizeKbRaw) > 0
       ? Number(sizeKbRaw)
       : null;
+    const row = document.createElement("div");
+    row.className = "small text-break";
+
     const a = document.createElement("a");
     a.href = url;
     a.target = "_blank";
     a.rel = "noopener noreferrer";
     a.className = "small text-break";
     a.textContent = url;
+    row.append(a);
+
     if (sizeKb !== null) {
       const rounded = sizeKb >= 100 ? Math.round(sizeKb) : Number(sizeKb.toFixed(1));
-      a.append(document.createTextNode(` (${rounded} KB)`));
+      const size = document.createElement("span");
+      size.className = "opacity-75";
+      size.textContent = ` (${rounded} KB)`;
+      row.append(size);
     }
-    wrap.append(a);
+    wrap.append(row);
   }
   return wrap;
 }
@@ -2851,7 +3002,18 @@ function renderCssOverview(payload) {
     )
   );
 
+  if ((overview.uniqueFillColors ?? 0) > 0) {
+    accordion.append(
+      createCssOverviewExpandableRow(
+        "Fill colors",
+        overview.uniqueFillColors ?? 0,
+        createColorListContent(Array.isArray(colors.fill) ? colors.fill : [])
+      )
+    );
+  }
+
   output.append(summaryCards, accordion);
+  initializeAccordionAnimations(output);
 }
 
 function makeStorageRow(item) {
@@ -2919,13 +3081,16 @@ function renderStorage(payload) {
   }
 
   if (!items.length) {
+    const empty = document.createElement("p");
+    empty.className = "text-center mb-0";
     if (currentStorageKind === "localStorage") {
-      output.textContent = "No localStorage items found.";
+      empty.textContent = "No localStorage items found.";
     } else if (currentStorageKind === "cookie") {
-      output.textContent = "No cookie items found.";
+      empty.textContent = "No cookie items found.";
     } else {
-      output.textContent = "No sessionStorage items found.";
+      empty.textContent = "No sessionStorage items found.";
     }
+    output.append(empty);
     return;
   }
 
@@ -3621,7 +3786,7 @@ async function bindEvents() {
       void saveThemePreference(selectedPreference);
     });
 
-    if (systemThemeMediaQuery) {
+  if (systemThemeMediaQuery) {
       systemThemeMediaQuery.addEventListener("change", () => {
         if (activeThemePreference === "system") {
           applyTheme("system");
@@ -3643,6 +3808,7 @@ async function bindEvents() {
   }
 
   renderBuildInfo();
+  initializeAccordionAnimations(document);
   void renderDeviceInfo();
   if (document.getElementById("main-content")?.classList.contains("hidden") === false) {
     void switchTab(currentTab);

@@ -1443,6 +1443,7 @@ function computeCssOverviewSnapshot() {
     const textColors = new Map();
     const backgroundColors = new Map();
     const borderColors = new Map();
+    const fillColors = new Map();
     const fontFamilies = new Map();
     const fontSizes = new Map();
     const fontWeights = new Map();
@@ -1499,6 +1500,10 @@ function computeCssOverviewSnapshot() {
         const borderWidth = Number.parseFloat(style.borderTopWidth || "0");
         if (borderWidth > 0 && style.borderTopStyle !== "none") {
             increment(borderColors, normalizeColor(style.borderTopColor));
+        }
+        const fillColor = normalizeColor(style.fill);
+        if (fillColor) {
+            increment(fillColors, fillColor);
         }
 
         increment(fontFamilies, style.fontFamily);
@@ -1594,13 +1599,15 @@ function computeCssOverviewSnapshot() {
             uniqueTextColors: textColors.size,
             uniqueBackgroundColors: backgroundColors.size,
             uniqueBorderColors: borderColors.size,
+            uniqueFillColors: fillColors.size,
             uniqueFontFamilies: fontFamilies.size,
             uniqueFontSizes: fontSizes.size
         },
         colors: {
             text: sortEntries(textColors),
             background: sortEntries(backgroundColors),
-            border: sortEntries(borderColors)
+            border: sortEntries(borderColors),
+            fill: sortEntries(fillColors)
         },
         fontInfo: {
             families: sortEntries(fontFamilies, 20),

@@ -225,24 +225,6 @@ summary.accordion-button::-webkit-details-marker {
   display: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  details.accordion-item {
-    interpolate-size: allow-keywords;
-  }
-}
-
-details.accordion-item::details-content {
-  block-size: 0;
-  overflow-y: clip;
-  transition:
-    content-visibility 0.2s allow-discrete,
-    block-size 0.2s;
-}
-
-details.accordion-item[open]::details-content {
-  block-size: auto;
-}
-
 /* Welcome (first-run) screen */
 .welcome-panel {
   min-height: 0;
