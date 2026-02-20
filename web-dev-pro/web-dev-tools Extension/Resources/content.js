@@ -593,6 +593,63 @@ function setImageFormatDisabled(format, disable) {
 }
 
 function computeSeoSnapshot() {
+    const normalizeUrl = (value) => {
+        try {
+            const url = new URL(value, location.href);
+            url.hash = "";
+            return url.href;
+        } catch (_error) {
+            return value || "";
+        }
+    };
+    const pickFilename = (url) => {
+        try {
+            const parsed = new URL(url, location.href);
+            const segments = parsed.pathname.split("/").filter(Boolean);
+            return segments.length ? segments[segments.length - 1] : parsed.hostname;
+        } catch (_error) {
+            const fallback = String(url || "");
+            const parts = fallback.split("/").filter(Boolean);
+            return parts.length ? parts[parts.length - 1] : fallback;
+        }
+    };
+    const pickExtension = (url) => {
+        const source = String(url || "").toLowerCase().split("#")[0].split("?")[0];
+        const match = source.match(/\.([a-z0-9]+)$/i);
+        return match?.[1] || "";
+    };
+    const inferMimeFromExt = (ext) => {
+        const map = {
+            svg: "image/svg+xml",
+            png: "image/png",
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            gif: "image/gif",
+            webp: "image/webp",
+            avif: "image/avif",
+            ico: "image/x-icon",
+            bmp: "image/bmp",
+            tif: "image/tiff",
+            tiff: "image/tiff"
+        };
+        return map[ext] || "";
+    };
+    const bytesFromEntry = (entry) => {
+        const transfer = Number(entry?.transferSize || 0);
+        if (transfer > 0) {
+            return transfer;
+        }
+        const encoded = Number(entry?.encodedBodySize || 0);
+        if (encoded > 0) {
+            return encoded;
+        }
+        const decoded = Number(entry?.decodedBodySize || 0);
+        if (decoded > 0) {
+            return decoded;
+        }
+        return null;
+    };
+
     const title = document.title || "";
     const metaDescription = document.querySelector('meta[name="description"]')?.content || "";
     const canonicalUrl = document.querySelector('link[rel="canonical"]')?.href || "";
@@ -600,21 +657,48 @@ function computeSeoSnapshot() {
     const monetizationLink = document.querySelector('link[rel~="monetization"]')?.getAttribute("href") || "";
     const pingbackLink = document.querySelector('link[rel~="pingback"]')?.getAttribute("href") || "";
     const webmentionLink = document.querySelector('link[rel~="webmention"]')?.getAttribute("href") || "";
+    const resourceEntries = typeof performance?.getEntriesByType === "function"
+        ? (performance.getEntriesByType("resource") || [])
+        : [];
+    const sizeByUrl = new Map();
+    for (const entry of resourceEntries) {
+        const name = normalizeUrl(entry?.name);
+        if (!name) {
+            continue;
+        }
+        const bytes = bytesFromEntry(entry);
+        if (!Number.isFinite(bytes) || bytes <= 0) {
+            continue;
+        }
+        const sizeKb = Math.round((bytes / 1024) * 10) / 10;
+        const existing = sizeByUrl.get(name);
+        if (!Number.isFinite(existing) || sizeKb > existing) {
+            sizeByUrl.set(name, sizeKb);
+        }
+    }
     const iconLinks = [...document.querySelectorAll("link[rel]")]
         .filter((link) => {
             const rel = (link.getAttribute("rel") || "").toLowerCase();
             return rel.includes("icon") || rel.includes("apple-touch-icon") || rel.includes("mask-icon");
         })
-        .map((link) => ({
-            rel: link.getAttribute("rel") || "",
-            href: link.getAttribute("href") || "",
-            type: link.getAttribute("type") || "",
-            sizes: link.getAttribute("sizes") || "",
-            purpose: link.getAttribute("purpose") || "",
-            media: link.getAttribute("media") || "",
-            color: link.getAttribute("color") || ""
-        }))
-        .filter((item) => Boolean(item.href))
+        .map((link) => {
+            const href = normalizeUrl(link.getAttribute("href") || "");
+            const mimeType = (link.getAttribute("type") || "").trim();
+            const ext = pickExtension(href);
+            return {
+                rel: link.getAttribute("rel") || "",
+                href,
+                type: ext ? ext.toUpperCase() : "",
+                mimeType: mimeType || inferMimeFromExt(ext),
+                sizes: link.getAttribute("sizes") || "",
+                purpose: link.getAttribute("purpose") || "",
+                media: link.getAttribute("media") || "",
+                color: link.getAttribute("color") || "",
+                filename: pickFilename(href),
+                sizeKb: Number.isFinite(sizeByUrl.get(href)) ? sizeByUrl.get(href) : null
+            };
+        })
+        .filter((item) => Boolean(item.href || item.filename))
         .slice(0, 40);
     const alternateFeeds = [...document.querySelectorAll('link[rel~="alternate"]')]
         .map((link) => ({
@@ -1467,12 +1551,14 @@ function computeCssOverviewSnapshot() {
 
     const mediaQueryCounts = new Map();
     const MEDIA_RULE = 4;
+    let totalStyleRules = 0;
 
     function countMediaInRuleList(ruleList) {
         if (!ruleList) {
             return;
         }
         for (const rule of ruleList) {
+            totalStyleRules += 1;
             if (rule.type === MEDIA_RULE && rule.media && rule.media.mediaText) {
                 const condition = rule.media.mediaText.trim();
                 if (condition) {
@@ -1504,6 +1590,7 @@ function computeCssOverviewSnapshot() {
             stylesheetUrls,
             stylesheetEntries,
             inlineStyleElements: document.querySelectorAll("[style]").length,
+            styleRules: totalStyleRules,
             uniqueTextColors: textColors.size,
             uniqueBackgroundColors: backgroundColors.size,
             uniqueBorderColors: borderColors.size,

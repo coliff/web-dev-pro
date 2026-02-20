@@ -8,6 +8,7 @@ let currentStorageKind = "cookie";
 let currentNetworkSubtab = "doc";
 let currentNetworkSort = "time";
 let currentNetworkFilter = "all";
+let currentNetworkShowImages = false;
 let hideNetworkInfoAlert = false;
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
@@ -17,6 +18,7 @@ const renderingSubtabKey = "popup.lastRenderingSubtab";
 const networkSubtabKey = "popup.lastNetworkSubtab";
 const networkSortKey = "popup.network.sort";
 const networkFilterKey = "popup.network.filter";
+const networkShowImagesKey = "popup.network.showImages";
 const networkInfoAlertKey = "popup.network.infoAlertDismissed";
 const moreToolsAlertKey = "popup.moreToolsAlertDismissed";
 const settingsSubtabKey = "popup.lastSettingsSubtab";
@@ -223,6 +225,7 @@ function listPopupSettingKeys() {
     networkSubtabKey,
     networkSortKey,
     networkFilterKey,
+    networkShowImagesKey,
     settingsSubtabKey,
     themePreferenceKey,
     legacyDarkModeKey,
@@ -356,6 +359,8 @@ function switchNetworkSubtab(subtabName) {
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-selected", active ? "true" : "false");
   });
+  const showImagesWrap = document.getElementById("network-show-images-wrap");
+  showImagesWrap?.classList.toggle("d-none", name !== "images");
   void saveNetworkSubtab(name);
   if (lastNetworkPayload) {
     renderNetwork(lastNetworkPayload);
@@ -442,6 +447,11 @@ async function resetAllPopupSettings() {
     networkFilterSelect.value = "all";
   }
   currentNetworkFilter = "all";
+  const networkShowImagesSwitch = document.getElementById("network-show-images-switch");
+  if (networkShowImagesSwitch instanceof HTMLInputElement) {
+    networkShowImagesSwitch.checked = false;
+  }
+  currentNetworkShowImages = false;
   const mediaTypeSelect = document.getElementById("rendering-media-type-select");
   if (mediaTypeSelect instanceof HTMLSelectElement) {
     mediaTypeSelect.value = "no-emulation";
@@ -1039,7 +1049,7 @@ function showConfirmDialog(message) {
     text.textContent = message;
 
     const actions = document.createElement("div");
-    actions.className = "d-flex gap-1 justify-content-end";
+    actions.className = "d-flex gap-3 justify-content-end";
 
     const cancelBtn = document.createElement("button");
     cancelBtn.type = "button";
@@ -1735,40 +1745,76 @@ function renderSEO(result) {
     empty.textContent = "None";
     iconsBody.append(empty);
   } else {
-    const iconsList = document.createElement("ul");
-    iconsList.className = "small mb-0 ps-3";
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "table-responsive";
+    const table = document.createElement("table");
+    table.className = "table table-sm table-bordered align-middle mb-0";
+    const thead = document.createElement("thead");
+    thead.className = "visually-hidden";
+    thead.innerHTML = "<tr><th scope=\"col\">Icon</th><th scope=\"col\">Info</th></tr>";
+    table.append(thead);
+    const tbody = document.createElement("tbody");
+
+    const formatSize = (sizeKb) => {
+      const numeric = Number(sizeKb);
+      if (!Number.isFinite(numeric) || numeric <= 0) {
+        return "Unavailable";
+      }
+      if (numeric >= 100) {
+        return `${Math.round(numeric)} KB`;
+      }
+      return `${numeric.toFixed(1)} KB`;
+    };
+
     for (const icon of iconLinks) {
-      const li = document.createElement("li");
       const href = String(icon?.href || "").trim();
-      const rel = String(icon?.rel || "").trim() || "icon";
-      const type = String(icon?.type || "").trim();
-      const sizes = String(icon?.sizes || "").trim();
+      const row = document.createElement("tr");
 
-      const labelParts = [rel];
-      if (type) {
-        labelParts.push(type);
-      }
-      if (sizes) {
-        labelParts.push(sizes);
-      }
-
-      const label = document.createElement("strong");
-      label.textContent = `${labelParts.join(" · ")}: `;
-      li.append(label);
-
-      if (/^https?:\/\//i.test(href) || href.startsWith("/")) {
-        const link = document.createElement("a");
-        link.href = href;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = href;
-        li.append(link);
+      const iconCell = document.createElement("td");
+      iconCell.className = "text-center";
+      iconCell.style.width = "36px";
+      iconCell.style.minWidth = "36px";
+      iconCell.style.maxWidth = "36px";
+      if (href) {
+        const img = document.createElement("img");
+        img.src = href;
+        img.alt = String(icon?.filename || "Icon");
+        img.loading = "lazy";
+        img.fetchPriority = "low";
+        img.className = "mx-auto d-block";
+        img.style.width = "32px";
+        img.style.height = "32px";
+        img.style.objectFit = "contain";
+        iconCell.append(img);
       } else {
-        li.append(document.createTextNode(href || "(missing href)"));
+        const fallback = document.createElement("span");
+        fallback.className = "small text-secondary";
+        fallback.textContent = "—";
+        iconCell.append(fallback);
       }
-      iconsList.append(li);
+
+      const infoCell = document.createElement("td");
+      infoCell.className = "small";
+
+      const appendInfoLine = (label, value) => {
+        const line = document.createElement("div");
+        const key = document.createElement("span");
+        key.className = "opacity-75";
+        key.textContent = `${label}: `;
+        line.append(key, document.createTextNode(String(value || "Unavailable")));
+        infoCell.append(line);
+      };
+      appendInfoLine("Size", formatSize(icon?.sizeKb));
+      appendInfoLine("Type", icon?.type);
+      appendInfoLine("MIME type", icon?.mimeType);
+      appendInfoLine("Filename", icon?.filename);
+
+      row.append(iconCell, infoCell);
+      tbody.append(row);
     }
-    iconsBody.append(iconsList);
+    table.append(tbody);
+    tableWrap.append(table);
+    iconsBody.append(tableWrap);
   }
   iconsDetails.append(iconsBody);
   accordion.append(iconsDetails);
@@ -2509,8 +2555,21 @@ function renderNetwork(payload) {
     iconCell.style.minWidth = "32px";
     iconCell.style.maxWidth = "32px";
     iconCell.style.width = "32px";
-    const icon = createNetworkTypeIcon(item);
-    iconCell.append(icon);
+    if (currentNetworkSubtab === "images" && currentNetworkShowImages && item?.url) {
+      const preview = document.createElement("img");
+      preview.src = String(item.url);
+      preview.alt = String(item.name || "Image thumbnail");
+      preview.loading = "lazy";
+      preview.fetchPriority = "low";
+      preview.className = "network-table-thumb mx-auto d-block";
+      preview.addEventListener("error", () => {
+        preview.replaceWith(createNetworkTypeIcon(item));
+      }, { once: true });
+      iconCell.append(preview);
+    } else {
+      const icon = createNetworkTypeIcon(item);
+      iconCell.append(icon);
+    }
 
     const infoCell = document.createElement("td");
     const nameLine = document.createElement("button");
@@ -2566,7 +2625,7 @@ function createCssOverviewExpandableRow(label, value, bodyContent) {
   title.className = "accordion-header user-select-none fs-6 text-body mb-0";
   title.append(document.createTextNode(`${label} `));
   const countSpan = document.createElement("span");
-  countSpan.className = "opacity-50";
+  countSpan.className = (label === "Font families" || label === "Font sizes") ? "opacity-75" : "opacity-50";
   countSpan.textContent = `(${value})`;
   title.append(countSpan);
   summary.append(title);
@@ -2575,6 +2634,30 @@ function createCssOverviewExpandableRow(label, value, bodyContent) {
   body.append(bodyContent);
   details.append(summary, body);
   return details;
+}
+
+function createCssOverviewMetricCard(label, value) {
+  const col = document.createElement("div");
+  col.className = "col";
+
+  const card = document.createElement("div");
+  card.className = "card h-100 bg-transparent border";
+
+  const body = document.createElement("div");
+  body.className = "card-body p-2";
+
+  const title = document.createElement("div");
+  title.className = "small opacity-75 mb-1";
+  title.textContent = label;
+
+  const count = document.createElement("div");
+  count.className = "fw-semibold";
+  count.textContent = String(value ?? 0);
+
+  body.append(title, count);
+  card.append(body);
+  col.append(card);
+  return col;
 }
 
 function createStylesheetUrlList(entries) {
@@ -2732,17 +2815,23 @@ function renderCssOverview(payload) {
     : stylesheetUrls.map((url) => ({ url, sizeKb: null }));
   const mediaQueries = Array.isArray(payload.mediaQueries) ? payload.mediaQueries : [];
 
+  const summaryCards = document.createElement("div");
+  summaryCards.className = "row row-cols-3 g-2 mb-2";
+  summaryCards.append(
+    createCssOverviewMetricCard("Elements", overview.totalElements ?? 0),
+    createCssOverviewMetricCard("Inline Styles", overview.inlineStyleElements ?? 0),
+    createCssOverviewMetricCard("Style rules", overview.styleRules ?? 0)
+  );
+
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
 
   accordion.append(
-    createCssOverviewStaticRow("Elements", overview.totalElements ?? 0),
     createCssOverviewExpandableRow(
       "Stylesheets",
       overview.stylesheets ?? 0,
       createStylesheetUrlList(stylesheetEntries)
     ),
-    createCssOverviewStaticRow("Inline Styles", overview.inlineStyleElements ?? 0),
     createCssOverviewExpandableRow(
       "Text colors",
       overview.uniqueTextColors ?? 0,
@@ -2775,7 +2864,7 @@ function renderCssOverview(payload) {
     )
   );
 
-  output.append(accordion);
+  output.append(summaryCards, accordion);
 }
 
 function makeStorageRow(item) {
@@ -3404,6 +3493,19 @@ async function bindEvents() {
       const value = networkSortSelect.value;
       currentNetworkSort = value === "filesize" || value === "type" || value === "name" ? value : "time";
       await saveStoredValue(networkSortKey, currentNetworkSort);
+      if (lastNetworkPayload) {
+        renderNetwork(lastNetworkPayload);
+      }
+    });
+  }
+  const networkShowImagesSwitch = document.getElementById("network-show-images-switch");
+  if (networkShowImagesSwitch instanceof HTMLInputElement) {
+    const stored = await loadStoredValue(networkShowImagesKey);
+    currentNetworkShowImages = stored === "true";
+    networkShowImagesSwitch.checked = currentNetworkShowImages;
+    networkShowImagesSwitch.addEventListener("change", async () => {
+      currentNetworkShowImages = networkShowImagesSwitch.checked;
+      await saveStoredValue(networkShowImagesKey, String(currentNetworkShowImages));
       if (lastNetworkPayload) {
         renderNetwork(lastNetworkPayload);
       }
