@@ -2426,79 +2426,96 @@ function showNetworkAssetDetails(item) {
   panel.style.maxHeight = "92vh";
   panel.style.overflow = "auto";
 
-  const heading = panel.querySelector(".small.fw-semibold.mb-2");
-  if (heading instanceof HTMLElement) {
-    const header = document.createElement("div");
-    header.className = "d-flex align-items-start justify-content-between mb-2";
+  try {
+    const heading = panel.querySelector(".small.fw-semibold.mb-2");
+    if (heading instanceof HTMLElement) {
+      const header = document.createElement("div");
+      header.className = "d-flex align-items-start justify-content-between mb-2";
 
-    heading.className = "small fw-semibold mb-0 text-truncate pe-2";
-    heading.style.maxWidth = "calc(100% - 30px)";
+      heading.className = "small fw-semibold mb-0 text-truncate pe-2";
+      heading.style.maxWidth = "calc(100% - 30px)";
 
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.className = "btn-close";
-    closeBtn.ariaLabel = "Close";
-    closeBtn.addEventListener("click", () => overlay.remove());
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "btn-close";
+      closeBtn.ariaLabel = "Close";
+      closeBtn.addEventListener("click", () => overlay.remove());
 
-    heading.remove();
-    header.append(heading, closeBtn);
-    panel.prepend(header);
-  }
+      if (heading.parentNode) {
+        heading.parentNode.removeChild(heading);
+      }
+      header.appendChild(heading);
+      header.appendChild(closeBtn);
+      panel.insertBefore(header, panel.firstChild);
+    }
 
-  if (isNetworkImageAsset(item) && item?.url) {
-    const previewWrap = document.createElement("div");
-    previewWrap.className = "mb-2 text-center";
-    const preview = document.createElement("img");
-    preview.src = String(item.url);
-    preview.alt = String(item.name || "Image preview");
-    preview.loading = "lazy";
-    preview.fetchPriority = "low";
-    preview.className = "img-fluid rounded";
-    preview.style.maxHeight = "180px";
-    previewWrap.append(preview);
-    panel.append(previewWrap);
-  }
+    if (isNetworkImageAsset(item) && item?.url) {
+      const previewWrap = document.createElement("div");
+      previewWrap.className = "mb-2 text-center";
+      const preview = document.createElement("img");
+      preview.src = String(item.url);
+      preview.alt = String(item.name || "Image preview");
+      preview.setAttribute("loading", "lazy");
+      preview.setAttribute("fetchpriority", "low");
+      preview.className = "img-fluid rounded";
+      preview.style.maxHeight = "180px";
+      previewWrap.appendChild(preview);
+      panel.appendChild(previewWrap);
+    }
 
-  const cards = document.createElement("div");
-  cards.className = "row row-cols-3 g-1 mb-2";
+    const cards = document.createElement("div");
+    cards.className = "row row-cols-3 g-1 mb-2";
 
-  const withFallback = (value) => {
-    const text = String(value ?? "").trim();
-    return text ? text : "Unavailable";
-  };
-  cards.append(createNetworkInfoCard("Type", withFallback(item?.type)));
-  cards.append(createNetworkInfoCard("MIME type", withFallback(item?.mimeType)));
-  cards.append(createNetworkInfoCard("Initiator", withFallback(item?.initiatorType)));
-  cards.append(createNetworkInfoCard("Size", withFallback(formatNetworkSizeKb(item?.sizeKb))));
-  cards.append(createNetworkInfoCard("Start time", withFallback(formatNetworkTimeMs(item?.timeMs))));
-  cards.append(createNetworkInfoCard("Duration", withFallback(formatNetworkTimeMs(item?.durationMs))));
-  cards.append(createNetworkInfoCard("Protocol", withFallback(formatNetworkProtocol(item?.nextHopProtocol))));
-  cards.append(createNetworkInfoCard("Transfer", withFallback(formatNetworkSizeKb(item?.transferSizeKb))));
-  cards.append(createNetworkInfoCard("Encoded", withFallback(formatNetworkSizeKb(item?.encodedBodySizeKb))));
-  cards.append(createNetworkInfoCard("Decoded", withFallback(formatNetworkSizeKb(item?.decodedBodySizeKb))));
-  if (isNetworkImageAsset(item)) {
-    cards.append(createNetworkInfoCard("Loading", withFallback(item?.imageLoading)));
-    cards.append(createNetworkInfoCard("Fetch Priority", withFallback(item?.imageFetchPriority)));
-    cards.append(createNetworkInfoCard("Decoding", withFallback(item?.imageDecoding)));
-  }
-  if (item?.type === "js") {
-    cards.append(createNetworkInfoCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable"));
-    cards.append(createNetworkInfoCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable"));
-  }
-  panel.append(cards);
+    const withFallback = (value) => {
+      const text = String(value ?? "").trim();
+      return text ? text : "Unavailable";
+    };
+    cards.appendChild(createNetworkInfoCard("Type", withFallback(item?.type)));
+    cards.appendChild(createNetworkInfoCard("MIME type", withFallback(item?.mimeType)));
+    cards.appendChild(createNetworkInfoCard("Initiator", withFallback(item?.initiatorType)));
+    cards.appendChild(createNetworkInfoCard("Size", withFallback(formatNetworkSizeKb(item?.sizeKb))));
+    cards.appendChild(createNetworkInfoCard("Start time", withFallback(formatNetworkTimeMs(item?.timeMs))));
+    cards.appendChild(createNetworkInfoCard("Duration", withFallback(formatNetworkTimeMs(item?.durationMs))));
+    cards.appendChild(createNetworkInfoCard("Protocol", withFallback(formatNetworkProtocol(item?.nextHopProtocol))));
+    cards.appendChild(createNetworkInfoCard("Transfer", withFallback(formatNetworkSizeKb(item?.transferSizeKb))));
+    cards.appendChild(createNetworkInfoCard("Encoded", withFallback(formatNetworkSizeKb(item?.encodedBodySizeKb))));
+    cards.appendChild(createNetworkInfoCard("Decoded", withFallback(formatNetworkSizeKb(item?.decodedBodySizeKb))));
+    if (isNetworkImageAsset(item)) {
+      cards.appendChild(createNetworkInfoCard("Loading", withFallback(item?.imageLoading)));
+      cards.appendChild(createNetworkInfoCard("Fetch Priority", withFallback(item?.imageFetchPriority)));
+      cards.appendChild(createNetworkInfoCard("Decoding", withFallback(item?.imageDecoding)));
+    }
+    if (item?.type === "js") {
+      cards.appendChild(createNetworkInfoCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable"));
+      cards.appendChild(createNetworkInfoCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable"));
+    }
+    panel.appendChild(cards);
 
-  const urlValue = String(item?.url || "");
-  if (urlValue) {
-    const urlWrap = document.createElement("div");
-    urlWrap.className = "small mt-2";
-    const a = document.createElement("a");
-    a.href = urlValue;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.className = "small text-break";
-    a.textContent = urlValue;
-    urlWrap.append(a);
-    panel.append(urlWrap);
+    const urlValue = String(item?.url || "");
+    if (urlValue) {
+      const urlWrap = document.createElement("div");
+      urlWrap.className = "small mt-2";
+      const a = document.createElement("a");
+      a.href = urlValue;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "small text-break";
+      a.textContent = urlValue;
+      urlWrap.appendChild(a);
+      panel.appendChild(urlWrap);
+    }
+  } catch {
+    const fallback = document.createElement("div");
+    fallback.className = "small mt-2";
+    const rows = [
+      `Type: ${String(item?.type || "Unavailable")}`,
+      `MIME type: ${String(item?.mimeType || "Unavailable")}`,
+      `Initiator: ${String(item?.initiatorType || "Unavailable")}`,
+      `Size: ${formatNetworkSizeKb(item?.sizeKb) || "Unavailable"}`,
+      `URL: ${String(item?.url || "Unavailable")}`,
+    ];
+    fallback.textContent = rows.join("\n");
+    panel.appendChild(fallback);
   }
 
   overlay.addEventListener("click", (event) => {
@@ -2689,8 +2706,8 @@ function renderNetwork(payload) {
       const preview = document.createElement("img");
       preview.src = String(item.url);
       preview.alt = String(item.name || "Image thumbnail");
-      preview.loading = "lazy";
-      preview.fetchPriority = "low";
+      preview.setAttribute("loading", "lazy");
+      preview.setAttribute("fetchpriority", "low");
       preview.className = "network-table-thumb mx-auto d-block";
       preview.addEventListener("error", () => {
         preview.replaceWith(createNetworkTypeIcon(item));
