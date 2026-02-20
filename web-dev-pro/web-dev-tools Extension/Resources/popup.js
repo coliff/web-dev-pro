@@ -1772,9 +1772,9 @@ function renderSEO(result) {
 
       const iconCell = document.createElement("td");
       iconCell.className = "text-center";
-      iconCell.style.width = "36px";
-      iconCell.style.minWidth = "36px";
-      iconCell.style.maxWidth = "36px";
+      iconCell.style.width = "46px";
+      iconCell.style.minWidth = "46px";
+      iconCell.style.maxWidth = "46px";
       if (href) {
         const img = document.createElement("img");
         img.src = href;
@@ -1804,10 +1804,13 @@ function renderSEO(result) {
         line.append(key, document.createTextNode(String(value || "Unavailable")));
         infoCell.append(line);
       };
-      appendInfoLine("Size", formatSize(icon?.sizeKb));
+      appendInfoLine("Filename", icon?.filename);
+      const sizeValue = formatSize(icon?.sizeKb);
+      if (sizeValue.toLowerCase() !== "unavailable") {
+        appendInfoLine("Size", sizeValue);
+      }
       appendInfoLine("Type", icon?.type);
       appendInfoLine("MIME type", icon?.mimeType);
-      appendInfoLine("Filename", icon?.filename);
 
       row.append(iconCell, infoCell);
       tbody.append(row);
@@ -2242,6 +2245,18 @@ function formatNetworkProtocol(value) {
   return String(value);
 }
 
+function isNetworkImageAsset(item) {
+  if (item?.type === "images") {
+    return true;
+  }
+  const mime = String(item?.mimeType || "").toLowerCase().trim();
+  if (mime.startsWith("image/")) {
+    return true;
+  }
+  const ext = getNetworkAssetExtension(item);
+  return ["svg", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "gif", "webp", "png", "avif", "bmp", "ico", "tif", "tiff"].includes(ext);
+}
+
 function createNetworkInfoCard(label, value) {
   const col = document.createElement("div");
   col.className = "col";
@@ -2297,7 +2312,7 @@ function showNetworkAssetDetails(item) {
     panel.prepend(header);
   }
 
-  if (item?.type === "images" && item?.url) {
+  if (isNetworkImageAsset(item) && item?.url) {
     const previewWrap = document.createElement("div");
     previewWrap.className = "mb-2 text-center";
     const preview = document.createElement("img");
@@ -2314,58 +2329,30 @@ function showNetworkAssetDetails(item) {
   const cards = document.createElement("div");
   cards.className = "row row-cols-3 g-1 mb-2";
 
-  const sizeValue = formatNetworkSizeKb(item?.sizeKb);
-  if (sizeValue) {
-    cards.append(createNetworkInfoCard("Size", sizeValue));
+  const withFallback = (value) => {
+    const text = String(value ?? "").trim();
+    return text ? text : "Unavailable";
+  };
+  cards.append(createNetworkInfoCard("Type", withFallback(item?.type)));
+  cards.append(createNetworkInfoCard("MIME type", withFallback(item?.mimeType)));
+  cards.append(createNetworkInfoCard("Initiator", withFallback(item?.initiatorType)));
+  cards.append(createNetworkInfoCard("Size", withFallback(formatNetworkSizeKb(item?.sizeKb))));
+  cards.append(createNetworkInfoCard("Start time", withFallback(formatNetworkTimeMs(item?.timeMs))));
+  cards.append(createNetworkInfoCard("Duration", withFallback(formatNetworkTimeMs(item?.durationMs))));
+  cards.append(createNetworkInfoCard("Protocol", withFallback(formatNetworkProtocol(item?.nextHopProtocol))));
+  cards.append(createNetworkInfoCard("Transfer", withFallback(formatNetworkSizeKb(item?.transferSizeKb))));
+  cards.append(createNetworkInfoCard("Encoded", withFallback(formatNetworkSizeKb(item?.encodedBodySizeKb))));
+  cards.append(createNetworkInfoCard("Decoded", withFallback(formatNetworkSizeKb(item?.decodedBodySizeKb))));
+  if (isNetworkImageAsset(item)) {
+    cards.append(createNetworkInfoCard("Loading", withFallback(item?.imageLoading)));
+    cards.append(createNetworkInfoCard("Fetch Priority", withFallback(item?.imageFetchPriority)));
+    cards.append(createNetworkInfoCard("Decoding", withFallback(item?.imageDecoding)));
   }
-  if (item?.mimeType) {
-    cards.append(createNetworkInfoCard("MIME type", String(item.mimeType)));
+  if (item?.type === "js") {
+    cards.append(createNetworkInfoCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable"));
+    cards.append(createNetworkInfoCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable"));
   }
-  if (item?.initiatorType) {
-    cards.append(createNetworkInfoCard("Initiator", String(item.initiatorType)));
-  }
-  const startTimeValue = formatNetworkTimeMs(item?.timeMs);
-  if (startTimeValue) {
-    cards.append(createNetworkInfoCard("Start time", startTimeValue));
-  }
-  const durationValue = formatNetworkTimeMs(item?.durationMs);
-  if (durationValue) {
-    cards.append(createNetworkInfoCard("Duration", durationValue));
-  }
-  if (item?.type === "images" && item?.imageLoading) {
-    cards.append(createNetworkInfoCard("Loading", String(item.imageLoading)));
-  }
-  if (item?.type === "images" && item?.imageFetchPriority) {
-    cards.append(createNetworkInfoCard("Fetch Priority", String(item.imageFetchPriority)));
-  }
-  if (item?.type === "images" && item?.imageDecoding) {
-    cards.append(createNetworkInfoCard("Decoding", String(item.imageDecoding)));
-  }
-  if (item?.type === "js" && item?.scriptAsync === true) {
-    cards.append(createNetworkInfoCard("Async", "Yes"));
-  }
-  if (item?.type === "js" && item?.scriptDefer === true) {
-    cards.append(createNetworkInfoCard("Defer", "Yes"));
-  }
-  const protocolValue = formatNetworkProtocol(item?.nextHopProtocol);
-  if (protocolValue) {
-    cards.append(createNetworkInfoCard("Protocol", protocolValue));
-  }
-  const transferValue = formatNetworkSizeKb(item?.transferSizeKb);
-  if (transferValue) {
-    cards.append(createNetworkInfoCard("Transfer", transferValue));
-  }
-  const encodedValue = formatNetworkSizeKb(item?.encodedBodySizeKb);
-  if (encodedValue) {
-    cards.append(createNetworkInfoCard("Encoded", encodedValue));
-  }
-  const decodedValue = formatNetworkSizeKb(item?.decodedBodySizeKb);
-  if (decodedValue) {
-    cards.append(createNetworkInfoCard("Decoded", decodedValue));
-  }
-  if (cards.childElementCount > 0) {
-    panel.append(cards);
-  }
+  panel.append(cards);
 
   const urlValue = String(item?.url || "");
   if (urlValue) {
