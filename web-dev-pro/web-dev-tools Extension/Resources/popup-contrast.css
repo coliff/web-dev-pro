@@ -1,0 +1,27 @@
+/* Applied only when prefers-contrast: more is true. */
+[data-bs-theme="dark"] {
+  --bs-border-color: #8a8a8a;
+}
+
+[data-bs-theme="light"] {
+  --bs-border-color: #666;
+}
+
+.tab.active {
+  border-bottom-width: 4px !important;
+}
+
+.tab,
+.accordion-button,
+.output,
+.table,
+.form-control,
+.form-select,
+.btn,
+.card {
+  border-color: var(--bs-border-color) !important;
+}
+
+.opacity-50 {
+  opacity: 0.7 !important;
+}

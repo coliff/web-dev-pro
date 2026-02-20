@@ -2,18 +2,26 @@ const ext = globalThis.browser ?? globalThis.chrome;
 
 let lastStoragePayload = null;
 let lastCssOverviewPayload = null;
+let lastNetworkPayload = null;
+let lastRenderedNetworkItems = [];
 let currentStorageKind = "cookie";
+let currentNetworkSubtab = "doc";
+let currentNetworkSort = "time";
+let hideNetworkInfoAlert = false;
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
 const cssSubtabKey = "popup.lastCssSubtab";
 const a11ySubtabKey = "popup.lastA11ySubtab";
 const renderingSubtabKey = "popup.lastRenderingSubtab";
+const networkSubtabKey = "popup.lastNetworkSubtab";
+const networkSortKey = "popup.network.sort";
+const networkInfoAlertKey = "popup.network.infoAlertDismissed";
 const settingsSubtabKey = "popup.lastSettingsSubtab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
 const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
 const a11yAltOverlayKey = "popup.a11y.altOverlayEnabled";
-const validTabs = new Set(["a11y", "css", "perf", "rendering", "seo", "settings", "storage"]);
+const validTabs = new Set(["a11y", "css", "network", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
 const popupStoragePrefix = "popup.";
 let activeThemePreference = "system";
@@ -206,6 +214,8 @@ function listPopupSettingKeys() {
     cssSubtabKey,
     a11ySubtabKey,
     renderingSubtabKey,
+    networkSubtabKey,
+    networkSortKey,
     settingsSubtabKey,
     themePreferenceKey,
     legacyDarkModeKey,
@@ -214,8 +224,10 @@ function listPopupSettingKeys() {
     "popup.rendering.prefersColorScheme",
     "popup.rendering.prefersReducedMotion",
     "popup.rendering.prefersContrast",
+    "popup.rendering.mediaType",
     "popup.rendering.disableAvif",
     "popup.rendering.disableWebp",
+    networkInfoAlertKey,
   ])];
 }
 
@@ -317,6 +329,31 @@ function switchRenderingSubtab(subtabName) {
   void saveRenderingSubtab(name);
 }
 
+const validNetworkSubtabs = new Set(["doc", "css", "js", "font", "images", "xhr-fetch"]);
+
+async function loadNetworkSubtab() {
+  const stored = await loadStoredValue(networkSubtabKey);
+  return validNetworkSubtabs.has(stored) ? stored : "doc";
+}
+
+async function saveNetworkSubtab(subtab) {
+  await saveStoredValue(networkSubtabKey, validNetworkSubtabs.has(subtab) ? subtab : "doc");
+}
+
+function switchNetworkSubtab(subtabName) {
+  const name = validNetworkSubtabs.has(subtabName) ? subtabName : "doc";
+  currentNetworkSubtab = name;
+  document.querySelectorAll("[data-network-subtab]").forEach((btn) => {
+    const active = btn instanceof HTMLElement && btn.dataset.networkSubtab === name;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  void saveNetworkSubtab(name);
+  if (lastNetworkPayload) {
+    renderNetwork(lastNetworkPayload);
+  }
+}
+
 const validSettingsSubtabs = new Set(["options", "credits", "device-info", "more-tools"]);
 
 async function loadSettingsSubtab() {
@@ -392,6 +429,10 @@ async function resetAllPopupSettings() {
   if (contrastSelect instanceof HTMLSelectElement) {
     contrastSelect.value = "no-emulation";
   }
+  const mediaTypeSelect = document.getElementById("rendering-media-type-select");
+  if (mediaTypeSelect instanceof HTMLSelectElement) {
+    mediaTypeSelect.value = "no-emulation";
+  }
   const avifSwitch = document.getElementById("rendering-disable-avif");
   const webpSwitch = document.getElementById("rendering-disable-webp");
   if (avifSwitch instanceof HTMLInputElement) {
@@ -412,6 +453,7 @@ async function resetAllPopupSettings() {
     await sendToActiveTab({ action: "prefers-color-scheme", value: null });
     await sendToActiveTab({ action: "prefers-reduced-motion", value: null });
     await sendToActiveTab({ action: "prefers-contrast", value: null });
+    await sendToActiveTab({ action: "media-type", value: null });
     await sendToActiveTab({ action: "rendering-format", format: "avif", disable: false });
     await sendToActiveTab({ action: "rendering-format", format: "webp", disable: false });
     await sendToActiveTab({ action: "a11y-color-filter", filter: "none" });
@@ -620,6 +662,54 @@ function getColorSchemeLabel() {
   return "system (no explicit preference)";
 }
 
+function getPrefersContrastLabel() {
+  if (!globalThis.matchMedia) {
+    return "Unavailable";
+  }
+  if (globalThis.matchMedia("(prefers-contrast: more)").matches) {
+    return "more";
+  }
+  if (globalThis.matchMedia("(prefers-contrast: less)").matches) {
+    return "less";
+  }
+  if (globalThis.matchMedia("(prefers-contrast: custom)").matches) {
+    return "custom";
+  }
+  if (globalThis.matchMedia("(prefers-contrast: no-preference)").matches) {
+    return "no-preference";
+  }
+  return "Unavailable";
+}
+
+function getColorGamutLabel() {
+  if (!globalThis.matchMedia) {
+    return "Unavailable";
+  }
+  if (globalThis.matchMedia("(color-gamut: rec2020)").matches) {
+    return "rec2020";
+  }
+  if (globalThis.matchMedia("(color-gamut: p3)").matches) {
+    return "p3";
+  }
+  if (globalThis.matchMedia("(color-gamut: srgb)").matches) {
+    return "srgb";
+  }
+  return "Unavailable";
+}
+
+function getDynamicRangeLabel() {
+  if (!globalThis.matchMedia) {
+    return "Unavailable";
+  }
+  if (globalThis.matchMedia("(dynamic-range: high)").matches) {
+    return "high";
+  }
+  if (globalThis.matchMedia("(dynamic-range: standard)").matches) {
+    return "standard";
+  }
+  return "Unavailable";
+}
+
 function getTimezoneLabel() {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
   const offsetMinutes = -new Date().getTimezoneOffset();
@@ -724,6 +814,9 @@ async function renderDeviceInfo() {
   const orientationLabel = getOrientationLabel();
   const reducedMotion = getReducedMotionLabel();
   const colorScheme = getColorSchemeLabel();
+  const prefersContrast = getPrefersContrastLabel();
+  const colorGamut = getColorGamutLabel();
+  const dynamicRange = getDynamicRangeLabel();
   const connectionType = getConnectionTypeLabel();
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   const effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
@@ -749,7 +842,10 @@ async function renderDeviceInfo() {
   const colorDepthNode = document.getElementById("device-display-color-depth");
   const orientationNode = document.getElementById("device-display-orientation");
   const reducedMotionNode = document.getElementById("device-display-reduced-motion");
+  const prefersContrastNode = document.getElementById("device-display-prefers-contrast");
   const colorSchemeNode = document.getElementById("device-display-color-scheme");
+  const colorGamutNode = document.getElementById("device-display-color-gamut");
+  const dynamicRangeNode = document.getElementById("device-display-dynamic-range");
   const ipNode = document.getElementById("device-network-ip");
   const locationNode = document.getElementById("device-network-location");
   const ispNode = document.getElementById("device-network-isp");
@@ -762,7 +858,8 @@ async function renderDeviceInfo() {
 
   if (
     !uaNode || !osVersionNode || !deviceNode || !languageNode || !resolutionNode || !dprNode || !colorDepthNode
-    || !orientationNode || !reducedMotionNode || !colorSchemeNode
+    || !orientationNode || !reducedMotionNode || !prefersContrastNode || !colorSchemeNode
+    || !colorGamutNode || !dynamicRangeNode
     || !ipNode || !locationNode || !ispNode || !connectionNode
     || !effectiveTypeNode || !downlinkNode || !rttNode || !dataSaverNode || !timezoneNode
   ) {
@@ -778,7 +875,10 @@ async function renderDeviceInfo() {
   colorDepthNode.textContent = colorDepth;
   orientationNode.textContent = orientationLabel;
   reducedMotionNode.textContent = reducedMotion;
+  prefersContrastNode.textContent = prefersContrast;
   colorSchemeNode.textContent = colorScheme;
+  colorGamutNode.textContent = colorGamut;
+  dynamicRangeNode.textContent = dynamicRange;
   connectionNode.textContent = connectionType;
   effectiveTypeNode.textContent = effectiveType;
   downlinkNode.textContent = downlink;
@@ -814,7 +914,10 @@ function buildDeviceInfoClipboardText() {
     `Color depth: ${read("device-display-color-depth")}`,
     `Orientation: ${read("device-display-orientation")}`,
     `Reduced motion: ${read("device-display-reduced-motion")}`,
+    `Prefers contrast: ${read("device-display-prefers-contrast")}`,
     `Color scheme: ${read("device-display-color-scheme")}`,
+    `Color gamut: ${read("device-display-color-gamut")}`,
+    `Dynamic range: ${read("device-display-dynamic-range")}`,
     "",
     "Network",
     `IP address: ${read("device-network-ip")}`,
@@ -852,10 +955,12 @@ function showDialogShell(title) {
   const overlay = document.createElement("div");
   overlay.className = "position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-2";
   overlay.style.background = "rgba(2, 6, 23, 0.45)";
+  overlay.style.backdropFilter = "blur(6px)";
+  overlay.style.webkitBackdropFilter = "blur(6px)";
   overlay.style.zIndex = "2147483647";
 
   const panel = document.createElement("div");
-  panel.className = "rounded-3 p-2 bg-body border text-body shadow-sm";
+  panel.className = "rounded-2 p-2 bg-body border text-body shadow-sm";
   panel.style.width = "100%";
   panel.style.maxWidth = "330px";
   panel.style.borderColor = "var(--bs-border-color)";
@@ -1134,6 +1239,7 @@ function renderSEO(result) {
   output.textContent = "";
   const openGraphTags = Array.isArray(result?.openGraphTags) ? result.openGraphTags : [];
   const structuredDataItems = Array.isArray(result?.structuredDataItems) ? result.structuredDataItems : [];
+  const iconLinks = Array.isArray(result?.iconLinks) ? result.iconLinks : [];
 
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
@@ -1592,6 +1698,68 @@ function renderSEO(result) {
     accordion.append(sdDetails);
   }
 
+  const iconsDetails = document.createElement("details");
+  iconsDetails.className = "accordion-item border-bottom-0";
+  iconsDetails.setAttribute("name", "seo-issues");
+  const iconsSummary = document.createElement("summary");
+  iconsSummary.className = "accordion-button rounded-top";
+  const iconsHeader = document.createElement("h2");
+  iconsHeader.className = "accordion-header user-select-none fs-6 text-body";
+  iconsHeader.append(document.createTextNode("Icons "));
+  const iconsCount = document.createElement("span");
+  iconsCount.className = "opacity-50";
+  iconsCount.textContent = `(${iconLinks.length})`;
+  iconsHeader.append(iconsCount);
+  iconsSummary.append(iconsHeader);
+  lockAccordionWhenEmpty(iconsDetails, iconsSummary, iconLinks.length);
+  iconsDetails.append(iconsSummary);
+
+  const iconsBody = document.createElement("div");
+  iconsBody.className = "accordion-body border-bottom p-2";
+  if (!iconLinks.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    iconsBody.append(empty);
+  } else {
+    const iconsList = document.createElement("ul");
+    iconsList.className = "small mb-0 ps-3";
+    for (const icon of iconLinks) {
+      const li = document.createElement("li");
+      const href = String(icon?.href || "").trim();
+      const rel = String(icon?.rel || "").trim() || "icon";
+      const type = String(icon?.type || "").trim();
+      const sizes = String(icon?.sizes || "").trim();
+
+      const labelParts = [rel];
+      if (type) {
+        labelParts.push(type);
+      }
+      if (sizes) {
+        labelParts.push(sizes);
+      }
+
+      const label = document.createElement("strong");
+      label.textContent = `${labelParts.join(" · ")}: `;
+      li.append(label);
+
+      if (/^https?:\/\//i.test(href) || href.startsWith("/")) {
+        const link = document.createElement("a");
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = href;
+        li.append(link);
+      } else {
+        li.append(document.createTextNode(href || "(missing href)"));
+      }
+      iconsList.append(li);
+    }
+    iconsBody.append(iconsList);
+  }
+  iconsDetails.append(iconsBody);
+  accordion.append(iconsDetails);
+
   output.append(accordion);
 }
 
@@ -1748,9 +1916,17 @@ function renderA11y(result) {
     const text = String(raw ?? "");
     const match = text.match(/^h([1-6])\s*:\s*(.*)$/i);
     const level = match ? Number(match[1]) : 1;
-    const label = match ? `H${level} ${match[2]}` : text;
+    const headingTag = `H${level}`;
+    const headingText = match ? match[2] : text;
     const item = document.createElement("div");
-    item.textContent = label;
+    item.className = "d-flex align-items-start gap-2";
+    const badge = document.createElement("span");
+    badge.className = "badge text-bg-secondary";
+    badge.textContent = headingTag;
+    const label = document.createElement("span");
+    label.className = "text-break";
+    label.textContent = headingText;
+    item.append(badge, label);
     const indent = Math.max(0, level - 1) * 18;
     item.style.marginLeft = `${indent}px`;
     if (level > 1) {
@@ -1963,6 +2139,376 @@ function renderPerf(result) {
   }
 
   output.append(accordion);
+}
+
+function formatNetworkSizeKb(sizeKb) {
+  const numeric = Number(sizeKb);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return "";
+  }
+  if (numeric >= 100) {
+    return `${Math.round(numeric)} KB`;
+  }
+  return `${numeric.toFixed(1)} KB`;
+}
+
+function formatNetworkTimeMs(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return "";
+  }
+  return `${numeric.toFixed(1)} ms`;
+}
+
+function formatNetworkProtocol(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) {
+    return "";
+  }
+  if (raw === "h2") {
+    return "HTTP/2";
+  }
+  if (raw === "h3") {
+    return "HTTP/3";
+  }
+  if (raw === "h1" || raw === "http/1.1") {
+    return "HTTP/1.1";
+  }
+  if (raw === "h2c") {
+    return "HTTP/2 (cleartext)";
+  }
+  if (raw === "http/3" || raw === "http/2") {
+    return raw.toUpperCase();
+  }
+  return String(value);
+}
+
+function createNetworkInfoCard(label, value) {
+  const col = document.createElement("div");
+  col.className = "col";
+
+  const card = document.createElement("div");
+  card.className = "card rounded-2 bg-transparent h-100 shadow-sm border";
+
+  const header = document.createElement("div");
+  header.className = "card-header py-1 px-2 bg-secondary bg-opacity-10 border-0";
+
+  const labelNode = document.createElement("div");
+  labelNode.className = "card-title small opacity-75 mb-0";
+  labelNode.textContent = label;
+
+  const valueNode = document.createElement("div");
+  valueNode.className = "card-body p-2 small text-break font-monospace";
+  const textValue = String(value ?? "");
+  valueNode.textContent = textValue;
+  if (textValue.trim().toLowerCase() === "unavailable") {
+    valueNode.classList.add("opacity-75");
+  }
+
+  header.append(labelNode);
+  card.append(header, valueNode);
+  col.append(card);
+  return col;
+}
+
+function showNetworkAssetDetails(item) {
+  const rawName = String(item?.name || "Asset");
+  const title = rawName.length > 42 ? `${rawName.slice(0, 42)}...` : rawName;
+  const { overlay, panel } = showDialogShell(title);
+  panel.style.maxWidth = "360px";
+  panel.style.maxHeight = "92vh";
+  panel.style.overflow = "auto";
+
+  const heading = panel.querySelector(":scope > .small.fw-semibold.mb-2");
+  if (heading instanceof HTMLElement) {
+    const header = document.createElement("div");
+    header.className = "d-flex align-items-start justify-content-between mb-2";
+
+    heading.className = "small fw-semibold mb-0 text-truncate pe-2";
+    heading.style.maxWidth = "calc(100% - 30px)";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn-close";
+    closeBtn.ariaLabel = "Close";
+    closeBtn.addEventListener("click", () => overlay.remove());
+
+    heading.remove();
+    header.append(heading, closeBtn);
+    panel.prepend(header);
+  }
+
+  if (item?.type === "images" && item?.url) {
+    const previewWrap = document.createElement("div");
+    previewWrap.className = "mb-2 text-center";
+    const preview = document.createElement("img");
+    preview.src = String(item.url);
+    preview.alt = String(item.name || "Image preview");
+    preview.loading = "lazy";
+    preview.fetchPriority = "low";
+    preview.className = "img-fluid rounded";
+    preview.style.maxHeight = "180px";
+    previewWrap.append(preview);
+    panel.append(previewWrap);
+  }
+
+  const cards = document.createElement("div");
+  cards.className = "row row-cols-3 g-1 mb-2";
+
+  const sizeValue = formatNetworkSizeKb(item?.sizeKb);
+  if (sizeValue) {
+    cards.append(createNetworkInfoCard("Size", sizeValue));
+  }
+  if (item?.mimeType) {
+    cards.append(createNetworkInfoCard("MIME type", String(item.mimeType)));
+  }
+  if (item?.initiatorType) {
+    cards.append(createNetworkInfoCard("Initiator", String(item.initiatorType)));
+  }
+  const startTimeValue = formatNetworkTimeMs(item?.timeMs);
+  if (startTimeValue) {
+    cards.append(createNetworkInfoCard("Start time", startTimeValue));
+  }
+  const durationValue = formatNetworkTimeMs(item?.durationMs);
+  if (durationValue) {
+    cards.append(createNetworkInfoCard("Duration", durationValue));
+  }
+  if (item?.type === "images" && item?.imageLoading) {
+    cards.append(createNetworkInfoCard("Loading", String(item.imageLoading)));
+  }
+  if (item?.type === "images" && item?.imageFetchPriority) {
+    cards.append(createNetworkInfoCard("Fetch Priority", String(item.imageFetchPriority)));
+  }
+  if (item?.type === "images" && item?.imageDecoding) {
+    cards.append(createNetworkInfoCard("Decoding", String(item.imageDecoding)));
+  }
+  if (item?.type === "js" && item?.scriptAsync === true) {
+    cards.append(createNetworkInfoCard("Async", "Yes"));
+  }
+  if (item?.type === "js" && item?.scriptDefer === true) {
+    cards.append(createNetworkInfoCard("Defer", "Yes"));
+  }
+  const protocolValue = formatNetworkProtocol(item?.nextHopProtocol);
+  if (protocolValue) {
+    cards.append(createNetworkInfoCard("Protocol", protocolValue));
+  }
+  const transferValue = formatNetworkSizeKb(item?.transferSizeKb);
+  if (transferValue) {
+    cards.append(createNetworkInfoCard("Transfer", transferValue));
+  }
+  const encodedValue = formatNetworkSizeKb(item?.encodedBodySizeKb);
+  if (encodedValue) {
+    cards.append(createNetworkInfoCard("Encoded", encodedValue));
+  }
+  const decodedValue = formatNetworkSizeKb(item?.decodedBodySizeKb);
+  if (decodedValue) {
+    cards.append(createNetworkInfoCard("Decoded", decodedValue));
+  }
+  if (cards.childElementCount > 0) {
+    panel.append(cards);
+  }
+
+  const urlValue = String(item?.url || "");
+  if (urlValue) {
+    const urlWrap = document.createElement("div");
+    urlWrap.className = "small mt-2";
+    const a = document.createElement("a");
+    a.href = urlValue;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.className = "small text-break";
+    a.textContent = urlValue;
+    urlWrap.append(a);
+    panel.append(urlWrap);
+  }
+
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) {
+      overlay.remove();
+    }
+  });
+}
+
+function getNetworkAssetExtension(item) {
+  const source = String(item?.url || item?.name || "");
+  const clean = source.split("#")[0].split("?")[0];
+  const filename = clean.split("/").pop() || "";
+  const match = filename.match(/\.([a-z0-9]+)$/i);
+  return match?.[1]?.toLowerCase() || "";
+}
+
+function createNetworkTypeIcon(item) {
+  const type = String(item?.type || "");
+  const icon = document.createElement("span");
+  icon.className = "network-type-icon rounded-2 text-uppercase";
+  if (type === "doc") {
+    icon.textContent = "D";
+    icon.classList.add("network-type-doc");
+  } else if (type === "css") {
+    icon.textContent = "C";
+    icon.classList.add("network-type-css");
+  } else if (type === "js") {
+    icon.textContent = "J";
+    icon.classList.add("network-type-js");
+  } else if (type === "font") {
+    const ext = getNetworkAssetExtension(item);
+    if (ext === "woff2") {
+      icon.textContent = "W";
+      icon.classList.add("network-type-font-woff2");
+    } else {
+      icon.textContent = "F";
+      icon.classList.add("network-type-font");
+    }
+  } else if (type === "images") {
+    const ext = getNetworkAssetExtension(item);
+    if (ext === "svg") {
+      icon.textContent = "S";
+      icon.classList.add("network-type-image-svg");
+    } else if (ext === "jpg" || ext === "jpeg" || ext === "jfif" || ext === "pjpeg" || ext === "pjp") {
+      icon.textContent = "J";
+      icon.classList.add("network-type-image-jpeg");
+    } else if (ext === "gif") {
+      icon.textContent = "G";
+      icon.classList.add("network-type-image-gif");
+    } else if (ext === "webp") {
+      icon.textContent = "W";
+      icon.classList.add("network-type-image-webp");
+    } else if (ext === "png") {
+      icon.textContent = "P";
+      icon.classList.add("network-type-image-png");
+    } else if (ext === "avif") {
+      icon.textContent = "A";
+      icon.classList.add("network-type-image-avif");
+    } else {
+      icon.textContent = "I";
+      icon.classList.add("network-type-images");
+    }
+  } else {
+    icon.textContent = "X";
+    icon.classList.add("network-type-xhr-fetch");
+  }
+  return icon;
+}
+
+function renderNetwork(payload) {
+  const output = document.getElementById("network-output");
+  const sortWrap = document.getElementById("network-sort-wrap");
+  if (!output) {
+    return;
+  }
+  output.textContent = "";
+
+  if (!hideNetworkInfoAlert) {
+    const info = document.createElement("div");
+    info.className = "alert alert-info alert-dismissible fade show py-2 px-2 mb-2";
+    info.role = "alert";
+    info.textContent = "Tap on an asset to view more details.";
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn-close";
+    closeBtn.ariaLabel = "Close";
+    closeBtn.dataset.networkDismissInfo = "true";
+    info.append(closeBtn);
+    output.append(info);
+  }
+
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const filtered = items.filter((item) => item?.type === currentNetworkSubtab);
+  if (currentNetworkSort === "name") {
+    filtered.sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
+  } else if (currentNetworkSort === "type") {
+    filtered.sort((a, b) => {
+      const aExt = getNetworkAssetExtension(a);
+      const bExt = getNetworkAssetExtension(b);
+      if (aExt && bExt && aExt !== bExt) {
+        return aExt.localeCompare(bExt);
+      }
+      if (aExt && !bExt) {
+        return -1;
+      }
+      if (!aExt && bExt) {
+        return 1;
+      }
+      return String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" });
+    });
+  } else if (currentNetworkSort === "filesize") {
+    filtered.sort((a, b) => {
+      const aSize = Number(a?.sizeKb);
+      const bSize = Number(b?.sizeKb);
+      const aValue = Number.isFinite(aSize) ? aSize : -1;
+      const bValue = Number.isFinite(bSize) ? bSize : -1;
+      return bValue - aValue;
+    });
+  } else {
+    filtered.sort((a, b) => {
+      const aTime = Number(a?.timeMs);
+      const bTime = Number(b?.timeMs);
+      const aValue = Number.isFinite(aTime) ? aTime : Number.MAX_SAFE_INTEGER;
+      const bValue = Number.isFinite(bTime) ? bTime : Number.MAX_SAFE_INTEGER;
+      return aValue - bValue;
+    });
+  }
+
+  if (!filtered.length) {
+    lastRenderedNetworkItems = [];
+    sortWrap?.classList.add("d-none");
+    const empty = document.createElement("p");
+    empty.className = "small text-secondary text-center mb-0";
+    empty.textContent = "No matching requests found.";
+    output.append(empty);
+    return;
+  }
+  sortWrap?.classList.remove("d-none");
+  lastRenderedNetworkItems = filtered;
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "table-responsive";
+  const table = document.createElement("table");
+  table.className = "table table-bordered table-sm align-middle mb-0";
+
+  const thead = document.createElement("thead");
+  thead.className = "visually-hidden";
+  const headRow = document.createElement("tr");
+  headRow.innerHTML = "<th scope=\"col\" class=\"text-center\" style=\"width: 32px; min-width: 32px; max-width: 32px;\">Type</th><th scope=\"col\">Asset info</th>";
+  thead.append(headRow);
+  table.append(thead);
+
+  const tbody = document.createElement("tbody");
+  filtered.forEach((item, index) => {
+    const row = document.createElement("tr");
+
+    const iconCell = document.createElement("td");
+    iconCell.className = "text-center align-top";
+    iconCell.style.minWidth = "32px";
+    iconCell.style.maxWidth = "32px";
+    iconCell.style.width = "32px";
+    const icon = createNetworkTypeIcon(item);
+    iconCell.append(icon);
+
+    const infoCell = document.createElement("td");
+    const nameLine = document.createElement("button");
+    nameLine.type = "button";
+    nameLine.className = "btn p-0 border-0 bg-transparent text-body text-start text-break align-baseline";
+    nameLine.style.fontSize = "0.75rem";
+    nameLine.style.fontWeight = "400";
+    nameLine.dataset.networkAssetIndex = String(index);
+    nameLine.textContent = String(item.name || "(unknown)");
+    infoCell.append(nameLine);
+
+    const sizeLabel = formatNetworkSizeKb(item.sizeKb);
+    if (sizeLabel) {
+      const sizeLine = document.createElement("div");
+      sizeLine.className = "small opacity-75";
+      sizeLine.textContent = sizeLabel;
+      infoCell.append(sizeLine);
+    }
+
+    row.append(iconCell, infoCell);
+    tbody.append(row);
+  });
+  table.append(tbody);
+  tableWrap.append(table);
+  output.append(tableWrap);
 }
 
 function createCssOverviewStaticRow(label, value) {
@@ -2338,6 +2884,13 @@ async function runAction(action, sourceButton = null) {
     if (action === "seo") {
       const result = await sendToActiveTab({ action: "seo-snapshot" });
       renderSEO(result);
+    } else if (action === "network") {
+      const result = await sendToActiveTab({ action: "network-snapshot" });
+      if (!result || !Array.isArray(result.items)) {
+        throw new Error("Network snapshot unavailable. Refresh the page and try again.");
+      }
+      lastNetworkPayload = result;
+      renderNetwork(result);
     } else if (action === "css-overview") {
       const result = await sendToActiveTab({ action: "css-overview-snapshot" });
       renderCssOverview(result);
@@ -2492,6 +3045,13 @@ async function switchTab(tabName, options = {}) {
     return;
   }
 
+  if (tabName === "network") {
+    const subtab = await loadNetworkSubtab();
+    switchNetworkSubtab(subtab);
+    await runAction("network");
+    return;
+  }
+
   if (tabName === "css") {
     const subtab = await loadCssSubtab();
     switchCssSubtab(subtab);
@@ -2517,6 +3077,7 @@ async function switchTab(tabName, options = {}) {
     const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
     const reducedMotionSelect = document.getElementById("rendering-reduced-motion-select");
     const contrastSelect = document.getElementById("rendering-contrast-select");
+    const mediaTypeSelect = document.getElementById("rendering-media-type-select");
     try {
       if (avifSwitch instanceof HTMLInputElement && avifSwitch.checked) {
         await sendToActiveTab({ action: "rendering-format", format: "avif", disable: true });
@@ -2540,6 +3101,12 @@ async function switchTab(tabName, options = {}) {
         await sendToActiveTab({
           action: "prefers-contrast",
           value: contrastSelect.value,
+        });
+      }
+      if (mediaTypeSelect instanceof HTMLSelectElement && mediaTypeSelect.value !== "no-emulation") {
+        await sendToActiveTab({
+          action: "media-type",
+          value: mediaTypeSelect.value,
         });
       }
     } catch {
@@ -2587,6 +3154,31 @@ async function bindEvents() {
     const renderingSubtabButton = target.closest("[data-rendering-subtab]");
     if (renderingSubtabButton instanceof HTMLElement && renderingSubtabButton.dataset.renderingSubtab) {
       switchRenderingSubtab(renderingSubtabButton.dataset.renderingSubtab);
+      return;
+    }
+
+    const networkSubtabButton = target.closest("[data-network-subtab]");
+    if (networkSubtabButton instanceof HTMLElement && networkSubtabButton.dataset.networkSubtab) {
+      switchNetworkSubtab(networkSubtabButton.dataset.networkSubtab);
+      return;
+    }
+
+    const dismissNetworkInfoButton = target.closest("[data-network-dismiss-info]");
+    if (dismissNetworkInfoButton instanceof HTMLElement) {
+      hideNetworkInfoAlert = true;
+      await saveStoredValue(networkInfoAlertKey, "true");
+      if (lastNetworkPayload) {
+        renderNetwork(lastNetworkPayload);
+      }
+      return;
+    }
+
+    const networkAssetButton = target.closest("[data-network-asset-index]");
+    if (networkAssetButton instanceof HTMLElement && networkAssetButton.dataset.networkAssetIndex) {
+      const index = Number(networkAssetButton.dataset.networkAssetIndex);
+      if (Number.isInteger(index) && index >= 0 && index < lastRenderedNetworkItems.length) {
+        showNetworkAssetDetails(lastRenderedNetworkItems[index]);
+      }
       return;
     }
 
@@ -2654,6 +3246,7 @@ async function bindEvents() {
   const colorSchemeKey = "popup.rendering.prefersColorScheme";
   const reducedMotionKey = "popup.rendering.prefersReducedMotion";
   const contrastKey = "popup.rendering.prefersContrast";
+  const mediaTypeKey = "popup.rendering.mediaType";
   const colorSchemeSelect = document.getElementById("rendering-color-scheme-select");
   if (colorSchemeSelect instanceof HTMLSelectElement) {
     const stored = await loadStoredValue(colorSchemeKey);
@@ -2711,6 +3304,25 @@ async function bindEvents() {
       }
     });
   }
+  const mediaTypeSelect = document.getElementById("rendering-media-type-select");
+  if (mediaTypeSelect instanceof HTMLSelectElement) {
+    const stored = await loadStoredValue(mediaTypeKey);
+    if (stored === "print" || stored === "screen" || stored === "no-emulation") {
+      mediaTypeSelect.value = stored;
+    }
+    mediaTypeSelect.addEventListener("change", async () => {
+      const value = mediaTypeSelect.value;
+      await saveStoredValue(mediaTypeKey, value);
+      try {
+        await sendToActiveTab({
+          action: "media-type",
+          value: value === "no-emulation" ? null : value,
+        });
+      } catch {
+        setStatus("Could not apply media type emulation.", true);
+      }
+    });
+  }
 
   const disableAvifKey = "popup.rendering.disableAvif";
   const disableWebpKey = "popup.rendering.disableWebp";
@@ -2743,6 +3355,28 @@ async function bindEvents() {
       }
     });
   }
+
+  const networkSortSelect = document.getElementById("network-sort-select");
+  if (networkSortSelect instanceof HTMLSelectElement) {
+    const stored = await loadStoredValue(networkSortKey);
+    if (stored === "time" || stored === "filesize" || stored === "type" || stored === "name") {
+      currentNetworkSort = stored;
+      networkSortSelect.value = stored;
+    } else {
+      currentNetworkSort = "time";
+      networkSortSelect.value = "time";
+    }
+    networkSortSelect.addEventListener("change", async () => {
+      const value = networkSortSelect.value;
+      currentNetworkSort = value === "filesize" || value === "type" || value === "name" ? value : "time";
+      await saveStoredValue(networkSortKey, currentNetworkSort);
+      if (lastNetworkPayload) {
+        renderNetwork(lastNetworkPayload);
+      }
+    });
+  }
+
+  hideNetworkInfoAlert = (await loadStoredValue(networkInfoAlertKey)) === "true";
 
   let savedTab = await loadSavedTab();
   if (savedTab === "css-overview") {

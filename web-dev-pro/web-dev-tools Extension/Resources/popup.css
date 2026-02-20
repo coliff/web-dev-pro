@@ -51,8 +51,15 @@ a {
   border-bottom: 3px solid transparent;
   border-radius: 0 !important;
   color: var(--bs-body-color) !important;
-  max-width: 66px;
+  max-width: none;
+  min-width: 0;
   min-height: 46px;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+}
+
+.tabs {
+  flex-wrap: nowrap;
 }
 
 .tab.active {
@@ -263,6 +270,75 @@ details.accordion-item[open]::details-content {
 
 .welcome-panel.hidden {
   display: none !important;
+}
+
+.network-type-icon {
+  align-items: center;
+  color: #fff;
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 700;
+  height: 18px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 18px;
+}
+
+.network-type-doc {
+  background-color: #6c757d;
+}
+
+.network-type-css {
+  background-color: rebeccapurple;
+}
+
+.network-type-js {
+  background-color: #f59f00;
+}
+
+.network-type-font {
+  background-color: #0dcaf0;
+}
+
+.network-type-font-woff2 {
+  background-color: #0b5ed7;
+}
+
+.network-type-images {
+  background-color: #198754;
+}
+
+.network-type-image-svg {
+  background-color: #6f42c1;
+}
+
+.network-type-image-jpeg {
+  background-color: #fd7e14;
+}
+
+.network-type-image-gif {
+  background-color: #0d6efd;
+}
+
+.network-type-image-webp {
+  background-color: #198754;
+}
+
+.network-type-image-png {
+  background-color: #20c997;
+}
+
+.network-type-image-avif {
+  background-color: #e83e8c;
+}
+
+.network-type-xhr-fetch {
+  background-color: #7e57c2;
+}
+
+.network-subtabs .nav-link {
+  padding-left: 0.2rem !important;
+  padding-right: 0.2rem !important;
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -17,6 +17,7 @@ const state = {
     prefersColorSchemeEmulation: null,
     prefersReducedMotionEmulation: null,
     prefersContrastEmulation: null,
+    mediaTypeEmulation: null,
     styleNodes: new Map(),
     overlayNodes: [],
     ariaInspectorInstalled: false,
@@ -39,10 +40,13 @@ function parseMediaFeatureQuery(query) {
             isNoPreferenceMotion: false,
             isContrastMore: false,
             isContrastLess: false,
-            isContrastNoPreference: false
+            isContrastNoPreference: false,
+            isPrintMedia: false,
+            isScreenMedia: false
         };
     }
     const q = query.replace(/\s+/g, " ").trim().toLowerCase();
+    const hasWord = (word) => new RegExp(`(^|[^a-z0-9-])${word}([^a-z0-9-]|$)`).test(q);
     return {
         isDark: q.includes("prefers-color-scheme: dark") || q.includes("(prefers-color-scheme:dark)"),
         isLight: q.includes("prefers-color-scheme: light") || q.includes("(prefers-color-scheme:light)"),
@@ -50,7 +54,9 @@ function parseMediaFeatureQuery(query) {
         isNoPreferenceMotion: q.includes("prefers-reduced-motion: no-preference") || q.includes("(prefers-reduced-motion:no-preference)"),
         isContrastMore: q.includes("prefers-contrast: more") || q.includes("(prefers-contrast:more)"),
         isContrastLess: q.includes("prefers-contrast: less") || q.includes("(prefers-contrast:less)"),
-        isContrastNoPreference: q.includes("prefers-contrast: no-preference") || q.includes("(prefers-contrast:no-preference)")
+        isContrastNoPreference: q.includes("prefers-contrast: no-preference") || q.includes("(prefers-contrast:no-preference)"),
+        isPrintMedia: hasWord("print"),
+        isScreenMedia: hasWord("screen")
     };
 }
 
@@ -62,7 +68,9 @@ function getEmulatedMatch(query, fallback) {
         isNoPreferenceMotion,
         isContrastMore,
         isContrastLess,
-        isContrastNoPreference
+        isContrastNoPreference,
+        isPrintMedia,
+        isScreenMedia
     } = parseMediaFeatureQuery(query);
 
     if (state.prefersColorSchemeEmulation && (isDark || isLight)) {
@@ -81,6 +89,11 @@ function getEmulatedMatch(query, fallback) {
             || (isContrastNoPreference && state.prefersContrastEmulation === "no-preference");
     }
 
+    if (state.mediaTypeEmulation && (isPrintMedia || isScreenMedia)) {
+        return (isPrintMedia && state.mediaTypeEmulation === "print")
+            || (isScreenMedia && state.mediaTypeEmulation === "screen");
+    }
+
     return fallback;
 }
 
@@ -93,7 +106,9 @@ window.matchMedia = function (query) {
         || parsed.isNoPreferenceMotion
         || parsed.isContrastMore
         || parsed.isContrastLess
-        || parsed.isContrastNoPreference;
+        || parsed.isContrastNoPreference
+        || parsed.isPrintMedia
+        || parsed.isScreenMedia;
     if (!targetsEmulatableFeature) {
         return mql;
     }
@@ -463,6 +478,12 @@ function setPrefersContrastEmulation(value) {
     return { value: state.prefersContrastEmulation };
 }
 
+function setMediaTypeEmulation(value) {
+    state.mediaTypeEmulation = value === "print" || value === "screen" ? value : null;
+    notifyMediaQueryMqls();
+    return { value: state.mediaTypeEmulation };
+}
+
 function fallbackUrlForFormat(url, format) {
     if (!url || typeof url !== "string") return url;
     const lower = url.toLowerCase();
@@ -579,6 +600,22 @@ function computeSeoSnapshot() {
     const monetizationLink = document.querySelector('link[rel~="monetization"]')?.getAttribute("href") || "";
     const pingbackLink = document.querySelector('link[rel~="pingback"]')?.getAttribute("href") || "";
     const webmentionLink = document.querySelector('link[rel~="webmention"]')?.getAttribute("href") || "";
+    const iconLinks = [...document.querySelectorAll("link[rel]")]
+        .filter((link) => {
+            const rel = (link.getAttribute("rel") || "").toLowerCase();
+            return rel.includes("icon") || rel.includes("apple-touch-icon") || rel.includes("mask-icon");
+        })
+        .map((link) => ({
+            rel: link.getAttribute("rel") || "",
+            href: link.getAttribute("href") || "",
+            type: link.getAttribute("type") || "",
+            sizes: link.getAttribute("sizes") || "",
+            purpose: link.getAttribute("purpose") || "",
+            media: link.getAttribute("media") || "",
+            color: link.getAttribute("color") || ""
+        }))
+        .filter((item) => Boolean(item.href))
+        .slice(0, 40);
     const alternateFeeds = [...document.querySelectorAll('link[rel~="alternate"]')]
         .map((link) => ({
             href: link.getAttribute("href") || "",
@@ -674,6 +711,7 @@ function computeSeoSnapshot() {
         monetizationLink,
         pingbackLink,
         webmentionLink,
+        iconLinks,
         alternateFeeds,
         fediverseCreator,
         generator,
@@ -1069,6 +1107,227 @@ async function computePerfSnapshot() {
     }
 }
 
+function computeNetworkSnapshot() {
+    const normalizeUrl = (value) => {
+        try {
+            const url = new URL(value, location.href);
+            url.hash = "";
+            return url.href;
+        } catch (_error) {
+            return value || "";
+        }
+    };
+
+    const bytesFromEntry = (entry) => {
+        if (!entry) {
+            return null;
+        }
+        const transfer = Number(entry.transferSize || 0);
+        if (transfer > 0) {
+            return transfer;
+        }
+        const encoded = Number(entry.encodedBodySize || 0);
+        if (encoded > 0) {
+            return encoded;
+        }
+        const decoded = Number(entry.decodedBodySize || 0);
+        if (decoded > 0) {
+            return decoded;
+        }
+        return null;
+    };
+
+    const inferType = (resource) => {
+        const initiator = String(resource?.initiatorType || "").toLowerCase();
+        const url = String(resource?.name || "").toLowerCase();
+        const isFont = /\.(woff2?|ttf|otf|eot)(\?|$)/i.test(url);
+        const isImage = /\.(png|jpe?g|gif|webp|avif|svg|ico|bmp|tiff?)(\?|$)/i.test(url);
+        const isJs = /\.(mjs|cjs|js)(\?|$)/i.test(url);
+        const isCss = /\.css(\?|$)/i.test(url);
+
+        if (initiator === "xmlhttprequest" || initiator === "fetch" || initiator === "beacon") {
+            return "xhr-fetch";
+        }
+
+        // Prefer explicit file extension classification before initiator fallback.
+        if (isFont || initiator === "font") {
+            return "font";
+        }
+        if (isImage || initiator === "img") {
+            return "images";
+        }
+        if (isJs || initiator === "script") {
+            return "js";
+        }
+        if (isCss || initiator === "css" || initiator === "stylesheet") {
+            return "css";
+        }
+        return null;
+    };
+
+    const pickName = (url) => {
+        try {
+            const parsed = new URL(url, location.href);
+            const segments = parsed.pathname.split("/").filter(Boolean);
+            return segments.length ? segments[segments.length - 1] : parsed.hostname;
+        } catch (_error) {
+            const fallback = String(url || "");
+            const parts = fallback.split("/").filter(Boolean);
+            return parts.length ? parts[parts.length - 1] : fallback;
+        }
+    };
+
+    const inferMimeType = (url, type) => {
+        if (type === "doc") {
+            return "text/html";
+        }
+        const source = String(url || "").toLowerCase().split("#")[0].split("?")[0];
+        const match = source.match(/\.([a-z0-9]+)$/i);
+        const ext = match?.[1] || "";
+        const map = {
+            css: "text/css",
+            js: "text/javascript",
+            mjs: "text/javascript",
+            cjs: "text/javascript",
+            json: "application/json",
+            xml: "application/xml",
+            svg: "image/svg+xml",
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            png: "image/png",
+            gif: "image/gif",
+            webp: "image/webp",
+            avif: "image/avif",
+            ico: "image/x-icon",
+            woff: "font/woff",
+            woff2: "font/woff2",
+            ttf: "font/ttf",
+            otf: "font/otf",
+            eot: "application/vnd.ms-fontobject"
+        };
+        return map[ext] || "";
+    };
+
+    const items = [];
+    const seen = new Set();
+    const imageAttrByUrl = new Map();
+    const scriptAttrByUrl = new Map();
+    const imageNodes = [...document.querySelectorAll("img")];
+    for (const img of imageNodes) {
+        const src = img.currentSrc || img.getAttribute("src") || "";
+        const normalized = normalizeUrl(src);
+        if (!normalized) {
+            continue;
+        }
+        const current = imageAttrByUrl.get(normalized) || {};
+        const loadingAttr = (img.getAttribute("loading") || "").trim();
+        const fetchPriorityAttr = (img.getAttribute("fetchpriority") || "").trim();
+        const decodingAttr = (img.getAttribute("decoding") || "").trim();
+        if (loadingAttr && !current.loading) {
+            current.loading = loadingAttr;
+        }
+        if (fetchPriorityAttr && !current.fetchPriority) {
+            current.fetchPriority = fetchPriorityAttr;
+        }
+        if (decodingAttr && !current.decoding) {
+            current.decoding = decodingAttr;
+        }
+        imageAttrByUrl.set(normalized, current);
+    }
+    const scriptNodes = [...document.querySelectorAll("script[src]")];
+    for (const script of scriptNodes) {
+        const src = script.getAttribute("src") || script.src || "";
+        const normalized = normalizeUrl(src);
+        if (!normalized) {
+            continue;
+        }
+        const current = scriptAttrByUrl.get(normalized) || {};
+        if (script.hasAttribute("async")) {
+            current.async = true;
+        }
+        if (script.hasAttribute("defer")) {
+            current.defer = true;
+        }
+        scriptAttrByUrl.set(normalized, current);
+    }
+
+    const navEntries = typeof performance?.getEntriesByType === "function"
+        ? (performance.getEntriesByType("navigation") || [])
+        : [];
+    const navEntry = navEntries[0] || null;
+    const docUrl = normalizeUrl(location.href);
+    const docBytes = bytesFromEntry(navEntry);
+    items.push({
+        type: "doc",
+        name: pickName(docUrl),
+        url: docUrl,
+        sizeKb: docBytes === null ? null : Math.round((docBytes / 1024) * 10) / 10,
+        timeMs: 0,
+        mimeType: inferMimeType(docUrl, "doc"),
+        initiatorType: "navigation",
+        durationMs: Number.isFinite(Number(navEntry?.duration)) ? Math.round(Number(navEntry.duration) * 10) / 10 : null,
+        nextHopProtocol: typeof navEntry?.nextHopProtocol === "string" ? navEntry.nextHopProtocol : null,
+        transferSizeKb: Number.isFinite(Number(navEntry?.transferSize)) && Number(navEntry.transferSize) > 0
+            ? Math.round((Number(navEntry.transferSize) / 1024) * 10) / 10
+            : null,
+        encodedBodySizeKb: Number.isFinite(Number(navEntry?.encodedBodySize)) && Number(navEntry.encodedBodySize) > 0
+            ? Math.round((Number(navEntry.encodedBodySize) / 1024) * 10) / 10
+            : null,
+        decodedBodySizeKb: Number.isFinite(Number(navEntry?.decodedBodySize)) && Number(navEntry.decodedBodySize) > 0
+            ? Math.round((Number(navEntry.decodedBodySize) / 1024) * 10) / 10
+            : null
+    });
+    seen.add(`doc|${docUrl}`);
+
+    const resources = typeof performance?.getEntriesByType === "function"
+        ? (performance.getEntriesByType("resource") || [])
+        : [];
+
+    for (const resource of resources) {
+        const type = inferType(resource);
+        if (!type) {
+            continue;
+        }
+        const url = normalizeUrl(resource.name);
+        if (!url) {
+            continue;
+        }
+        const key = `${type}|${url}`;
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        const bytes = bytesFromEntry(resource);
+        items.push({
+            type,
+            name: pickName(url),
+            url,
+            sizeKb: bytes === null ? null : Math.round((bytes / 1024) * 10) / 10,
+            timeMs: Number.isFinite(Number(resource.startTime)) ? Number(resource.startTime) : null,
+            mimeType: inferMimeType(url, type),
+            initiatorType: typeof resource?.initiatorType === "string" ? resource.initiatorType : null,
+            durationMs: Number.isFinite(Number(resource?.duration)) ? Math.round(Number(resource.duration) * 10) / 10 : null,
+            nextHopProtocol: typeof resource?.nextHopProtocol === "string" ? resource.nextHopProtocol : null,
+            transferSizeKb: Number.isFinite(Number(resource?.transferSize)) && Number(resource.transferSize) > 0
+                ? Math.round((Number(resource.transferSize) / 1024) * 10) / 10
+                : null,
+            encodedBodySizeKb: Number.isFinite(Number(resource?.encodedBodySize)) && Number(resource.encodedBodySize) > 0
+                ? Math.round((Number(resource.encodedBodySize) / 1024) * 10) / 10
+                : null,
+            decodedBodySizeKb: Number.isFinite(Number(resource?.decodedBodySize)) && Number(resource.decodedBodySize) > 0
+                ? Math.round((Number(resource.decodedBodySize) / 1024) * 10) / 10
+                : null,
+            imageLoading: type === "images" ? (imageAttrByUrl.get(url)?.loading || null) : null,
+            imageFetchPriority: type === "images" ? (imageAttrByUrl.get(url)?.fetchPriority || null) : null,
+            imageDecoding: type === "images" ? (imageAttrByUrl.get(url)?.decoding || null) : null,
+            scriptAsync: type === "js" ? (scriptAttrByUrl.get(url)?.async === true) : null,
+            scriptDefer: type === "js" ? (scriptAttrByUrl.get(url)?.defer === true) : null
+        });
+    }
+
+    return { items };
+}
+
 function computeCssOverviewSnapshot() {
     const elements = [...document.querySelectorAll("*")];
     const textColors = new Map();
@@ -1392,6 +1651,10 @@ ext.runtime.onMessage.addListener((request) => {
         return Promise.resolve(computePerfSnapshot());
     }
 
+    if (request.action === "network-snapshot") {
+        return Promise.resolve(computeNetworkSnapshot());
+    }
+
     if (request.action === "css-overview-snapshot") {
         return Promise.resolve(computeCssOverviewSnapshot());
     }
@@ -1439,6 +1702,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "prefers-contrast") {
         return Promise.resolve(setPrefersContrastEmulation(request.value));
+    }
+
+    if (request.action === "media-type") {
+        return Promise.resolve(setMediaTypeEmulation(request.value));
     }
 
     return undefined;
