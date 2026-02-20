@@ -1134,6 +1134,7 @@ function renderSEO(result) {
   output.textContent = "";
   const openGraphTags = Array.isArray(result?.openGraphTags) ? result.openGraphTags : [];
   const structuredDataItems = Array.isArray(result?.structuredDataItems) ? result.structuredDataItems : [];
+  const icons = Array.isArray(result?.icons) ? result.icons : [];
 
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
@@ -1544,6 +1545,82 @@ function renderSEO(result) {
     sdDetails.append(sdBody);
     accordion.append(sdDetails);
   }
+
+  const iconsDetails = document.createElement("details");
+  iconsDetails.className = "accordion-item border-bottom-0";
+  iconsDetails.setAttribute("name", "seo-issues");
+  const iconsSummary = document.createElement("summary");
+  iconsSummary.className = "accordion-button rounded-top";
+  const iconsHeader = document.createElement("h2");
+  iconsHeader.className = "accordion-header user-select-none fs-6 text-body";
+  iconsHeader.append(document.createTextNode("Icons "));
+  const iconsCount = document.createElement("span");
+  iconsCount.className = "opacity-50";
+  iconsCount.textContent = `(${icons.length})`;
+  iconsHeader.append(iconsCount);
+  iconsSummary.append(iconsHeader);
+  lockAccordionWhenEmpty(iconsDetails, iconsSummary, icons.length);
+  iconsDetails.append(iconsSummary);
+  const iconsBody = document.createElement("div");
+  iconsBody.className = "accordion-body border-bottom p-2";
+  if (!icons.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    iconsBody.append(empty);
+  } else {
+    const table = document.createElement("table");
+    table.className = "table table-sm small mb-0";
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    for (const text of ["Preview", "rel", "sizes", "href"]) {
+      const th = document.createElement("th");
+      th.textContent = text;
+      headerRow.append(th);
+    }
+    thead.append(headerRow);
+    table.append(thead);
+    const tbody = document.createElement("tbody");
+    for (const icon of icons) {
+      const tr = document.createElement("tr");
+      const previewTd = document.createElement("td");
+      const href = typeof icon?.href === "string" ? icon.href.trim() : "";
+      if (href) {
+        const img = document.createElement("img");
+        img.src = href;
+        img.alt = "";
+        img.style.maxHeight = "32px";
+        img.style.maxWidth = "32px";
+        img.loading = "lazy";
+        img.onerror = () => { img.remove(); };
+        previewTd.append(img);
+      }
+      tr.append(previewTd);
+      const relTd = document.createElement("td");
+      relTd.textContent = typeof icon?.rel === "string" ? icon.rel : "";
+      tr.append(relTd);
+      const sizesTd = document.createElement("td");
+      sizesTd.textContent = typeof icon?.sizes === "string" ? icon.sizes : "";
+      tr.append(sizesTd);
+      const hrefTd = document.createElement("td");
+      if (/^https?:\/\//i.test(href)) {
+        const link = document.createElement("a");
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = href;
+        hrefTd.append(link);
+      } else {
+        hrefTd.textContent = href;
+      }
+      tr.append(hrefTd);
+      tbody.append(tr);
+    }
+    table.append(tbody);
+    iconsBody.append(table);
+  }
+  iconsDetails.append(iconsBody);
+  accordion.append(iconsDetails);
 
   output.append(accordion);
 }

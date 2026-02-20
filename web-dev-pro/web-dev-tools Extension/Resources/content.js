@@ -650,6 +650,21 @@ function computeSeoSnapshot() {
         }
     }
 
+    const icons = [
+        ...document.querySelectorAll(
+            'link[rel~="icon"], link[rel~="shortcut icon"], link[rel~="apple-touch-icon"], link[rel~="mask-icon"]'
+        )
+    ]
+        .map((link) => ({
+            rel: link.getAttribute("rel") || "",
+            type: link.getAttribute("type") || "",
+            href: link.href || "",
+            sizes: link.getAttribute("sizes") || "",
+            color: link.getAttribute("color") || ""
+        }))
+        .filter((item) => Boolean(item.href))
+        .slice(0, 20);
+
     const warnings = [];
     if (title.length < 10 || title.length > 100) {
         warnings.push(`Title length ${title.length} (target 10-100)`);
@@ -684,6 +699,7 @@ function computeSeoSnapshot() {
         openGraphTags,
         structuredData,
         structuredDataItems: structuredDataItems.slice(0, 30),
+        icons,
         warnings
     };
 }
