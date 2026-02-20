@@ -7,6 +7,7 @@ let lastRenderedNetworkItems = [];
 let currentStorageKind = "cookie";
 let currentNetworkSubtab = "doc";
 let currentNetworkSort = "time";
+let currentNetworkFilter = "all";
 let hideNetworkInfoAlert = false;
 let currentTab = "seo";
 const popupTabKey = "popup.lastActiveTab";
@@ -15,6 +16,7 @@ const a11ySubtabKey = "popup.lastA11ySubtab";
 const renderingSubtabKey = "popup.lastRenderingSubtab";
 const networkSubtabKey = "popup.lastNetworkSubtab";
 const networkSortKey = "popup.network.sort";
+const networkFilterKey = "popup.network.filter";
 const networkInfoAlertKey = "popup.network.infoAlertDismissed";
 const moreToolsAlertKey = "popup.moreToolsAlertDismissed";
 const settingsSubtabKey = "popup.lastSettingsSubtab";
@@ -220,6 +222,7 @@ function listPopupSettingKeys() {
     renderingSubtabKey,
     networkSubtabKey,
     networkSortKey,
+    networkFilterKey,
     settingsSubtabKey,
     themePreferenceKey,
     legacyDarkModeKey,
@@ -334,7 +337,7 @@ function switchRenderingSubtab(subtabName) {
   void saveRenderingSubtab(name);
 }
 
-const validNetworkSubtabs = new Set(["doc", "css", "js", "font", "images", "xhr-fetch"]);
+const validNetworkSubtabs = new Set(["doc", "css", "js", "font", "images", "xhr-fetch", "other"]);
 
 async function loadNetworkSubtab() {
   const stored = await loadStoredValue(networkSubtabKey);
@@ -434,6 +437,11 @@ async function resetAllPopupSettings() {
   if (contrastSelect instanceof HTMLSelectElement) {
     contrastSelect.value = "no-emulation";
   }
+  const networkFilterSelect = document.getElementById("network-filter-select");
+  if (networkFilterSelect instanceof HTMLSelectElement) {
+    networkFilterSelect.value = "all";
+  }
+  currentNetworkFilter = "all";
   const mediaTypeSelect = document.getElementById("rendering-media-type-select");
   if (mediaTypeSelect instanceof HTMLSelectElement) {
     mediaTypeSelect.value = "no-emulation";
@@ -2389,8 +2397,13 @@ function createNetworkTypeIcon(item) {
       icon.classList.add("network-type-images");
     }
   } else {
-    icon.textContent = "X";
-    icon.classList.add("network-type-xhr-fetch");
+    if (type === "xhr-fetch") {
+      icon.textContent = "X";
+      icon.classList.add("network-type-xhr-fetch");
+    } else {
+      icon.textContent = "O";
+      icon.classList.add("network-type-other");
+    }
   }
   return icon;
 }
@@ -2403,22 +2416,16 @@ function renderNetwork(payload) {
   }
   output.textContent = "";
 
-  if (!hideNetworkInfoAlert) {
-    const info = document.createElement("div");
-    info.className = "alert alert-info alert-dismissible fade show py-2 px-2 mb-2";
-    info.role = "alert";
-    info.textContent = "Tap on an asset to view more details.";
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.className = "btn-close";
-    closeBtn.ariaLabel = "Close";
-    closeBtn.dataset.networkDismissInfo = "true";
-    info.append(closeBtn);
-    output.append(info);
-  }
-
   const items = Array.isArray(payload?.items) ? payload.items : [];
-  const filtered = items.filter((item) => item?.type === currentNetworkSubtab);
+  const filtered = items.filter((item) => {
+    if (item?.type !== currentNetworkSubtab) {
+      return false;
+    }
+    if (currentNetworkFilter === "third-party") {
+      return item?.isThirdParty === true;
+    }
+    return true;
+  });
   if (currentNetworkSort === "name") {
     filtered.sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), undefined, { sensitivity: "base" }));
   } else if (currentNetworkSort === "type") {
@@ -2463,6 +2470,21 @@ function renderNetwork(payload) {
     output.append(empty);
     return;
   }
+
+  if (!hideNetworkInfoAlert) {
+    const info = document.createElement("div");
+    info.className = "alert alert-info alert-dismissible fade show py-2 px-2 mb-2";
+    info.role = "alert";
+    info.textContent = "Tap on an asset to view more details.";
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn-close";
+    closeBtn.ariaLabel = "Close";
+    closeBtn.dataset.networkDismissInfo = "true";
+    info.append(closeBtn);
+    output.append(info);
+  }
+
   sortWrap?.classList.remove("d-none");
   lastRenderedNetworkItems = filtered;
 
@@ -3382,6 +3404,25 @@ async function bindEvents() {
       const value = networkSortSelect.value;
       currentNetworkSort = value === "filesize" || value === "type" || value === "name" ? value : "time";
       await saveStoredValue(networkSortKey, currentNetworkSort);
+      if (lastNetworkPayload) {
+        renderNetwork(lastNetworkPayload);
+      }
+    });
+  }
+  const networkFilterSelect = document.getElementById("network-filter-select");
+  if (networkFilterSelect instanceof HTMLSelectElement) {
+    const stored = await loadStoredValue(networkFilterKey);
+    if (stored === "third-party" || stored === "all") {
+      currentNetworkFilter = stored;
+      networkFilterSelect.value = stored;
+    } else {
+      currentNetworkFilter = "all";
+      networkFilterSelect.value = "all";
+    }
+    networkFilterSelect.addEventListener("change", async () => {
+      const value = networkFilterSelect.value;
+      currentNetworkFilter = value === "third-party" ? "third-party" : "all";
+      await saveStoredValue(networkFilterKey, currentNetworkFilter);
       if (lastNetworkPayload) {
         renderNetwork(lastNetworkPayload);
       }

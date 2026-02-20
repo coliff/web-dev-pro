@@ -336,11 +336,19 @@
         <button class="nav-link py-1 small text-body" type="button" data-network-subtab="css">CSS</button>
         <button class="nav-link py-1 small text-body" type="button" data-network-subtab="js">JS</button>
         <button class="nav-link py-1 small text-body" type="button" data-network-subtab="font">Font</button>
-        <button class="nav-link py-1 small text-body" type="button" data-network-subtab="images">Image</button>
-        <button class="nav-link py-1 small text-body me-3" type="button" data-network-subtab="xhr-fetch">XHR/Fetch</button>
+        <button class="nav-link py-1 small text-body" type="button" data-network-subtab="images">Img</button>
+        <button class="nav-link py-1 small text-body" type="button" data-network-subtab="xhr-fetch">XHR/Fetch</button>
+        <button class="nav-link py-1 small text-body me-3" type="button" data-network-subtab="other">Other</button>
       </nav>
       <div class="pt-2 bg-body overflow-auto flex-grow-1 min-h-0 px-3">
-        <div id="network-sort-wrap" class="mb-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+          <div id="network-filter-wrap">
+            <select id="network-filter-select" class="form-select form-select-sm w-auto" aria-label="Filter">
+              <option value="all" selected>All requests</option>
+              <option value="third-party">3rd-party only</option>
+            </select>
+          </div>
+          <div id="network-sort-wrap">
           <select id="network-sort-select" class="form-select form-select-sm w-auto">
             <option value="time" disabled>Sort</option>
             <option value="time" selected>Time</option>
@@ -348,6 +356,7 @@
             <option value="type">Type</option>
             <option value="name">Name</option>
           </select>
+          </div>
         </div>
         <div id="network-output" class="output rounded-3 overflow-auto p-1"></div>
       </div>

@@ -1144,6 +1144,8 @@ function computeNetworkSnapshot() {
         const isImage = /\.(png|jpe?g|gif|webp|avif|svg|ico|bmp|tiff?)(\?|$)/i.test(url);
         const isJs = /\.(mjs|cjs|js)(\?|$)/i.test(url);
         const isCss = /\.css(\?|$)/i.test(url);
+        const isManifest = /\.(webmanifest|appcache)(\?|$)/i.test(url) || /\/manifest\.json(\?|$)/i.test(url);
+        const isMedia = /\.(mp4|webm|ogg|ogv|mov|m4v|m3u8|mpd|mp3|wav|aac|flac|m4a)(\?|$)/i.test(url);
 
         if (initiator === "xmlhttprequest" || initiator === "fetch" || initiator === "beacon") {
             return "xhr-fetch";
@@ -1162,7 +1164,18 @@ function computeNetworkSnapshot() {
         if (isCss || initiator === "css" || initiator === "stylesheet") {
             return "css";
         }
-        return null;
+        if (isManifest || isMedia) {
+            return "other";
+        }
+        return "other";
+    };
+
+    const isThirdPartyRequest = (url) => {
+        try {
+            return new URL(url, location.href).origin !== location.origin;
+        } catch (_error) {
+            return false;
+        }
     };
 
     const pickName = (url) => {
@@ -1203,7 +1216,21 @@ function computeNetworkSnapshot() {
             woff2: "font/woff2",
             ttf: "font/ttf",
             otf: "font/otf",
-            eot: "application/vnd.ms-fontobject"
+            eot: "application/vnd.ms-fontobject",
+            webmanifest: "application/manifest+json",
+            mp4: "video/mp4",
+            webm: "video/webm",
+            ogg: "video/ogg",
+            ogv: "video/ogg",
+            mov: "video/quicktime",
+            m4v: "video/x-m4v",
+            m3u8: "application/vnd.apple.mpegurl",
+            mpd: "application/dash+xml",
+            mp3: "audio/mpeg",
+            wav: "audio/wav",
+            aac: "audio/aac",
+            flac: "audio/flac",
+            m4a: "audio/mp4"
         };
         return map[ext] || "";
     };
@@ -1275,7 +1302,8 @@ function computeNetworkSnapshot() {
             : null,
         decodedBodySizeKb: Number.isFinite(Number(navEntry?.decodedBodySize)) && Number(navEntry.decodedBodySize) > 0
             ? Math.round((Number(navEntry.decodedBodySize) / 1024) * 10) / 10
-            : null
+            : null,
+        isThirdParty: false
     });
     seen.add(`doc|${docUrl}`);
 
@@ -1285,9 +1313,6 @@ function computeNetworkSnapshot() {
 
     for (const resource of resources) {
         const type = inferType(resource);
-        if (!type) {
-            continue;
-        }
         const url = normalizeUrl(resource.name);
         if (!url) {
             continue;
@@ -1321,7 +1346,8 @@ function computeNetworkSnapshot() {
             imageFetchPriority: type === "images" ? (imageAttrByUrl.get(url)?.fetchPriority || null) : null,
             imageDecoding: type === "images" ? (imageAttrByUrl.get(url)?.decoding || null) : null,
             scriptAsync: type === "js" ? (scriptAttrByUrl.get(url)?.async === true) : null,
-            scriptDefer: type === "js" ? (scriptAttrByUrl.get(url)?.defer === true) : null
+            scriptDefer: type === "js" ? (scriptAttrByUrl.get(url)?.defer === true) : null,
+            isThirdParty: isThirdPartyRequest(url)
         });
     }
 
