@@ -1488,6 +1488,53 @@ function renderSEO(result) {
         img.onerror = () => { imgWrap.remove(); };
         imgWrap.append(img);
         li.append(imgWrap);
+        (async () => {
+          const parseLength = (value) => {
+            const parsed = Number.parseInt(String(value || ""), 10);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+          };
+          const controller = new AbortController();
+          const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
+          let bytes = null;
+          try {
+            const headResponse = await fetch(content, { method: "HEAD", cache: "no-store", credentials: "omit", signal: controller.signal });
+            bytes = parseLength(headResponse.headers.get("content-length"));
+          } catch (_error) {
+            // Continue to range request fallback.
+          }
+          if (bytes === null && !controller.signal.aborted) {
+            try {
+              const rangeResponse = await fetch(content, {
+                method: "GET",
+                cache: "no-store",
+                credentials: "omit",
+                headers: { Range: "bytes=0-0" },
+                signal: controller.signal
+              });
+              const contentRange = rangeResponse.headers.get("content-range");
+              if (contentRange) {
+                const match = contentRange.match(/\/(\d+)\s*$/);
+                if (match?.[1]) {
+                  bytes = parseLength(match[1]);
+                }
+              }
+              if (bytes === null) {
+                bytes = parseLength(rangeResponse.headers.get("content-length"));
+              }
+            } catch (_error) {
+              // Can't get size, display nothing.
+            }
+          }
+          globalThis.clearTimeout(timeoutId);
+          if (bytes !== null) {
+            const sizeKb = bytes / 1024;
+            const rounded = sizeKb >= 100 ? Math.round(sizeKb) : Number(sizeKb.toFixed(1));
+            const sizeSpan = document.createElement("span");
+            sizeSpan.className = "opacity-75";
+            sizeSpan.textContent = ` (${rounded} KB)`;
+            li.insertBefore(sizeSpan, imgWrap);
+          }
+        })();
       }
     } else {
       li.append(document.createTextNode(content));
