@@ -4,6 +4,10 @@
   .tab {
     background-color: #eee !important;
   }
+
+  .tool-group {
+    background-color: #eee;
+  }
 }
 
 [data-bs-theme="dark"] {

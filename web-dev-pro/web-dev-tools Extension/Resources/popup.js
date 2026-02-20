@@ -16,6 +16,7 @@ const renderingSubtabKey = "popup.lastRenderingSubtab";
 const networkSubtabKey = "popup.lastNetworkSubtab";
 const networkSortKey = "popup.network.sort";
 const networkInfoAlertKey = "popup.network.infoAlertDismissed";
+const moreToolsAlertKey = "popup.moreToolsAlertDismissed";
 const settingsSubtabKey = "popup.lastSettingsSubtab";
 const themePreferenceKey = "popup.themePreference";
 const legacyDarkModeKey = "popup.darkModeEnabled";
@@ -78,6 +79,9 @@ async function openMoreTools(tool) {
     openInNewTab(`https://securityheaders.com/?q=${encoded}&hide=on&followRedirects=on`);
   } else if (tool === "pagespeed") {
     openInNewTab(`https://pagespeed.web.dev/analysis?url=${encoded}&form_factor=mobile`);
+  } else if (tool === "mozilla-observatory") {
+    const host = new URL(pageUrl).hostname;
+    openInNewTab(`https://developer.mozilla.org/en-US/observatory/analyze?host=${encodeURIComponent(host)}`);
   }
 }
 
@@ -228,6 +232,7 @@ function listPopupSettingKeys() {
     "popup.rendering.disableAvif",
     "popup.rendering.disableWebp",
     networkInfoAlertKey,
+    moreToolsAlertKey,
   ])];
 }
 
@@ -2924,6 +2929,13 @@ async function runAction(action, sourceButton = null) {
       flashButtonLabel(sourceButton, "Copied");
       setStatus("Device info copied.");
       return;
+    } else if (action === "dismiss-more-tools-alert") {
+      const alert = document.getElementById("more-tools-alert");
+      if (alert) {
+        alert.classList.add("d-none");
+      }
+      await saveStoredValue(moreToolsAlertKey, "true");
+      return;
     }
 
   } catch (error) {
@@ -3377,6 +3389,13 @@ async function bindEvents() {
   }
 
   hideNetworkInfoAlert = (await loadStoredValue(networkInfoAlertKey)) === "true";
+
+  if ((await loadStoredValue(moreToolsAlertKey)) === "true") {
+    const moreToolsAlert = document.getElementById("more-tools-alert");
+    if (moreToolsAlert) {
+      moreToolsAlert.classList.add("d-none");
+    }
+  }
 
   let savedTab = await loadSavedTab();
   if (savedTab === "css-overview") {

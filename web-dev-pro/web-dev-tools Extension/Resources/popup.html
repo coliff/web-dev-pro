@@ -353,24 +353,24 @@
       </div>
     </section>
 
-    <section class="tool-group tool-group-surface pt-3 tab-panel overflow-hidden d-flex flex-column" data-panel="perf">
+    <section class="tool-group pt-3 tab-panel overflow-hidden d-flex flex-column" data-panel="perf">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">Performance</h2>
       </div>
       <nav class="nav nav-tabs nav-fill" aria-label="Performance tools">
-        <button class="nav-link active py-1 small text-body" type="button">Overview</button>
+        <button class="nav-link active py-1 small text-body d-none" type="button">Overview</button>
       </nav>
       <div class="pt-2 bg-body overflow-auto flex-grow-1 min-h-0 px-3">
         <div id="perf-output" class="output rounded-3 overflow-auto p-1"></div>
       </div>
     </section>
 
-    <section class="tool-group tool-group-surface p-3 tab-panel active d-flex flex-column overflow-hidden" data-panel="seo">
+    <section class="tool-group pt-3 tab-panel overflow-hidden d-flex flex-column" data-panel="seo">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fs-5 ms-3 font-monospace">SEO &amp; Meta</h2>
       </div>
       <nav class="nav nav-tabs nav-fill" aria-label="SEO tools">
-        <button class="nav-link active py-1 small text-body" type="button">Overview</button>
+        <button class="nav-link active py-1 small text-body d-none" type="button">Overview</button>
       </nav>
       <div class="pt-2 bg-body overflow-auto flex-grow-1 min-h-0 px-3">
         <div id="seo-output" class="output rounded-3 overflow-auto p-1"></div>
@@ -427,10 +427,11 @@
           <p class="small text-body mb-0 mt-2">CSS – Bootstrap<br />Icons – Font Awesome</p>
         </div>
         <div class="settings-subpanel pt-3 d-none d-flex flex-column overflow-auto flex-grow-1 min-h-0" data-settings-subpanel="more-tools">
-          <div class="alert alert-info small mb-3 py-2" role="note">Note: these tools send the current page to an external website in a new tab.</div>
+          <div class="alert alert-info alert-dismissible small mb-3 py-2" role="note" id="more-tools-alert">Note: these tools send the current page to an external website in a new tab.<button type="button" class="btn-close py-2" data-action="dismiss-more-tools-alert" aria-label="Close"></button></div>
           <div class="d-flex flex-column gap-2">
             <button type="button" class="btn btn-secondary btn-sm" data-more-tools="lighthouse">Google Lighthouse</button>
             <button type="button" class="btn btn-secondary btn-sm" data-more-tools="pagespeed">Google PageSpeed Insights</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-more-tools="mozilla-observatory">Mozilla HTTP Observatory</button>
             <button type="button" class="btn btn-secondary btn-sm" data-more-tools="nu-validator">Nu HTML Checker</button>
             <button type="button" class="btn btn-secondary btn-sm" data-more-tools="security-headers">Security Headers</button>
           </div>
