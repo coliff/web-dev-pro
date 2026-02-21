@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Web DevTools+",
   "description": "Inspect SEO, accessibility, performance and storage for any page.",
-  "version": "1.0",
+  "version": "1.1.0",
   "icons": {
     "48": "icon-48.png",
     "96": "icon-96.png",

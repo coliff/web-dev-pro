@@ -772,8 +772,8 @@ function computeSeoSnapshot() {
     }
 
     const warnings = [];
-    if (title.length < 10 || title.length > 100) {
-        warnings.push(`Title length ${title.length} (target 10-100)`);
+    if (title.length < 2 || title.length > 100) {
+        warnings.push(`Title length ${title.length} (target 2-100)`);
     }
     if (!metaDescription.trim()) {
         warnings.push("Meta description is missing");

@@ -29,7 +29,7 @@ const a11yAltOverlayKey = "popup.a11y.altOverlayEnabled";
 const validTabs = new Set(["a11y", "css", "network", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
 const popupStoragePrefix = "popup.";
-let activeThemePreference = "system";
+let activeThemePreference = "dark";
 const systemThemeMediaQuery = globalThis.matchMedia
   ? globalThis.matchMedia("(prefers-color-scheme: dark)")
   : null;
@@ -416,10 +416,10 @@ async function resetAllPopupSettings() {
 
   const themeSelect = document.getElementById("theme-select");
   if (themeSelect instanceof HTMLSelectElement) {
-    themeSelect.value = "system";
+    themeSelect.value = "dark";
   }
-  activeThemePreference = "system";
-  applyTheme("system");
+  activeThemePreference = "dark";
+  applyTheme("dark");
 
   const ariaInspectSwitch = document.getElementById("a11y-aria-inspect-switch");
   const altOverlaySwitch = document.getElementById("a11y-alt-overlay-switch");
@@ -512,7 +512,7 @@ async function loadThemePreference() {
   if (legacyStored === "false") {
     return "light";
   }
-  return "system";
+  return "dark";
 }
 
 async function saveThemePreference(preference) {
@@ -665,21 +665,32 @@ function getOrientationLabel() {
   return "Unavailable";
 }
 
+function mediaQueryMatches(query) {
+  if (!globalThis.matchMedia) {
+    return false;
+  }
+  try {
+    return globalThis.matchMedia(query).matches;
+  } catch {
+    return false;
+  }
+}
+
 function getReducedMotionLabel() {
   if (!globalThis.matchMedia) {
     return "Unavailable";
   }
-  return globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduce" : "no-preference";
+  return mediaQueryMatches("(prefers-reduced-motion: reduce)") ? "reduce" : "no-preference";
 }
 
 function getColorSchemeLabel() {
   if (!globalThis.matchMedia) {
     return "Unavailable";
   }
-  if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
+  if (mediaQueryMatches("(prefers-color-scheme: dark)")) {
     return "dark (system)";
   }
-  if (globalThis.matchMedia("(prefers-color-scheme: light)").matches) {
+  if (mediaQueryMatches("(prefers-color-scheme: light)")) {
     return "light (system)";
   }
   return "system (no explicit preference)";
@@ -689,16 +700,16 @@ function getPrefersContrastLabel() {
   if (!globalThis.matchMedia) {
     return "Unavailable";
   }
-  if (globalThis.matchMedia("(prefers-contrast: more)").matches) {
+  if (mediaQueryMatches("(prefers-contrast: more)")) {
     return "more";
   }
-  if (globalThis.matchMedia("(prefers-contrast: less)").matches) {
+  if (mediaQueryMatches("(prefers-contrast: less)")) {
     return "less";
   }
-  if (globalThis.matchMedia("(prefers-contrast: custom)").matches) {
+  if (mediaQueryMatches("(prefers-contrast: custom)")) {
     return "custom";
   }
-  if (globalThis.matchMedia("(prefers-contrast: no-preference)").matches) {
+  if (mediaQueryMatches("(prefers-contrast: no-preference)")) {
     return "no-preference";
   }
   return "Unavailable";
@@ -708,13 +719,13 @@ function getColorGamutLabel() {
   if (!globalThis.matchMedia) {
     return "Unavailable";
   }
-  if (globalThis.matchMedia("(color-gamut: rec2020)").matches) {
+  if (mediaQueryMatches("(color-gamut: rec2020)")) {
     return "rec2020";
   }
-  if (globalThis.matchMedia("(color-gamut: p3)").matches) {
+  if (mediaQueryMatches("(color-gamut: p3)")) {
     return "p3";
   }
-  if (globalThis.matchMedia("(color-gamut: srgb)").matches) {
+  if (mediaQueryMatches("(color-gamut: srgb)")) {
     return "srgb";
   }
   return "Unavailable";
@@ -724,10 +735,10 @@ function getDynamicRangeLabel() {
   if (!globalThis.matchMedia) {
     return "Unavailable";
   }
-  if (globalThis.matchMedia("(dynamic-range: high)").matches) {
+  if (mediaQueryMatches("(dynamic-range: high)")) {
     return "high";
   }
-  if (globalThis.matchMedia("(dynamic-range: standard)").matches) {
+  if (mediaQueryMatches("(dynamic-range: standard)")) {
     return "standard";
   }
   return "Unavailable";
@@ -820,103 +831,126 @@ async function resolveNetworkDetails() {
 }
 
 async function renderDeviceInfo() {
-  const userAgent = navigator.userAgent || "Unknown";
-  const uaData = navigator.userAgentData;
-  const language = Array.isArray(navigator.languages) && navigator.languages.length
-    ? navigator.languages.join(", ")
-    : (navigator.language || "Unknown");
-  const platform = uaData?.platform || navigator.platform || "Unknown";
-  const mobileHint = uaData?.mobile === true || /iphone|ipad|android/i.test(userAgent) ? "mobile" : "desktop";
-  const osVersion = await resolveOsVersion(userAgent);
-  const logicalWidth = Number.isFinite(screen.width) ? screen.width : 0;
-  const logicalHeight = Number.isFinite(screen.height) ? screen.height : 0;
-  const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio : 1;
-  const physicalWidth = Math.round(logicalWidth * dpr);
-  const physicalHeight = Math.round(logicalHeight * dpr);
-  const colorDepth = Number.isFinite(screen.colorDepth) ? `${screen.colorDepth}-bit` : "Unavailable";
-  const orientationLabel = getOrientationLabel();
-  const reducedMotion = getReducedMotionLabel();
-  const colorScheme = getColorSchemeLabel();
-  const prefersContrast = getPrefersContrastLabel();
-  const colorGamut = getColorGamutLabel();
-  const dynamicRange = getDynamicRangeLabel();
-  const connectionType = getConnectionTypeLabel();
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
-    ? connection.effectiveType
-    : (typeof connection?.type === "string" && connection.type ? connection.type : "Unavailable");
-  const downlink = typeof connection?.downlink === "number" && Number.isFinite(connection.downlink)
-    ? `${connection.downlink} Mbps`
-    : "Unavailable";
-  const rtt = typeof connection?.rtt === "number" && Number.isFinite(connection.rtt)
-    ? `${connection.rtt} ms`
-    : "Unavailable";
-  const dataSaver = typeof connection?.saveData === "boolean"
-    ? (connection.saveData ? "On" : "Off")
-    : "Unavailable";
-  const timezone = getTimezoneLabel();
-  const isMacIntelDesktop = String(platform).trim().toLowerCase() === "macintel" && mobileHint === "desktop";
+  const setText = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) {
+      node.textContent = String(value ?? "Unavailable");
+    }
+  };
+  const setHtml = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) {
+      node.innerHTML = String(value ?? "Unavailable");
+    }
+  };
 
-  const uaNode = document.getElementById("device-browser-user-agent");
-  const osVersionNode = document.getElementById("device-browser-os-version");
-  const deviceNode = document.getElementById("device-browser-device");
-  const languageNode = document.getElementById("device-browser-language");
-  const resolutionNode = document.getElementById("device-display-resolution");
-  const dprNode = document.getElementById("device-display-dpr");
-  const colorDepthNode = document.getElementById("device-display-color-depth");
-  const orientationNode = document.getElementById("device-display-orientation");
-  const reducedMotionNode = document.getElementById("device-display-reduced-motion");
-  const prefersContrastNode = document.getElementById("device-display-prefers-contrast");
-  const colorSchemeNode = document.getElementById("device-display-color-scheme");
-  const colorGamutNode = document.getElementById("device-display-color-gamut");
-  const dynamicRangeNode = document.getElementById("device-display-dynamic-range");
-  const ipNode = document.getElementById("device-network-ip");
-  const locationNode = document.getElementById("device-network-location");
-  const ispNode = document.getElementById("device-network-isp");
-  const connectionNode = document.getElementById("device-network-connection");
-  const effectiveTypeNode = document.getElementById("device-network-effective-type");
-  const downlinkNode = document.getElementById("device-network-downlink");
-  const rttNode = document.getElementById("device-network-rtt");
-  const dataSaverNode = document.getElementById("device-network-data-saver");
-  const timezoneNode = document.getElementById("device-network-timezone");
-
-  if (
-    !uaNode || !osVersionNode || !deviceNode || !languageNode || !resolutionNode || !dprNode || !colorDepthNode
-    || !orientationNode || !reducedMotionNode || !prefersContrastNode || !colorSchemeNode
-    || !colorGamutNode || !dynamicRangeNode
-    || !ipNode || !locationNode || !ispNode || !connectionNode
-    || !effectiveTypeNode || !downlinkNode || !rttNode || !dataSaverNode || !timezoneNode
-  ) {
-    return;
+  const fallbackIds = [
+    "device-browser-user-agent",
+    "device-browser-os-version",
+    "device-browser-device",
+    "device-browser-language",
+    "device-display-resolution",
+    "device-display-dpr",
+    "device-display-color-depth",
+    "device-display-orientation",
+    "device-display-reduced-motion",
+    "device-display-prefers-contrast",
+    "device-display-color-scheme",
+    "device-display-color-gamut",
+    "device-display-dynamic-range",
+    "device-network-ip",
+    "device-network-location",
+    "device-network-isp",
+    "device-network-connection",
+    "device-network-effective-type",
+    "device-network-downlink",
+    "device-network-rtt",
+    "device-network-data-saver",
+    "device-network-timezone",
+  ];
+  for (const id of fallbackIds) {
+    setText(id, "Unavailable");
   }
 
-  uaNode.textContent = userAgent;
-  osVersionNode.textContent = osVersion;
-  deviceNode.textContent = isMacIntelDesktop ? "" : `${platform} (${mobileHint})`;
-  languageNode.textContent = language;
-  resolutionNode.innerHTML = `${logicalWidth}x${logicalHeight} logical<br>${physicalWidth}x${physicalHeight} physical`;
-  dprNode.textContent = `${dpr.toFixed(2)}x`;
-  colorDepthNode.textContent = colorDepth;
-  orientationNode.textContent = orientationLabel;
-  reducedMotionNode.textContent = reducedMotion;
-  prefersContrastNode.textContent = prefersContrast;
-  colorSchemeNode.textContent = colorScheme;
-  colorGamutNode.textContent = colorGamut;
-  dynamicRangeNode.textContent = dynamicRange;
-  connectionNode.textContent = connectionType;
-  effectiveTypeNode.textContent = effectiveType;
-  downlinkNode.textContent = downlink;
-  rttNode.textContent = rtt;
-  dataSaverNode.textContent = dataSaver;
-  timezoneNode.textContent = timezone;
-  ipNode.textContent = "Loading...";
-  locationNode.textContent = "Loading...";
-  ispNode.textContent = "Loading...";
+  try {
+    const userAgent = navigator.userAgent || "Unknown";
+    const uaData = navigator.userAgentData;
+    const language = Array.isArray(navigator.languages) && navigator.languages.length
+      ? navigator.languages.join(", ")
+      : (navigator.language || "Unknown");
+    const platform = uaData?.platform || navigator.platform || "Unknown";
+    const mobileHint = uaData?.mobile === true || /iphone|ipad|android/i.test(userAgent) ? "mobile" : "desktop";
+    let osVersion = "Unknown";
+    try {
+      osVersion = await resolveOsVersion(userAgent);
+    } catch {
+      osVersion = "Unknown";
+    }
+    const logicalWidth = Number.isFinite(screen.width) ? screen.width : 0;
+    const logicalHeight = Number.isFinite(screen.height) ? screen.height : 0;
+    const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    const physicalWidth = Math.round(logicalWidth * dpr);
+    const physicalHeight = Math.round(logicalHeight * dpr);
+    const colorDepth = Number.isFinite(screen.colorDepth) ? `${screen.colorDepth}-bit` : "Unavailable";
+    const orientationLabel = getOrientationLabel();
+    const reducedMotion = getReducedMotionLabel();
+    const colorScheme = getColorSchemeLabel();
+    const prefersContrast = getPrefersContrastLabel();
+    const colorGamut = getColorGamutLabel();
+    const dynamicRange = getDynamicRangeLabel();
+    const connectionType = getConnectionTypeLabel();
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    const effectiveType = typeof connection?.effectiveType === "string" && connection.effectiveType
+      ? connection.effectiveType
+      : (typeof connection?.type === "string" && connection.type ? connection.type : "Unavailable");
+    const downlink = typeof connection?.downlink === "number" && Number.isFinite(connection.downlink)
+      ? `${connection.downlink} Mbps`
+      : "Unavailable";
+    const rtt = typeof connection?.rtt === "number" && Number.isFinite(connection.rtt)
+      ? `${connection.rtt} ms`
+      : "Unavailable";
+    const dataSaver = typeof connection?.saveData === "boolean"
+      ? (connection.saveData ? "On" : "Off")
+      : "Unavailable";
+    const timezone = getTimezoneLabel();
+    const isMacIntelDesktop = String(platform).trim().toLowerCase() === "macintel" && mobileHint === "desktop";
 
-  const network = await resolveNetworkDetails();
-  ipNode.textContent = network.ip;
-  locationNode.textContent = network.location;
-  ispNode.textContent = network.isp;
+    setText("device-browser-user-agent", userAgent);
+    setText("device-browser-os-version", osVersion);
+    setText("device-browser-device", isMacIntelDesktop ? "" : `${platform} (${mobileHint})`);
+    setText("device-browser-language", language);
+    setHtml("device-display-resolution", `${logicalWidth}x${logicalHeight} logical<br>${physicalWidth}x${physicalHeight} physical`);
+    setText("device-display-dpr", `${dpr.toFixed(2)}x`);
+    setText("device-display-color-depth", colorDepth);
+    setText("device-display-orientation", orientationLabel);
+    setText("device-display-reduced-motion", reducedMotion);
+    setText("device-display-prefers-contrast", prefersContrast);
+    setText("device-display-color-scheme", colorScheme);
+    setText("device-display-color-gamut", colorGamut);
+    setText("device-display-dynamic-range", dynamicRange);
+    setText("device-network-connection", connectionType);
+    setText("device-network-effective-type", effectiveType);
+    setText("device-network-downlink", downlink);
+    setText("device-network-rtt", rtt);
+    setText("device-network-data-saver", dataSaver);
+    setText("device-network-timezone", timezone);
+    setText("device-network-ip", "Loading...");
+    setText("device-network-location", "Loading...");
+    setText("device-network-isp", "Loading...");
+
+    try {
+      const network = await resolveNetworkDetails();
+      setText("device-network-ip", network.ip);
+      setText("device-network-location", network.location);
+      setText("device-network-isp", network.isp);
+    } catch {
+      setText("device-network-ip", "Unavailable");
+      setText("device-network-location", "Unavailable");
+      setText("device-network-isp", "Unavailable");
+    }
+  } catch {
+    // Keep fallback values so the table is never blank.
+  }
 }
 
 function buildDeviceInfoClipboardText() {
@@ -1406,22 +1440,20 @@ function renderSEO(result) {
     metaList.append(descriptionItem);
   }
 
-  const canonicalItem = document.createElement("li");
-  const canonicalLabel = document.createElement("strong");
-  canonicalLabel.textContent = "Canonical URL: ";
-  canonicalItem.append(canonicalLabel);
   const canonicalUrl = typeof result?.canonicalUrl === "string" ? result.canonicalUrl.trim() : "";
   if (/^https?:\/\//i.test(canonicalUrl)) {
+    const canonicalItem = document.createElement("li");
+    const canonicalLabel = document.createElement("strong");
+    canonicalLabel.textContent = "Canonical URL: ";
+    canonicalItem.append(canonicalLabel);
     const link = document.createElement("a");
     link.href = canonicalUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = canonicalUrl;
     canonicalItem.append(link);
-  } else {
-    canonicalItem.append(document.createTextNode("Missing"));
+    metaList.append(canonicalItem);
   }
-  metaList.append(canonicalItem);
 
   const authorLink = typeof result?.authorLink === "string" ? result.authorLink.trim() : "";
   if (authorLink) {
@@ -2158,38 +2190,15 @@ function renderPerf(result) {
   const output = document.getElementById("perf-output");
   output.textContent = "";
 
+  const summaryCards = document.createElement("div");
+  summaryCards.className = "row row-cols-2 g-2 mb-2";
+  summaryCards.append(
+    createCssOverviewMetricCard("Total DOM nodes", domNodes),
+    createCssOverviewMetricCard("Page weight estimate", `${pageWeightKb} KB`)
+  );
+
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
-
-  const domDetails = document.createElement("details");
-  domDetails.className = "accordion-item border-bottom-0";
-  const domSummary = document.createElement("summary");
-  domSummary.className = "accordion-button rounded-top pe-none no-expand";
-  const domHeader = document.createElement("h2");
-  domHeader.className = "accordion-header user-select-none fs-6 text-body";
-  domHeader.append("Total DOM nodes: ");
-  const domCount = document.createElement("span");
-  domCount.className = "opacity-75";
-  domCount.textContent = String(domNodes);
-  domHeader.append(domCount);
-  domSummary.append(domHeader);
-  domDetails.append(domSummary);
-  accordion.append(domDetails);
-
-  const weightDetails = document.createElement("details");
-  weightDetails.className = "accordion-item border-bottom-0";
-  const weightSummary = document.createElement("summary");
-  weightSummary.className = "accordion-button rounded-top pe-none no-expand";
-  const weightHeader = document.createElement("h2");
-  weightHeader.className = "accordion-header user-select-none fs-6 text-body";
-  weightHeader.append("Page weight estimate: ");
-  const weightCount = document.createElement("span");
-  weightCount.className = "opacity-75";
-  weightCount.textContent = `${pageWeightKb} KB`;
-  weightHeader.append(weightCount);
-  weightSummary.append(weightHeader);
-  weightDetails.append(weightSummary);
-  accordion.append(weightDetails);
 
   if (externalScripts.length > 0) {
     const externalDetails = document.createElement("details");
@@ -2332,7 +2341,7 @@ function renderPerf(result) {
     accordion.append(largeDetails);
   }
 
-  output.append(accordion);
+  output.append(summaryCards, accordion);
   initializeAccordionAnimations(output);
 }
 
@@ -2388,6 +2397,15 @@ function isNetworkImageAsset(item) {
   }
   const ext = getNetworkAssetExtension(item);
   return ["svg", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "gif", "webp", "png", "avif", "bmp", "ico", "tif", "tiff"].includes(ext);
+}
+
+function isNetworkVideoAsset(item) {
+  const mime = String(item?.mimeType || "").toLowerCase().trim();
+  if (mime.startsWith("video/")) {
+    return true;
+  }
+  const ext = getNetworkAssetExtension(item);
+  return ["mp4", "webm", "ogg", "ogv", "mov", "m4v", "m3u8", "mpd"].includes(ext);
 }
 
 function createNetworkInfoCard(label, value) {
@@ -2462,34 +2480,57 @@ function showNetworkAssetDetails(item) {
       previewWrap.appendChild(preview);
       panel.appendChild(previewWrap);
     }
-
-    const cards = document.createElement("div");
-    cards.className = "row row-cols-3 g-1 mb-2";
-
-    const withFallback = (value) => {
-      const text = String(value ?? "").trim();
-      return text ? text : "Unavailable";
-    };
-    cards.appendChild(createNetworkInfoCard("Type", withFallback(item?.type)));
-    cards.appendChild(createNetworkInfoCard("MIME type", withFallback(item?.mimeType)));
-    cards.appendChild(createNetworkInfoCard("Initiator", withFallback(item?.initiatorType)));
-    cards.appendChild(createNetworkInfoCard("Size", withFallback(formatNetworkSizeKb(item?.sizeKb))));
-    cards.appendChild(createNetworkInfoCard("Start time", withFallback(formatNetworkTimeMs(item?.timeMs))));
-    cards.appendChild(createNetworkInfoCard("Duration", withFallback(formatNetworkTimeMs(item?.durationMs))));
-    cards.appendChild(createNetworkInfoCard("Protocol", withFallback(formatNetworkProtocol(item?.nextHopProtocol))));
-    cards.appendChild(createNetworkInfoCard("Transfer", withFallback(formatNetworkSizeKb(item?.transferSizeKb))));
-    cards.appendChild(createNetworkInfoCard("Encoded", withFallback(formatNetworkSizeKb(item?.encodedBodySizeKb))));
-    cards.appendChild(createNetworkInfoCard("Decoded", withFallback(formatNetworkSizeKb(item?.decodedBodySizeKb))));
-    if (isNetworkImageAsset(item)) {
-      cards.appendChild(createNetworkInfoCard("Loading", withFallback(item?.imageLoading)));
-      cards.appendChild(createNetworkInfoCard("Fetch Priority", withFallback(item?.imageFetchPriority)));
-      cards.appendChild(createNetworkInfoCard("Decoding", withFallback(item?.imageDecoding)));
+    if (isNetworkVideoAsset(item) && item?.url) {
+      const previewWrap = document.createElement("div");
+      previewWrap.className = "mb-2";
+      const video = document.createElement("video");
+      video.src = String(item.url);
+      video.controls = true;
+      video.autoplay = false;
+      video.setAttribute("preload", "metadata");
+      video.setAttribute("playsinline", "");
+      video.className = "w-100 rounded border";
+      video.style.maxHeight = "220px";
+      previewWrap.appendChild(video);
+      panel.appendChild(previewWrap);
     }
-    if (item?.type === "js") {
-      cards.appendChild(createNetworkInfoCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable"));
-      cards.appendChild(createNetworkInfoCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable"));
+
+  const cards = document.createElement("div");
+  cards.className = "row row-cols-3 g-1 mb-2";
+
+  const withFallback = (value) => {
+    const text = String(value ?? "").trim();
+    return text ? text : "Unavailable";
+  };
+  const imageAsset = isNetworkImageAsset(item);
+  const appendCard = (label, value) => {
+    const normalized = withFallback(value);
+    if (imageAsset && normalized === "Unavailable") {
+      return;
     }
+    cards.appendChild(createNetworkInfoCard(label, normalized));
+  };
+    appendCard("MIME type", item?.mimeType);
+  appendCard("Initiator", item?.initiatorType);
+  appendCard("Size", formatNetworkSizeKb(item?.sizeKb));
+  appendCard("Start time", formatNetworkTimeMs(item?.timeMs));
+  appendCard("Duration", formatNetworkTimeMs(item?.durationMs));
+  appendCard("Protocol", formatNetworkProtocol(item?.nextHopProtocol));
+  appendCard("Transfer", formatNetworkSizeKb(item?.transferSizeKb));
+  appendCard("Encoded", formatNetworkSizeKb(item?.encodedBodySizeKb));
+  appendCard("Decoded", formatNetworkSizeKb(item?.decodedBodySizeKb));
+  if (imageAsset) {
+    appendCard("Loading", item?.imageLoading);
+    appendCard("Fetch Priority", item?.imageFetchPriority);
+    appendCard("Decoding", item?.imageDecoding);
+  }
+  if (item?.type === "js") {
+    appendCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable");
+    appendCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable");
+  }
+  if (cards.childElementCount > 0) {
     panel.appendChild(cards);
+  }
 
     const urlValue = String(item?.url || "");
     if (urlValue) {
@@ -3718,6 +3759,7 @@ async function bindEvents() {
   if (savedTab && validTabs.has(savedTab)) {
     currentTab = savedTab;
     showMainScreen();
+    applyTabSelection(currentTab);
   } else {
     showWelcomeScreen();
   }
@@ -3804,11 +3846,16 @@ async function bindEvents() {
     });
 
   if (systemThemeMediaQuery) {
-      systemThemeMediaQuery.addEventListener("change", () => {
+      const onSystemThemeChange = () => {
         if (activeThemePreference === "system") {
           applyTheme("system");
         }
-      });
+      };
+      if (typeof systemThemeMediaQuery.addEventListener === "function") {
+        systemThemeMediaQuery.addEventListener("change", onSystemThemeChange);
+      } else if (typeof systemThemeMediaQuery.addListener === "function") {
+        systemThemeMediaQuery.addListener(onSystemThemeChange);
+      }
     }
   }
 

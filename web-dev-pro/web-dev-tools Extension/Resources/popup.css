@@ -113,10 +113,11 @@ main {
 }
 
 .tab-panel {
-  display: none;
+  display: none !important;
 }
 
 .tab-panel.active {
+  display: flex !important;
   min-height: 0;
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -238,6 +239,10 @@ summary.accordion-button::-webkit-details-marker {
   line-height: 1.25;
 }
 
+ .welcome-cards .card {
+   text-align: center;
+ }
+ 
 .welcome-cards .card:hover,
 .welcome-cards .card:focus-visible {
   background-color: var(--bs-secondary-bg);
