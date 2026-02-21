@@ -4,6 +4,11 @@
 
 An iPhone and iPad Safari browser extension that allows you to check and test a variety of web development tools.
 
+## Browser Support
+
+- This app only supports iOS 16 and later.
+- No need for Firefox or Chromium specific code.
+
 ## HTML
 
 - Buttons should always have a type attribute
