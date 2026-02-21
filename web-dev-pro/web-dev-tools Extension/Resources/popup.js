@@ -2504,7 +2504,11 @@ function showNetworkAssetDetails(item) {
   };
   const imageAsset = isNetworkImageAsset(item);
   const appendCard = (label, value) => {
-    cards.appendChild(createNetworkInfoCard(label, withFallback(value)));
+    const normalized = withFallback(value);
+    if (imageAsset && normalized === "Unavailable") {
+      return;
+    }
+    cards.appendChild(createNetworkInfoCard(label, normalized));
   };
   appendCard("MIME type", item?.mimeType);
   appendCard("Initiator", item?.initiatorType);
@@ -2524,7 +2528,9 @@ function showNetworkAssetDetails(item) {
     appendCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable");
     appendCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable");
   }
-  panel.appendChild(cards);
+  if (cards.childElementCount > 0) {
+    panel.appendChild(cards);
+  }
 
   const urlValue = String(item?.url || "");
   if (urlValue) {
