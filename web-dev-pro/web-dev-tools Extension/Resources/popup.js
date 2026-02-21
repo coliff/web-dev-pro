@@ -2445,56 +2445,55 @@ function showNetworkAssetDetails(item) {
   panel.style.maxHeight = "92vh";
   panel.style.overflow = "auto";
 
-  try {
-    const heading = panel.querySelector(".small.fw-semibold.mb-2");
-    if (heading instanceof HTMLElement) {
-      const header = document.createElement("div");
-      header.className = "d-flex align-items-start justify-content-between mb-2";
+  const heading = panel.querySelector(".small.fw-semibold.mb-2");
+  if (heading instanceof HTMLElement) {
+    const header = document.createElement("div");
+    header.className = "d-flex align-items-start justify-content-between mb-2";
 
-      heading.className = "small fw-semibold mb-0 text-truncate pe-2";
-      heading.style.maxWidth = "calc(100% - 30px)";
+    heading.className = "small fw-semibold mb-0 text-truncate pe-2";
+    heading.style.maxWidth = "calc(100% - 30px)";
 
-      const closeBtn = document.createElement("button");
-      closeBtn.type = "button";
-      closeBtn.className = "btn-close";
-      closeBtn.ariaLabel = "Close";
-      closeBtn.addEventListener("click", () => overlay.remove());
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn-close";
+    closeBtn.setAttribute("aria-label", "Close");
+    closeBtn.addEventListener("click", () => overlay.remove());
 
-      if (heading.parentNode) {
-        heading.parentNode.removeChild(heading);
-      }
-      header.appendChild(heading);
-      header.appendChild(closeBtn);
-      panel.insertBefore(header, panel.firstChild);
+    if (heading.parentNode) {
+      heading.parentNode.removeChild(heading);
     }
+    header.appendChild(heading);
+    header.appendChild(closeBtn);
+    panel.insertBefore(header, panel.firstChild);
+  }
 
-    if (isNetworkImageAsset(item) && item?.url) {
-      const previewWrap = document.createElement("div");
-      previewWrap.className = "mb-2 text-center";
-      const preview = document.createElement("img");
-      preview.src = String(item.url);
-      preview.alt = String(item.name || "Image preview");
-      preview.setAttribute("loading", "lazy");
-      preview.setAttribute("fetchpriority", "low");
-      preview.className = "img-fluid rounded";
-      preview.style.maxHeight = "180px";
-      previewWrap.appendChild(preview);
-      panel.appendChild(previewWrap);
-    }
-    if (isNetworkVideoAsset(item) && item?.url) {
-      const previewWrap = document.createElement("div");
-      previewWrap.className = "mb-2";
-      const video = document.createElement("video");
-      video.src = String(item.url);
-      video.controls = true;
-      video.autoplay = false;
-      video.setAttribute("preload", "metadata");
-      video.setAttribute("playsinline", "");
-      video.className = "w-100 rounded border";
-      video.style.maxHeight = "220px";
-      previewWrap.appendChild(video);
-      panel.appendChild(previewWrap);
-    }
+  if (isNetworkImageAsset(item) && item?.url) {
+    const previewWrap = document.createElement("div");
+    previewWrap.className = "mb-2 text-center";
+    const preview = document.createElement("img");
+    preview.src = String(item.url);
+    preview.alt = String(item.name || "Image preview");
+    preview.setAttribute("loading", "lazy");
+    preview.setAttribute("fetchpriority", "low");
+    preview.className = "img-fluid rounded";
+    preview.style.maxHeight = "180px";
+    previewWrap.appendChild(preview);
+    panel.appendChild(previewWrap);
+  }
+  if (isNetworkVideoAsset(item) && item?.url) {
+    const previewWrap = document.createElement("div");
+    previewWrap.className = "mb-2";
+    const video = document.createElement("video");
+    video.src = String(item.url);
+    video.controls = true;
+    video.autoplay = false;
+    video.setAttribute("preload", "metadata");
+    video.setAttribute("playsinline", "");
+    video.className = "w-100 rounded border";
+    video.style.maxHeight = "220px";
+    previewWrap.appendChild(video);
+    panel.appendChild(previewWrap);
+  }
 
   const cards = document.createElement("div");
   cards.className = "row row-cols-3 g-1 mb-2";
@@ -2511,7 +2510,7 @@ function showNetworkAssetDetails(item) {
     }
     cards.appendChild(createNetworkInfoCard(label, normalized));
   };
-    appendCard("MIME type", item?.mimeType);
+  appendCard("MIME type", item?.mimeType);
   appendCard("Initiator", item?.initiatorType);
   appendCard("Size", formatNetworkSizeKb(item?.sizeKb));
   appendCard("Start time", formatNetworkTimeMs(item?.timeMs));
@@ -2533,31 +2532,18 @@ function showNetworkAssetDetails(item) {
     panel.appendChild(cards);
   }
 
-    const urlValue = String(item?.url || "");
-    if (urlValue) {
-      const urlWrap = document.createElement("div");
-      urlWrap.className = "small mt-2";
-      const a = document.createElement("a");
-      a.href = urlValue;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      a.className = "small text-break";
-      a.textContent = urlValue;
-      urlWrap.appendChild(a);
-      panel.appendChild(urlWrap);
-    }
-  } catch {
-    const fallback = document.createElement("div");
-    fallback.className = "small mt-2";
-    const rows = [
-      `Type: ${String(item?.type || "Unavailable")}`,
-      `MIME type: ${String(item?.mimeType || "Unavailable")}`,
-      `Initiator: ${String(item?.initiatorType || "Unavailable")}`,
-      `Size: ${formatNetworkSizeKb(item?.sizeKb) || "Unavailable"}`,
-      `URL: ${String(item?.url || "Unavailable")}`,
-    ];
-    fallback.textContent = rows.join("\n");
-    panel.appendChild(fallback);
+  const urlValue = String(item?.url || "");
+  if (urlValue) {
+    const urlWrap = document.createElement("div");
+    urlWrap.className = "small mt-2";
+    const a = document.createElement("a");
+    a.href = urlValue;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.className = "small text-break";
+    a.textContent = urlValue;
+    urlWrap.appendChild(a);
+    panel.appendChild(urlWrap);
   }
 
   overlay.addEventListener("click", (event) => {
@@ -2708,7 +2694,7 @@ function renderNetwork(payload) {
     const closeBtn = document.createElement("button");
     closeBtn.type = "button";
     closeBtn.className = "btn-close";
-    closeBtn.ariaLabel = "Close";
+    closeBtn.setAttribute("aria-label", "Close");
     closeBtn.dataset.networkDismissInfo = "true";
     info.append(closeBtn);
     output.append(info);
