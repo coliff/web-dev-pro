@@ -1383,7 +1383,7 @@ class AccordionAnimator {
 }
 
 function initializeAccordionAnimations(root = document) {
-  if (!(root instanceof ParentNode)) {
+  if (!root || typeof root.querySelectorAll !== "function") {
     return;
   }
   root.querySelectorAll("details.accordion-item").forEach((details) => {
