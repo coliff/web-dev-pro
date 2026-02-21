@@ -1012,7 +1012,7 @@ function flashButtonLabel(button, nextLabel, timeoutMs = 900) {
 
 function showDialogShell(title) {
   const overlay = document.createElement("div");
-  overlay.className = "position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-2";
+  overlay.className = "position-fixed top-0 start-0 w-100 h-100 d-flex align-items-start justify-content-center p-2";
   overlay.style.background = "rgba(2, 6, 23, 0.45)";
   overlay.style.backdropFilter = "blur(6px)";
   overlay.style.webkitBackdropFilter = "blur(6px)";
