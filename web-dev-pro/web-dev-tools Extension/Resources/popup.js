@@ -880,12 +880,19 @@ async function renderDeviceInfo() {
       : (navigator.language || "Unknown");
     const platform = uaData?.platform || navigator.platform || "Unknown";
     const mobileHint = uaData?.mobile === true || /iphone|ipad|android/i.test(userAgent) ? "mobile" : "desktop";
+
+    setText("device-browser-user-agent", userAgent);
+    setText("device-browser-device", `${platform} (${mobileHint})`);
+    setText("device-browser-language", language);
+
     let osVersion = "Unknown";
     try {
       osVersion = await resolveOsVersion(userAgent);
     } catch {
       osVersion = "Unknown";
     }
+    setText("device-browser-os-version", osVersion);
+
     const logicalWidth = Number.isFinite(screen.width) ? screen.width : 0;
     const logicalHeight = Number.isFinite(screen.height) ? screen.height : 0;
     const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio : 1;
@@ -913,12 +920,6 @@ async function renderDeviceInfo() {
       ? (connection.saveData ? "On" : "Off")
       : "Unavailable";
     const timezone = getTimezoneLabel();
-    const isMacIntelDesktop = String(platform).trim().toLowerCase() === "macintel" && mobileHint === "desktop";
-
-    setText("device-browser-user-agent", userAgent);
-    setText("device-browser-os-version", osVersion);
-    setText("device-browser-device", isMacIntelDesktop ? "" : `${platform} (${mobileHint})`);
-    setText("device-browser-language", language);
     setHtml("device-display-resolution", `${logicalWidth}x${logicalHeight} logical<br>${physicalWidth}x${physicalHeight} physical`);
     setText("device-display-dpr", `${dpr.toFixed(2)}x`);
     setText("device-display-color-depth", colorDepth);
