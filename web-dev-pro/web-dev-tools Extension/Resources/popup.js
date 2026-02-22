@@ -834,7 +834,11 @@ async function renderDeviceInfo() {
   const setText = (id, value) => {
     const node = document.getElementById(id);
     if (node) {
-      node.textContent = String(value ?? "Unavailable");
+      const textValue = String(value ?? "Unavailable");
+      node.textContent = textValue;
+      if (id.startsWith("device-network-")) {
+        node.classList.toggle("opacity-75", textValue.trim().toLowerCase() === "unavailable");
+      }
     }
   };
   const setHtml = (id, value) => {
@@ -2409,6 +2413,63 @@ function isNetworkVideoAsset(item) {
   return ["mp4", "webm", "ogg", "ogv", "mov", "m4v", "m3u8", "mpd"].includes(ext);
 }
 
+function isNetworkSourceAsset(item) {
+  const mime = String(item?.mimeType || "").toLowerCase().trim();
+  if (
+    mime.startsWith("text/")
+    || mime.includes("json")
+    || mime.includes("xml")
+    || mime.includes("javascript")
+    || mime.includes("ecmascript")
+    || mime.includes("svg")
+  ) {
+    return true;
+  }
+  const ext = getNetworkAssetExtension(item);
+  const sourceExts = new Set([
+    "html", "htm", "css", "js", "mjs", "cjs", "json", "map", "xml", "svg",
+    "txt", "md", "csv", "ts", "tsx", "jsx", "yml", "yaml", "webmanifest",
+  ]);
+  const binaryExts = new Set([
+    "jpg", "jpeg", "png", "gif", "webp", "avif", "bmp", "ico", "tif", "tiff",
+    "mp4", "webm", "ogg", "ogv", "mov", "m4v", "m3u8", "mpd",
+    "woff", "woff2", "ttf", "otf", "eot", "pdf", "zip", "gz", "br",
+  ]);
+  if (binaryExts.has(ext)) {
+    return false;
+  }
+  return sourceExts.has(ext);
+}
+
+function escapeHtml(input) {
+  return String(input ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function makeSourceFrameDoc(codeText, mimeType = "") {
+  const escapedCode = escapeHtml(codeText);
+  const escapedMime = escapeHtml(mimeType || "text/plain");
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; background: #0b0f14; color: #d7dde7; }
+  .meta { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; opacity: 0.7; padding: 8px 10px; border-bottom: 1px solid #2a3039; }
+  pre { margin: 0; padding: 12px; white-space: pre; overflow: auto; height: calc(100% - 36px); box-sizing: border-box; }
+  code { font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; }
+</style>
+</head>
+<body>
+  <div class="meta">${escapedMime}</div>
+  <pre><code>${escapedCode}</code></pre>
+</body>
+</html>`;
+}
+
 function createNetworkInfoCard(label, value) {
   const col = document.createElement("div");
   col.className = "col";
@@ -2444,27 +2505,132 @@ function showNetworkAssetDetails(item) {
   panel.style.maxWidth = "360px";
   panel.style.maxHeight = "92vh";
   panel.style.overflow = "auto";
+  panel.classList.add("d-flex", "flex-column");
 
   const heading = panel.querySelector(".small.fw-semibold.mb-2");
+  const hasSourceTab = isNetworkSourceAsset(item) && Boolean(item?.url);
+  const sourceState = { loaded: false, loading: false, text: "", mimeType: String(item?.mimeType || "") };
+
+  const header = document.createElement("div");
+  header.className = "d-flex align-items-start justify-content-between mb-2";
   if (heading instanceof HTMLElement) {
-    const header = document.createElement("div");
-    header.className = "d-flex align-items-start justify-content-between mb-2";
-
     heading.className = "small fw-semibold mb-0 text-truncate pe-2";
-    heading.style.maxWidth = "calc(100% - 30px)";
-
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.className = "btn-close";
-    closeBtn.setAttribute("aria-label", "Close");
-    closeBtn.addEventListener("click", () => overlay.remove());
-
+    heading.style.maxWidth = "calc(100% - 96px)";
     if (heading.parentNode) {
       heading.parentNode.removeChild(heading);
     }
     header.appendChild(heading);
-    header.appendChild(closeBtn);
-    panel.insertBefore(header, panel.firstChild);
+  }
+  const rightActions = document.createElement("div");
+  rightActions.className = "d-flex align-items-center gap-1";
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.className = "btn btn-sm btn-secondary py-0 px-2 d-none";
+  copyBtn.textContent = "Copy";
+  copyBtn.addEventListener("click", async () => {
+    if (!sourceState.text) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(sourceState.text);
+      flashButtonLabel(copyBtn, "Copied");
+    } catch {
+      setStatus("Could not copy source.", true);
+    }
+  });
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "btn-close";
+  closeBtn.setAttribute("aria-label", "Close");
+  closeBtn.addEventListener("click", () => overlay.remove());
+  rightActions.append(copyBtn, closeBtn);
+  header.append(rightActions);
+  panel.insertBefore(header, panel.firstChild);
+
+  const tabs = document.createElement("nav");
+  tabs.className = "nav nav-tabs nav-fill mb-2";
+  const infoTabBtn = document.createElement("button");
+  infoTabBtn.type = "button";
+  infoTabBtn.className = "nav-link active py-1 small text-body";
+  infoTabBtn.textContent = "Info";
+  tabs.append(infoTabBtn);
+  let sourceTabBtn = null;
+  if (hasSourceTab) {
+    sourceTabBtn = document.createElement("button");
+    sourceTabBtn.type = "button";
+    sourceTabBtn.className = "nav-link py-1 small text-body";
+    sourceTabBtn.textContent = "Source";
+    tabs.append(sourceTabBtn);
+  }
+  panel.append(tabs);
+
+  const infoPane = document.createElement("div");
+  infoPane.className = "d-block";
+  const sourcePane = document.createElement("div");
+  sourcePane.className = "d-none flex-grow-1";
+  panel.append(infoPane, sourcePane);
+
+  const setModalTab = async (tabName) => {
+    const isInfo = tabName === "info";
+    infoTabBtn.classList.toggle("active", isInfo);
+    infoPane.classList.toggle("d-none", !isInfo);
+    if (sourceTabBtn) {
+      sourceTabBtn.classList.toggle("active", !isInfo);
+    }
+    sourcePane.classList.toggle("d-none", isInfo);
+    const showCopyForSource = !isInfo && hasSourceTab;
+    copyBtn.classList.toggle("d-none", !showCopyForSource);
+    copyBtn.disabled = !sourceState.loaded || !sourceState.text;
+
+    if (!isInfo && hasSourceTab && !sourceState.loaded && !sourceState.loading) {
+      sourceState.loading = true;
+      sourcePane.textContent = "";
+      const loading = document.createElement("div");
+      loading.className = "small opacity-75";
+      loading.textContent = "Loading source...";
+      sourcePane.append(loading);
+      try {
+        const response = await fetch(String(item.url), { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const contentType = response.headers.get("content-type");
+        if (contentType) {
+          sourceState.mimeType = contentType;
+        }
+        sourceState.text = await response.text();
+        sourceState.loaded = true;
+        sourcePane.textContent = "";
+        const frame = document.createElement("iframe");
+        frame.className = "w-100 border rounded";
+        frame.style.height = "100%";
+        frame.style.minHeight = "56vh";
+        frame.style.backgroundColor = "var(--bs-body-bg)";
+        frame.setAttribute("sandbox", "");
+        frame.setAttribute("title", "Asset source");
+        frame.srcdoc = makeSourceFrameDoc(sourceState.text, sourceState.mimeType);
+        sourcePane.append(frame);
+        copyBtn.disabled = false;
+      } catch (error) {
+        sourcePane.textContent = "";
+        const msg = document.createElement("div");
+        msg.className = "small text-danger";
+        msg.textContent = String(error?.message || error || "Could not load source.");
+        sourcePane.append(msg);
+        copyBtn.disabled = true;
+      } finally {
+        sourceState.loading = false;
+      }
+    }
+  };
+
+  infoTabBtn.addEventListener("click", () => {
+    void setModalTab("info");
+  });
+  if (sourceTabBtn) {
+    sourceTabBtn.addEventListener("click", () => {
+      void setModalTab("source");
+    });
   }
 
   if (isNetworkImageAsset(item) && item?.url) {
@@ -2477,8 +2643,8 @@ function showNetworkAssetDetails(item) {
     preview.setAttribute("fetchpriority", "low");
     preview.className = "img-fluid rounded";
     preview.style.maxHeight = "180px";
-    previewWrap.appendChild(preview);
-    panel.appendChild(previewWrap);
+    previewWrap.append(preview);
+    infoPane.append(previewWrap);
   }
   if (isNetworkVideoAsset(item) && item?.url) {
     const previewWrap = document.createElement("div");
@@ -2491,13 +2657,12 @@ function showNetworkAssetDetails(item) {
     video.setAttribute("playsinline", "");
     video.className = "w-100 rounded border";
     video.style.maxHeight = "220px";
-    previewWrap.appendChild(video);
-    panel.appendChild(previewWrap);
+    previewWrap.append(video);
+    infoPane.append(previewWrap);
   }
 
   const cards = document.createElement("div");
   cards.className = "row row-cols-3 g-1 mb-2";
-
   const withFallback = (value) => {
     const text = String(value ?? "").trim();
     return text ? text : "Unavailable";
@@ -2508,7 +2673,7 @@ function showNetworkAssetDetails(item) {
     if (imageAsset && normalized === "Unavailable") {
       return;
     }
-    cards.appendChild(createNetworkInfoCard(label, normalized));
+    cards.append(createNetworkInfoCard(label, normalized));
   };
   appendCard("MIME type", item?.mimeType);
   appendCard("Initiator", item?.initiatorType);
@@ -2529,7 +2694,7 @@ function showNetworkAssetDetails(item) {
     appendCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable");
   }
   if (cards.childElementCount > 0) {
-    panel.appendChild(cards);
+    infoPane.append(cards);
   }
 
   const urlValue = String(item?.url || "");
@@ -2542,9 +2707,11 @@ function showNetworkAssetDetails(item) {
     a.rel = "noopener noreferrer";
     a.className = "small text-break";
     a.textContent = urlValue;
-    urlWrap.appendChild(a);
-    panel.appendChild(urlWrap);
+    urlWrap.append(a);
+    infoPane.append(urlWrap);
   }
+
+  void setModalTab("info");
 
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) {
@@ -2712,7 +2879,7 @@ function renderNetwork(payload) {
   const tableWrap = document.createElement("div");
   tableWrap.className = "table-responsive";
   const table = document.createElement("table");
-  table.className = "table table-bordered table-sm align-middle mb-0";
+  table.className = "table table-bordered table-striped table-sm align-middle mb-0 network-assets-table";
 
   const thead = document.createElement("thead");
   thead.className = "visually-hidden";
@@ -2935,7 +3102,10 @@ function createFontListContent(entries) {
     const value = document.createElement("span");
     value.className = "font-monospace";
     value.textContent = entry.value;
-    item.append(value, document.createTextNode(` (${entry.count})`));
+    const count = document.createElement("span");
+    count.className = "opacity-75";
+    count.textContent = ` (${entry.count})`;
+    item.append(value, count);
     wrap.append(item);
   }
   return wrap;

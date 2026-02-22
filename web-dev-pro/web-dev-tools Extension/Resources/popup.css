@@ -348,6 +348,11 @@ summary.accordion-button::-webkit-details-marker {
   object-fit: contain;
 }
 
+.network-assets-table {
+  --bs-table-striped-bg: rgba(var(--bs-body-color-rgb), 0.025);
+  --bs-table-striped-color: var(--bs-body-color);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
