@@ -1396,6 +1396,9 @@ function computeNetworkSnapshot() {
         decodedBodySizeKb: Number.isFinite(Number(navEntry?.decodedBodySize)) && Number(navEntry.decodedBodySize) > 0
             ? Math.round((Number(navEntry.decodedBodySize) / 1024) * 10) / 10
             : null,
+        status: Number.isFinite(Number(navEntry?.responseStatus)) && Number(navEntry.responseStatus) > 0
+            ? Number(navEntry.responseStatus)
+            : null,
         isThirdParty: false
     });
     seen.add(`doc|${docUrl}`);
@@ -1434,6 +1437,9 @@ function computeNetworkSnapshot() {
                 : null,
             decodedBodySizeKb: Number.isFinite(Number(resource?.decodedBodySize)) && Number(resource.decodedBodySize) > 0
                 ? Math.round((Number(resource.decodedBodySize) / 1024) * 10) / 10
+                : null,
+            status: Number.isFinite(Number(resource?.responseStatus)) && Number(resource.responseStatus) > 0
+                ? Number(resource.responseStatus)
                 : null,
             imageLoading: type === "images" ? (imageAttrByUrl.get(url)?.loading || null) : null,
             imageFetchPriority: type === "images" ? (imageAttrByUrl.get(url)?.fetchPriority || null) : null,
@@ -1644,6 +1650,86 @@ async function listIndexedDb() {
     }
 }
 
+function normalizeManifestUrl(url) {
+    try {
+        return new URL(url, location.href).href;
+    } catch (_error) {
+        return String(url || "");
+    }
+}
+
+async function computeManifestSnapshot() {
+    const manifestLink = document.querySelector('link[rel~="manifest"]');
+    if (!manifestLink) {
+        return { found: false, url: "", data: null, warnings: [] };
+    }
+
+    const url = normalizeManifestUrl(manifestLink.getAttribute("href") || manifestLink.href || "");
+    if (!url) {
+        return { found: false, url: "", data: null, warnings: ["Manifest link has no href."] };
+    }
+
+    try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) {
+            return {
+                found: true,
+                url,
+                data: null,
+                warnings: [`Manifest request failed with HTTP ${response.status}.`]
+            };
+        }
+
+        const text = await response.text();
+        let data = null;
+        try {
+            data = JSON.parse(text);
+        } catch (_error) {
+            return {
+                found: true,
+                url,
+                data: null,
+                warnings: ["Manifest file is not valid JSON."]
+            };
+        }
+
+        const warnings = [];
+        const display = String(data?.display || "").trim();
+        const validDisplay = new Set(["standalone", "fullscreen", "minimal-ui", "browser", "window-controls-overlay", "tabbed"]);
+        if (!display) {
+            warnings.push("Missing display property.");
+        } else if (!validDisplay.has(display)) {
+            warnings.push("Display property should be one of standalone, fullscreen, minimal-ui, browser, window-controls-overlay or tabbed.");
+        }
+        if (!String(data?.name || "").trim() && !String(data?.short_name || "").trim()) {
+            warnings.push("Missing both name and short_name.");
+        }
+        if (!String(data?.start_url || "").trim()) {
+            warnings.push("Missing start_url.");
+        }
+        if (!Array.isArray(data?.icons) || data.icons.length === 0) {
+            warnings.push("No icons defined.");
+        }
+        if (!Array.isArray(data?.screenshots) || data.screenshots.length === 0) {
+            warnings.push("No screenshots defined.");
+        }
+
+        return {
+            found: true,
+            url,
+            data,
+            warnings
+        };
+    } catch (_error) {
+        return {
+            found: true,
+            url,
+            data: null,
+            warnings: ["Could not fetch manifest file."]
+        };
+    }
+}
+
 function parseCookies() {
     if (!document.cookie) {
         return [];
@@ -1695,8 +1781,11 @@ async function storageSnapshot() {
         deletable: true
     }));
 
+    const manifest = await computeManifestSnapshot();
+
     return {
-        items: [...cookies, ...localItems, ...sessionItems, ...indexedDbItems]
+        items: [...cookies, ...localItems, ...sessionItems, ...indexedDbItems],
+        manifest
     };
 }
 
@@ -1790,6 +1879,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "storage-snapshot") {
         return storageSnapshot();
+    }
+
+    if (request.action === "manifest-snapshot") {
+        return computeManifestSnapshot();
     }
 
     if (request.action === "storage-set") {

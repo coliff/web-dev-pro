@@ -1,6 +1,7 @@
 const ext = globalThis.browser ?? globalThis.chrome;
 
 let lastStoragePayload = null;
+let lastManifestPayload = null;
 let lastCssOverviewPayload = null;
 let lastNetworkPayload = null;
 let lastRenderedNetworkItems = [];
@@ -28,6 +29,7 @@ const a11yAriaInspectKey = "popup.a11y.ariaInspectEnabled";
 const a11yAltOverlayKey = "popup.a11y.altOverlayEnabled";
 const validTabs = new Set(["a11y", "css", "network", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
+const validStorageKinds = new Set(["cookie", "localStorage", "sessionStorage", "manifest"]);
 const popupStoragePrefix = "popup.";
 const mockNetworkDebugKey = "popup.debug.mockNetwork";
 let activeThemePreference = "dark";
@@ -77,6 +79,7 @@ function getMockNetworkSnapshot() {
         type: "doc",
         name: "index.html",
         url: "https://demo.local/index.html",
+        status: 200,
         mimeType: "text/html; charset=utf-8",
         initiatorType: "navigation",
         sizeKb: 18.7,
@@ -92,6 +95,7 @@ function getMockNetworkSnapshot() {
         type: "css",
         name: "app.css",
         url: "https://demo.local/assets/app.css",
+        status: 200,
         mimeType: "text/css",
         initiatorType: "link",
         sizeKb: 42.3,
@@ -107,6 +111,7 @@ function getMockNetworkSnapshot() {
         type: "js",
         name: "runtime.mjs",
         url: "https://demo.local/assets/runtime.mjs",
+        status: 200,
         mimeType: "application/javascript",
         initiatorType: "script",
         sizeKb: 88.6,
@@ -124,6 +129,7 @@ function getMockNetworkSnapshot() {
         type: "font",
         name: "inter-v12-latin.woff2",
         url: "https://demo.local/fonts/inter-v12-latin.woff2",
+        status: 304,
         mimeType: "font/woff2",
         initiatorType: "css",
         sizeKb: 98.3,
@@ -139,6 +145,7 @@ function getMockNetworkSnapshot() {
         type: "images",
         name: "favicon.svg",
         url: "https://demo.local/favicon.svg",
+        status: 200,
         mimeType: "image/svg+xml",
         initiatorType: "link",
         sizeKb: 2.8,
@@ -157,6 +164,7 @@ function getMockNetworkSnapshot() {
         type: "images",
         name: "hero.webp",
         url: "https://images.example-cdn.com/hero.webp",
+        status: 200,
         mimeType: "image/webp",
         initiatorType: "img",
         sizeKb: 224.9,
@@ -175,6 +183,7 @@ function getMockNetworkSnapshot() {
         type: "xhr-fetch",
         name: "api/products?page=1",
         url: "https://api.demo.local/products?page=1",
+        status: 200,
         mimeType: "application/json",
         initiatorType: "fetch",
         sizeKb: 54.2,
@@ -190,6 +199,7 @@ function getMockNetworkSnapshot() {
         type: "other",
         name: "tracking-pixel",
         url: "https://analytics.example.com/pixel?id=123",
+        status: 204,
         mimeType: "application/octet-stream",
         initiatorType: "beacon",
         sizeKb: 0.7,
@@ -2386,24 +2396,57 @@ function renderA11y(result) {
     missingAltDetails.append(missingAltSummary);
     const missingAltBody = document.createElement("div");
     missingAltBody.className = "accordion-body border-bottom p-2";
-    const missingAltList = document.createElement("ul");
-    missingAltList.className = "small mb-0 ps-3";
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "table-responsive";
+    const missingAltTable = document.createElement("table");
+    missingAltTable.className = "table table-sm align-middle mb-0";
+    const missingAltHead = document.createElement("thead");
+    const missingAltHeadRow = document.createElement("tr");
+    const previewHead = document.createElement("th");
+    previewHead.scope = "col";
+    previewHead.className = "small";
+    previewHead.textContent = "Image";
+    const sourceHead = document.createElement("th");
+    sourceHead.scope = "col";
+    sourceHead.className = "small";
+    sourceHead.textContent = "Source";
+    missingAltHeadRow.append(previewHead, sourceHead);
+    missingAltHead.append(missingAltHeadRow);
+    missingAltTable.append(missingAltHead);
+    const missingAltBodyRows = document.createElement("tbody");
     for (const sample of missingAltSamples) {
-      const li = document.createElement("li");
+      const row = document.createElement("tr");
       const raw = String(sample ?? "");
+      const imageCell = document.createElement("td");
+      const sourceCell = document.createElement("td");
+      sourceCell.className = "small";
+
       if (/^https?:\/\//i.test(raw)) {
+        const preview = document.createElement("img");
+        preview.src = raw;
+        preview.alt = "";
+        preview.className = "img-fluid rounded border";
+        preview.style.maxWidth = "50px";
+        preview.style.height = "auto";
+        preview.loading = "lazy";
+        imageCell.append(preview);
+
         const link = document.createElement("a");
         link.href = raw;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
         link.textContent = raw;
-        li.append(link);
+        sourceCell.append(link);
       } else {
-        li.textContent = raw;
+        imageCell.append(document.createTextNode("N/A"));
+        sourceCell.textContent = raw;
       }
-      missingAltList.append(li);
+      row.append(imageCell, sourceCell);
+      missingAltBodyRows.append(row);
     }
-    missingAltBody.append(missingAltList);
+    missingAltTable.append(missingAltBodyRows);
+    tableWrap.append(missingAltTable);
+    missingAltBody.append(tableWrap);
     missingAltDetails.append(missingAltBody);
     auditsAccordion.append(missingAltDetails);
     auditIssueCount += missingAltSamples.length;
@@ -3116,8 +3159,16 @@ function showNetworkAssetDetails(item) {
   const rawName = String(item?.name || "Asset");
   const title = rawName.length > 42 ? `${rawName.slice(0, 42)}...` : rawName;
   const { overlay, panel } = showDialogShell(title);
+  const dialog = overlay.closest("dialog");
+  if (dialog instanceof HTMLDialogElement) {
+    dialog.classList.add("wdt-dialog-network-asset");
+  }
   panel.style.maxWidth = "360px";
-  panel.style.maxHeight = "92vh";
+  if (isIpadExtensionPopupContext()) {
+    panel.style.maxHeight = `${Math.max(320, Math.floor(globalThis.innerHeight * 0.92))}px`;
+  } else {
+    panel.style.maxHeight = "92vh";
+  }
   panel.classList.add("d-flex", "flex-column", "overflow-hidden");
 
   const errorBlock = document.createElement("pre");
@@ -3173,7 +3224,7 @@ function showNetworkAssetDetails(item) {
     panel.insertBefore(header, panel.firstChild);
 
     const body = document.createElement("div");
-    body.className = "d-flex flex-column flex-grow-1 min-h-0 overflow-auto overflow-x-hidden bg-body";
+    body.className = "wdt-modal-body d-flex flex-column flex-grow-1 min-h-0 overflow-auto overflow-x-hidden bg-body";
     body.style.webkitOverflowScrolling = "touch";
     panel.append(body);
 
@@ -3466,6 +3517,7 @@ function showNetworkAssetDetails(item) {
       cards.append(createNetworkInfoCard(label, normalized));
     };
     appendCard("MIME type", item?.mimeType);
+    appendCard("Status", item?.status);
     appendCard("Initiator", item?.initiatorType);
     appendCard("Size", formatNetworkSizeKb(item?.sizeKb));
     appendCard("Start time", formatNetworkTimeMs(item?.timeMs));
@@ -4047,7 +4099,7 @@ function makeStorageRow(item) {
   row.className = "storage-row rounded-3 bg-secondary bg-opacity-25";
 
   const heading = document.createElement("strong");
-  heading.textContent = `${item.kind} :: ${item.key}`;
+  heading.textContent = `${storageKindTitle(item.kind)} :: ${item.key}`;
 
   const value = document.createElement("code");
   value.textContent = item.value;
@@ -4072,6 +4124,277 @@ function makeStorageRow(item) {
 function getFilteredStorageItems(payload) {
   const items = Array.isArray(payload?.items) ? payload.items : [];
   return items.filter((item) => item?.kind === currentStorageKind);
+}
+
+function storageKindTitle(kind) {
+  if (kind === "cookie") {
+    return "cookie";
+  }
+  if (kind === "localStorage") {
+    return "local";
+  }
+  if (kind === "sessionStorage") {
+    return "session";
+  }
+  if (kind === "manifest") {
+    return "manifest";
+  }
+  return String(kind || "storage");
+}
+
+function createStorageToolbar(kind, count) {
+  const toolbar = document.createElement("div");
+  toolbar.className = "d-flex align-items-center justify-content-between mb-2 gap-2";
+
+  const countLabel = document.createElement("div");
+  countLabel.className = "small text-secondary";
+  const plural = count === 1 ? "" : "s";
+  countLabel.textContent = `${count} ${storageKindTitle(kind)} item${plural}`;
+
+  const actions = document.createElement("div");
+  actions.className = "d-flex align-items-center gap-1";
+
+  const reloadBtn = document.createElement("button");
+  reloadBtn.type = "button";
+  reloadBtn.className = "btn btn-sm btn-outline-secondary py-0 px-2";
+  reloadBtn.textContent = "Reload";
+  reloadBtn.dataset.storageAction = "reload";
+  reloadBtn.dataset.kind = kind;
+
+  const clearBtn = document.createElement("button");
+  clearBtn.type = "button";
+  clearBtn.className = "btn btn-sm btn-outline-danger py-0 px-2";
+  clearBtn.textContent = "Delete All";
+  clearBtn.dataset.storageAction = "clear-all";
+  clearBtn.dataset.kind = kind;
+
+  actions.append(reloadBtn, clearBtn);
+  toolbar.append(countLabel, actions);
+  return toolbar;
+}
+
+function appendManifestSection(root, title, bodyNode) {
+  const wrap = document.createElement("div");
+  wrap.className = "mb-3";
+
+  const heading = document.createElement("h3");
+  heading.className = "small fw-semibold mb-1";
+  heading.textContent = title;
+
+  wrap.append(heading, bodyNode);
+  root.append(wrap);
+}
+
+function hasManifestValue(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  const text = String(value).trim();
+  if (!text) {
+    return false;
+  }
+  return text.toLowerCase() !== "unavailable";
+}
+
+function createManifestDefinitionList(rows) {
+  const validRows = rows.filter((row) => hasManifestValue(row?.value));
+  if (!validRows.length) {
+    return null;
+  }
+
+  const table = document.createElement("table");
+  table.className = "table table-sm table-borderless mb-0 small";
+  const tbody = document.createElement("tbody");
+  for (const row of validRows) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.className = "align-top text-nowrap opacity-75 pe-2";
+    th.scope = "row";
+    th.textContent = String(row.label || "");
+    const td = document.createElement("td");
+    td.className = "text-break";
+
+    if (row.isColor === true) {
+      const swatch = document.createElement("span");
+      swatch.className = "rounded-circle border d-inline-block align-middle me-2";
+      swatch.style.width = "0.75rem";
+      swatch.style.height = "0.75rem";
+      swatch.style.backgroundColor = String(row.value);
+      td.append(swatch);
+    }
+
+    if (row.isCode === true) {
+      const code = document.createElement("code");
+      code.textContent = String(row.value);
+      td.append(code);
+    } else {
+      td.textContent = String(row.value);
+    }
+
+    tr.append(th, td);
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  return table;
+}
+
+function createManifestIconsList(icons) {
+  const validIcons = icons.filter((icon) => hasManifestValue(icon?.src));
+  if (!validIcons.length) {
+    return null;
+  }
+
+  const wrap = document.createElement("div");
+  wrap.className = "d-flex flex-column gap-2";
+
+  validIcons.slice(0, 16).forEach((icon, index) => {
+    const row = document.createElement("div");
+    row.className = "d-flex gap-2 align-items-start rounded border p-2";
+
+    const preview = document.createElement("img");
+    preview.src = String(icon.src);
+    preview.alt = `Manifest icon ${index + 1}`;
+    preview.width = 24;
+    preview.height = 24;
+    preview.className = "rounded border flex-shrink-0";
+    preview.setAttribute("loading", "lazy");
+    row.append(preview);
+
+    const info = document.createElement("div");
+    info.className = "d-flex flex-column gap-1 min-w-0";
+
+    const source = document.createElement("a");
+    source.href = String(icon.src);
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    source.className = "small text-break";
+    source.textContent = String(icon.src);
+    info.append(source);
+
+    const meta = document.createElement("div");
+    meta.className = "d-flex flex-wrap gap-1";
+
+    if (hasManifestValue(icon.type)) {
+      const typePill = document.createElement("span");
+      typePill.className = "badge text-bg-secondary";
+      typePill.textContent = String(icon.type);
+      meta.append(typePill);
+    }
+    if (hasManifestValue(icon.sizes)) {
+      const sizePill = document.createElement("span");
+      sizePill.className = "badge text-bg-secondary";
+      sizePill.textContent = `Size ${String(icon.sizes)}`;
+      meta.append(sizePill);
+    }
+    if (hasManifestValue(icon.purpose)) {
+      const purposePill = document.createElement("span");
+      purposePill.className = "badge text-bg-secondary";
+      purposePill.textContent = `Purpose ${String(icon.purpose)}`;
+      meta.append(purposePill);
+    }
+    if (meta.childElementCount > 0) {
+      info.append(meta);
+    }
+
+    row.append(info);
+    wrap.append(row);
+  });
+
+  return wrap;
+}
+
+function renderManifestStorage(payload, output) {
+  const manifest = payload?.manifest || lastManifestPayload;
+  if (!manifest?.found) {
+    const empty = document.createElement("p");
+    empty.className = "text-center mb-0";
+    empty.textContent = "No manifest file found.";
+    output.append(empty);
+    return;
+  }
+
+  const container = document.createElement("div");
+  container.className = "d-flex flex-column gap-2";
+
+  const source = document.createElement("div");
+  source.className = "small";
+  const sourceLabel = document.createElement("span");
+  sourceLabel.className = "opacity-75 me-1";
+  sourceLabel.textContent = "Source:";
+  const sourceLink = document.createElement("a");
+  sourceLink.href = String(manifest.url || "");
+  sourceLink.target = "_blank";
+  sourceLink.rel = "noopener noreferrer";
+  sourceLink.className = "small text-break";
+  sourceLink.textContent = String(manifest.url || "manifest");
+  source.append(sourceLabel, sourceLink);
+  container.append(source);
+
+  const identityRows = [
+    { label: "Name", value: manifest.data?.name },
+    { label: "Short name", value: manifest.data?.short_name },
+    { label: "Description", value: manifest.data?.description },
+    { label: "ID", value: manifest.data?.id, isCode: true },
+  ];
+  const identityTable = createManifestDefinitionList(identityRows);
+  if (identityTable) {
+    appendManifestSection(container, "Identity", identityTable);
+  }
+
+  const presentationRows = [
+    { label: "Start URL", value: manifest.data?.start_url, isCode: true },
+    { label: "Display", value: manifest.data?.display, isCode: true },
+    { label: "Orientation", value: manifest.data?.orientation, isCode: true },
+    { label: "Theme color", value: manifest.data?.theme_color, isCode: true, isColor: true },
+    { label: "Background color", value: manifest.data?.background_color, isCode: true, isColor: true },
+    { label: "Scope", value: manifest.data?.scope, isCode: true },
+  ];
+  const presentationTable = createManifestDefinitionList(presentationRows);
+  if (presentationTable) {
+    appendManifestSection(container, "Presentation", presentationTable);
+  }
+
+  const iconsList = Array.isArray(manifest.data?.icons)
+    ? createManifestIconsList(manifest.data.icons)
+    : null;
+  if (iconsList) {
+    appendManifestSection(container, "Icons", iconsList);
+  }
+
+  const screenshotRows = Array.isArray(manifest.data?.screenshots) ? manifest.data.screenshots
+    .filter((shot) => hasManifestValue(shot?.src))
+    .slice(0, 12)
+    .map((shot, index) => ({
+      label: `Screenshot ${index + 1}`,
+      value: `${String(shot?.form_factor || "unspecified")} | ${String(shot?.sizes || "unspecified")} | ${String(shot?.src || "")}`,
+    }))
+    : [];
+  const screenshotsTable = createManifestDefinitionList(screenshotRows);
+  if (screenshotsTable) {
+    appendManifestSection(container, "Screenshots", screenshotsTable);
+  }
+
+  if (Array.isArray(manifest.warnings) && manifest.warnings.length) {
+    const alert = document.createElement("div");
+    alert.className = "alert alert-info py-2 px-2 mt-2 mb-0";
+
+    const title = document.createElement("div");
+    title.className = "small fw-semibold mb-1";
+    title.textContent = "Errors and warnings";
+    alert.append(title);
+
+    const list = document.createElement("ul");
+    list.className = "small mb-0 ps-3";
+    for (const warning of manifest.warnings) {
+      const li = document.createElement("li");
+      li.textContent = String(warning);
+      list.append(li);
+    }
+    alert.append(list);
+    container.append(alert);
+  }
+
+  output.append(container);
 }
 
 function renderStorageKindTabs() {
@@ -4106,20 +4429,27 @@ function renderStorage(payload) {
     copyJsonBtn.disabled = false;
   }
 
+  if (currentStorageKind === "manifest") {
+    renderManifestStorage(payload, output);
+    return;
+  }
+
   if (!items.length) {
+    output.append(createStorageToolbar(currentStorageKind, 0));
     const empty = document.createElement("p");
     empty.className = "text-center mb-0";
     if (currentStorageKind === "localStorage") {
-      empty.textContent = "No localStorage items found.";
+      empty.textContent = "No local items found.";
     } else if (currentStorageKind === "cookie") {
       empty.textContent = "No cookie items found.";
     } else {
-      empty.textContent = "No sessionStorage items found.";
+      empty.textContent = "No session items found.";
     }
     output.append(empty);
     return;
   }
 
+  output.append(createStorageToolbar(currentStorageKind, items.length));
   for (const item of items) {
     output.append(makeStorageRow(item));
   }
@@ -4128,7 +4458,20 @@ function renderStorage(payload) {
 async function loadStorage() {
   const response = await sendToActiveTab({ action: "storage-snapshot" });
   lastStoragePayload = response;
+  if (response?.manifest) {
+    lastManifestPayload = response.manifest;
+  }
   renderStorage(response);
+}
+
+async function loadManifest() {
+  const manifest = await sendToActiveTab({ action: "manifest-snapshot" });
+  lastManifestPayload = manifest;
+  if (!lastStoragePayload || typeof lastStoragePayload !== "object") {
+    lastStoragePayload = { items: [] };
+  }
+  lastStoragePayload = { ...lastStoragePayload, manifest };
+  renderStorage(lastStoragePayload);
 }
 
 async function handleStorageAction(source) {
@@ -4150,7 +4493,52 @@ async function handleStorageAction(source) {
   const kind = target.dataset.kind;
   const key = target.dataset.key;
 
-  if (!kind || !key) {
+  if (action === "reload") {
+    if (kind === "manifest") {
+      await loadManifest();
+      setStatus("Manifest refreshed.");
+    } else {
+      await loadStorage();
+      setStatus("Storage refreshed.");
+    }
+    return;
+  }
+
+  if (!kind || !validStorageKinds.has(kind)) {
+    return;
+  }
+
+  if (action === "clear-all") {
+    if (kind === "manifest") {
+      setStatus("Manifest cannot be deleted.", true);
+      return;
+    }
+    if (!lastStoragePayload) {
+      await loadStorage();
+    }
+    const items = (Array.isArray(lastStoragePayload?.items) ? lastStoragePayload.items : [])
+      .filter((entry) => entry.kind === kind && entry.deletable !== false);
+    if (!items.length) {
+      setStatus(`No ${storageKindTitle(kind)} items to delete.`);
+      return;
+    }
+    const approved = await showConfirmDialog(`Delete all ${storageKindTitle(kind)} items (${items.length})?`);
+    if (!approved) {
+      return;
+    }
+    for (const entry of items) {
+      await sendToActiveTab({
+        action: "storage-delete",
+        kind: entry.kind,
+        key: entry.key,
+      });
+    }
+    await loadStorage();
+    setStatus(`Deleted ${items.length} ${storageKindTitle(kind)} item${items.length === 1 ? "" : "s"}.`);
+    return;
+  }
+
+  if (action !== "copy" || !key) {
     return;
   }
 
@@ -4463,7 +4851,9 @@ async function bindEvents() {
     const storageKindTab = target.closest("[data-storage-kind-tab]");
     if (storageKindTab instanceof HTMLElement && storageKindTab.dataset.storageKindTab) {
       currentStorageKind = storageKindTab.dataset.storageKindTab;
-      if (lastStoragePayload) {
+      if (currentStorageKind === "manifest") {
+        await loadManifest();
+      } else if (lastStoragePayload) {
         renderStorage(lastStoragePayload);
       } else {
         await loadStorage();
