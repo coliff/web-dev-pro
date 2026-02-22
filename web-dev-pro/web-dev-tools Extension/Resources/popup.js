@@ -29,10 +29,168 @@ const a11yAltOverlayKey = "popup.a11y.altOverlayEnabled";
 const validTabs = new Set(["a11y", "css", "network", "perf", "rendering", "seo", "settings", "storage"]);
 const validThemePreferences = new Set(["system", "dark", "light"]);
 const popupStoragePrefix = "popup.";
+const mockNetworkDebugKey = "popup.debug.mockNetwork";
 let activeThemePreference = "dark";
 const systemThemeMediaQuery = globalThis.matchMedia
   ? globalThis.matchMedia("(prefers-color-scheme: dark)")
   : null;
+
+function isMockNetworkModeEnabled() {
+  try {
+    const params = new URLSearchParams(globalThis.location?.search || "");
+    const queryValue = params.get("mockNetwork");
+    if (queryValue === "1" || queryValue === "true") {
+      return true;
+    }
+    if (queryValue === "0" || queryValue === "false") {
+      return false;
+    }
+  } catch {
+    // Ignore URL parsing failures.
+  }
+
+  try {
+    const stored = globalThis.localStorage?.getItem(mockNetworkDebugKey);
+    return stored === "true";
+  } catch {
+    return false;
+  }
+}
+
+function getMockNetworkSnapshot() {
+  return {
+    items: [
+      {
+        type: "doc",
+        name: "index.html",
+        url: "https://demo.local/index.html",
+        mimeType: "text/html; charset=utf-8",
+        initiatorType: "navigation",
+        sizeKb: 18.7,
+        transferSizeKb: 20.2,
+        encodedBodySizeKb: 18.7,
+        decodedBodySizeKb: 65.4,
+        timeMs: 6.2,
+        durationMs: 24.5,
+        nextHopProtocol: "h3",
+        isThirdParty: false,
+      },
+      {
+        type: "css",
+        name: "app.css",
+        url: "https://demo.local/assets/app.css",
+        mimeType: "text/css",
+        initiatorType: "link",
+        sizeKb: 42.3,
+        transferSizeKb: 12.8,
+        encodedBodySizeKb: 11.9,
+        decodedBodySizeKb: 42.3,
+        timeMs: 11.4,
+        durationMs: 29.1,
+        nextHopProtocol: "h3",
+        isThirdParty: false,
+      },
+      {
+        type: "js",
+        name: "runtime.mjs",
+        url: "https://demo.local/assets/runtime.mjs",
+        mimeType: "application/javascript",
+        initiatorType: "script",
+        sizeKb: 88.6,
+        transferSizeKb: 30.4,
+        encodedBodySizeKb: 28.1,
+        decodedBodySizeKb: 88.6,
+        timeMs: 14.3,
+        durationMs: 36.9,
+        nextHopProtocol: "h2",
+        scriptAsync: true,
+        scriptDefer: false,
+        isThirdParty: false,
+      },
+      {
+        type: "font",
+        name: "inter-v12-latin.woff2",
+        url: "https://demo.local/fonts/inter-v12-latin.woff2",
+        mimeType: "font/woff2",
+        initiatorType: "css",
+        sizeKb: 98.3,
+        transferSizeKb: 41.7,
+        encodedBodySizeKb: 40.9,
+        decodedBodySizeKb: 98.3,
+        timeMs: 15.7,
+        durationMs: 44.2,
+        nextHopProtocol: "h3",
+        isThirdParty: false,
+      },
+      {
+        type: "images",
+        name: "favicon.svg",
+        url: "https://demo.local/favicon.svg",
+        mimeType: "image/svg+xml",
+        initiatorType: "link",
+        sizeKb: 2.8,
+        transferSizeKb: 1.4,
+        encodedBodySizeKb: 1.3,
+        decodedBodySizeKb: 2.8,
+        timeMs: 4.1,
+        durationMs: 10.5,
+        nextHopProtocol: "h3",
+        imageLoading: "eager",
+        imageFetchPriority: "high",
+        imageDecoding: "sync",
+        isThirdParty: false,
+      },
+      {
+        type: "images",
+        name: "hero.webp",
+        url: "https://images.example-cdn.com/hero.webp",
+        mimeType: "image/webp",
+        initiatorType: "img",
+        sizeKb: 224.9,
+        transferSizeKb: 110.7,
+        encodedBodySizeKb: 109.8,
+        decodedBodySizeKb: 224.9,
+        timeMs: 33.9,
+        durationMs: 86.4,
+        nextHopProtocol: "h2",
+        imageLoading: "lazy",
+        imageFetchPriority: "auto",
+        imageDecoding: "async",
+        isThirdParty: true,
+      },
+      {
+        type: "xhr-fetch",
+        name: "api/products?page=1",
+        url: "https://api.demo.local/products?page=1",
+        mimeType: "application/json",
+        initiatorType: "fetch",
+        sizeKb: 54.2,
+        transferSizeKb: 20.1,
+        encodedBodySizeKb: 19.3,
+        decodedBodySizeKb: 54.2,
+        timeMs: 24.7,
+        durationMs: 58.3,
+        nextHopProtocol: "h3",
+        isThirdParty: false,
+      },
+      {
+        type: "other",
+        name: "tracking-pixel",
+        url: "https://analytics.example.com/pixel?id=123",
+        mimeType: "application/octet-stream",
+        initiatorType: "beacon",
+        sizeKb: 0.7,
+        transferSizeKb: 0.7,
+        encodedBodySizeKb: 0.7,
+        decodedBodySizeKb: 0.7,
+        timeMs: 41.1,
+        durationMs: 72.9,
+        nextHopProtocol: "h2",
+        isThirdParty: true,
+      },
+    ],
+  };
+}
 
 async function getActiveTabId() {
   if (ext.tabs.query.length === 1) {
@@ -1015,13 +1173,6 @@ function flashButtonLabel(button, nextLabel, timeoutMs = 900) {
 }
 
 function showDialogShell(title) {
-  const overlay = document.createElement("div");
-  overlay.className = "position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-start justify-content-center p-2";
-  overlay.style.background = "rgba(2, 6, 23, 0.45)";
-  overlay.style.backdropFilter = "blur(6px)";
-  overlay.style.webkitBackdropFilter = "blur(6px)";
-  overlay.style.zIndex = "2147483647";
-
   const panel = document.createElement("div");
   panel.className = "rounded-2 p-2 bg-body border text-body shadow-sm";
   panel.style.width = "100%";
@@ -1031,8 +1182,61 @@ function showDialogShell(title) {
   const heading = document.createElement("div");
   heading.className = "small fw-semibold mb-2";
   heading.textContent = title;
-
   panel.append(heading);
+
+  if (typeof HTMLDialogElement !== "undefined") {
+    const dialog = document.createElement("dialog");
+    dialog.className = "border-0 p-0 m-0";
+    dialog.style.width = "100vw";
+    dialog.style.maxWidth = "100vw";
+    dialog.style.height = "100vh";
+    dialog.style.maxHeight = "100vh";
+    dialog.style.background = "transparent";
+    dialog.style.overflow = "visible";
+
+    const overlay = document.createElement("div");
+    overlay.className = "w-100 h-100 d-flex align-items-start justify-content-center p-2";
+    overlay.style.background = "rgba(2, 6, 23, 0.45)";
+    overlay.style.backdropFilter = "blur(6px)";
+    overlay.style.webkitBackdropFilter = "blur(6px)";
+
+    const closeDialog = () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+      dialog.remove();
+    };
+
+    const nativeRemove = overlay.remove.bind(overlay);
+    overlay.remove = () => {
+      closeDialog();
+      nativeRemove();
+    };
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        closeDialog();
+      }
+    });
+
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeDialog();
+    });
+
+    overlay.append(panel);
+    dialog.append(overlay);
+    document.body.append(dialog);
+    dialog.showModal();
+    return { overlay, panel };
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-start justify-content-center p-2";
+  overlay.style.background = "rgba(2, 6, 23, 0.45)";
+  overlay.style.backdropFilter = "blur(6px)";
+  overlay.style.webkitBackdropFilter = "blur(6px)";
+  overlay.style.zIndex = "2147483647";
   overlay.append(panel);
   document.body.append(overlay);
   return { overlay, panel };
@@ -1825,66 +2029,61 @@ function renderSEO(result) {
   ogDetails.append(ogBody);
   accordion.append(ogDetails);
 
-  const twitterDetails = document.createElement("details");
-  twitterDetails.className = "accordion-item border-bottom-0";
-  twitterDetails.setAttribute("name", "seo-issues");
-  const twitterSummary = document.createElement("summary");
-  twitterSummary.className = "accordion-button rounded-top";
-  const twitterHeader = document.createElement("h2");
-  twitterHeader.className = "accordion-header user-select-none fs-6 text-body";
-  twitterHeader.append(document.createTextNode("Twitter Cards "));
-  const twitterCount = document.createElement("span");
-  twitterCount.className = "opacity-50";
-  twitterCount.textContent = `(${twitterTags.length})`;
-  twitterHeader.append(twitterCount);
-  twitterSummary.append(twitterHeader);
-  lockAccordionWhenEmpty(twitterDetails, twitterSummary, twitterTags.length);
-  twitterDetails.append(twitterSummary);
-  const twitterBody = document.createElement("div");
-  twitterBody.className = "accordion-body border-bottom p-2";
-  const twitterList = document.createElement("ul");
-  twitterList.className = "small mb-0 ps-3";
-  const sortedTwitterTags = [...twitterTags].sort((a, b) => {
-    const aKey = String((a && typeof a === "object" ? a.name : a) || "").toLowerCase();
-    const bKey = String((b && typeof b === "object" ? b.name : b) || "").toLowerCase();
-    return aKey.localeCompare(bKey);
-  });
+  if (twitterTags.length > 0) {
+    const twitterDetails = document.createElement("details");
+    twitterDetails.className = "accordion-item border-bottom-0";
+    twitterDetails.setAttribute("name", "seo-issues");
+    const twitterSummary = document.createElement("summary");
+    twitterSummary.className = "accordion-button rounded-top";
+    const twitterHeader = document.createElement("h2");
+    twitterHeader.className = "accordion-header user-select-none fs-6 text-body";
+    twitterHeader.append(document.createTextNode("Twitter Cards "));
+    const twitterCount = document.createElement("span");
+    twitterCount.className = "opacity-50";
+    twitterCount.textContent = `(${twitterTags.length})`;
+    twitterHeader.append(twitterCount);
+    twitterSummary.append(twitterHeader);
+    twitterDetails.append(twitterSummary);
+    const twitterBody = document.createElement("div");
+    twitterBody.className = "accordion-body border-bottom p-2";
+    const twitterList = document.createElement("ul");
+    twitterList.className = "small mb-0 ps-3";
+    const sortedTwitterTags = [...twitterTags].sort((a, b) => {
+      const aKey = String((a && typeof a === "object" ? a.name : a) || "").toLowerCase();
+      const bKey = String((b && typeof b === "object" ? b.name : b) || "").toLowerCase();
+      return aKey.localeCompare(bKey);
+    });
 
-  for (const tag of sortedTwitterTags) {
-    const li = document.createElement("li");
-    const name = typeof tag === "object" && tag
-      ? String(tag.name || "twitter:*")
-      : String(tag ?? "").split(": ").shift() || "twitter:*";
-    const content = typeof tag === "object" && tag
-      ? String(tag.content || "(empty)")
-      : String(tag ?? "").replace(/^[^:]+:\s*/, "") || "(empty)";
+    for (const tag of sortedTwitterTags) {
+      const li = document.createElement("li");
+      const name = typeof tag === "object" && tag
+        ? String(tag.name || "twitter:*")
+        : String(tag ?? "").split(": ").shift() || "twitter:*";
+      const content = typeof tag === "object" && tag
+        ? String(tag.content || "(empty)")
+        : String(tag ?? "").replace(/^[^:]+:\s*/, "") || "(empty)";
 
-    const nameStrong = document.createElement("strong");
-    nameStrong.textContent = name;
-    li.append(nameStrong, document.createTextNode(": "));
+      const nameStrong = document.createElement("strong");
+      nameStrong.textContent = name;
+      li.append(nameStrong, document.createTextNode(": "));
 
-    if (name === "twitter:url" || name === "twitter:image") {
-      const link = document.createElement("a");
-      link.href = content;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = content;
-      li.append(link);
-    } else {
-      li.append(document.createTextNode(content));
+      if (name === "twitter:url" || name === "twitter:image") {
+        const link = document.createElement("a");
+        link.href = content;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = content;
+        li.append(link);
+      } else {
+        li.append(document.createTextNode(content));
+      }
+      twitterList.append(li);
     }
-    twitterList.append(li);
-  }
-  if (!twitterTags.length) {
-    const empty = document.createElement("div");
-    empty.className = "small text-success";
-    empty.textContent = "None";
-    twitterBody.append(empty);
-  } else {
+
     twitterBody.append(twitterList);
+    twitterDetails.append(twitterBody);
+    accordion.append(twitterDetails);
   }
-  twitterDetails.append(twitterBody);
-  accordion.append(twitterDetails);
 
   if (structuredDataItems.length > 0) {
     const sdDetails = document.createElement("details");
@@ -2513,6 +2712,29 @@ function escapeHtml(input) {
 function makeSourceFrameDoc(codeText, mimeType = "") {
   const escapedCode = escapeHtml(codeText);
   const escapedMime = escapeHtml(mimeType || "text/plain");
+  const normalizedMime = String(mimeType || "").toLowerCase();
+  let language = "plain";
+  if (
+    normalizedMime.includes("json")
+    || normalizedMime.includes("manifest")
+    || normalizedMime.includes("webmanifest")
+  ) {
+    language = "json";
+  } else if (
+    normalizedMime.includes("html")
+    || normalizedMime.includes("xml")
+    || normalizedMime.includes("svg")
+  ) {
+    language = "markup";
+  } else if (normalizedMime.includes("css")) {
+    language = "css";
+  } else if (
+    normalizedMime.includes("javascript")
+    || normalizedMime.includes("ecmascript")
+    || normalizedMime.includes("typescript")
+  ) {
+    language = "javascript";
+  }
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2521,13 +2743,94 @@ function makeSourceFrameDoc(codeText, mimeType = "") {
 <style>
   html, body { margin: 0; width: 100%; height: 100%; background: #0b0f14; color: #d7dde7; }
   .meta { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; opacity: 0.7; padding: 8px 10px; border-bottom: 1px solid #2a3039; }
-  pre { margin: 0; padding: 12px; white-space: pre; overflow: auto; height: calc(100% - 36px); box-sizing: border-box; }
+  pre {
+    margin: 0;
+    padding: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow: auto;
+    height: calc(100% - 36px);
+    box-sizing: border-box;
+    tab-size: 2;
+  }
   code { font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; }
+  .tok-comment { color: #6c7a89; }
+  .tok-keyword { color: #ff9d5c; }
+  .tok-string { color: #a5d76e; }
+  .tok-number { color: #6bc1ff; }
+  .tok-operator { color: #ffd166; }
+  .tok-tag { color: #67d4ff; }
+  .tok-attr { color: #f7c06a; }
 </style>
 </head>
 <body>
   <div class="meta">${escapedMime}</div>
-  <pre><code>${escapedCode}</code></pre>
+  <pre data-language="${language}"><code id="source-code">${escapedCode}</code></pre>
+  <script>
+    (() => {
+      const codeNode = document.getElementById("source-code");
+      if (!(codeNode instanceof HTMLElement)) {
+        return;
+      }
+      const pre = codeNode.closest("pre");
+      const language = pre?.dataset?.language || "plain";
+      const source = codeNode.textContent || "";
+      const esc = (text) => String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+
+      const wrap = (regex, className, input) => input.replace(regex, '<span class="' + className + '">$&</span>');
+
+      const highlightMarkup = (text) => {
+        let out = esc(text);
+        out = wrap(/&lt;!--[\s\S]*?--&gt;/g, "tok-comment", out);
+        out = out.replace(/(&lt;\/?)([a-zA-Z][\w:-]*)([^&]*?)(\/?&gt;)/g, (_, open, tag, attrs, close) => {
+          const highlightedAttrs = attrs.replace(/\s([a-zA-Z_:][\w:.-]*)(\s*=\s*)(\"[^\"]*\"|\'[^\']*\')/g, (match, name, eq, value) => {
+            return " " + '<span class="tok-attr">' + name + "</span>" + eq + '<span class="tok-string">' + value + "</span>";
+          });
+          return open + '<span class="tok-tag">' + tag + "</span>" + highlightedAttrs + close;
+        });
+        return out;
+      };
+
+      const highlightJson = (text) => {
+        let out = esc(text);
+        out = wrap(/\"(?:\\.|[^\"\\])*\"(?=\s*:)/g, "tok-attr", out);
+        out = wrap(/\"(?:\\.|[^\"\\])*\"/g, "tok-string", out);
+        out = wrap(/\b(?:true|false|null)\b/g, "tok-keyword", out);
+        out = wrap(/-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, "tok-number", out);
+        return out;
+      };
+
+      const highlightCode = (text, keywordRegex) => {
+        let out = esc(text);
+        out = wrap(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "tok-comment", out);
+        out = wrap(/\"(?:\\.|[^\"\\])*\"|\'(?:\\.|[^\'\\])*\'|\`(?:\\.|[^\`\\])*\`/g, "tok-string", out);
+        out = wrap(keywordRegex, "tok-keyword", out);
+        out = wrap(/-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, "tok-number", out);
+        out = wrap(/[{}()[\];,.:+\-*/%=<>!&|?]/g, "tok-operator", out);
+        return out;
+      };
+
+      if (language === "markup") {
+        codeNode.innerHTML = highlightMarkup(source);
+        return;
+      }
+      if (language === "json") {
+        codeNode.innerHTML = highlightJson(source);
+        return;
+      }
+      if (language === "css") {
+        codeNode.innerHTML = highlightCode(source, /\b(?:@media|@supports|@keyframes|from|to|important)\b/g);
+        return;
+      }
+      if (language === "javascript") {
+        codeNode.innerHTML = highlightCode(source, /\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|throw|new|class|extends|import|export|async|await|true|false|null|undefined)\b/g);
+      }
+    })();
+  </script>
 </body>
 </html>`;
 }
@@ -2564,216 +2867,260 @@ function showNetworkAssetDetails(item) {
   const rawName = String(item?.name || "Asset");
   const title = rawName.length > 42 ? `${rawName.slice(0, 42)}...` : rawName;
   const { overlay, panel } = showDialogShell(title);
+  overlay.style.backdropFilter = "none";
+  overlay.style.webkitBackdropFilter = "none";
   panel.style.maxWidth = "360px";
   panel.style.maxHeight = "92vh";
-  panel.style.overflow = "auto";
+  panel.style.overflow = "hidden";
+  panel.style.backgroundColor = "var(--bs-body-bg)";
   panel.classList.add("d-flex", "flex-column");
 
-  const heading = panel.querySelector(".small.fw-semibold.mb-2");
-  const hasSourceTab = isNetworkSourceAsset(item) && Boolean(item?.url);
-  const sourceState = { loaded: false, loading: false, text: "", mimeType: String(item?.mimeType || "") };
+  const errorBlock = document.createElement("pre");
+  errorBlock.className = "small text-danger border rounded p-2 mt-2 mb-0 d-none";
+  errorBlock.style.whiteSpace = "pre-wrap";
+  errorBlock.style.overflow = "auto";
+  errorBlock.style.maxHeight = "120px";
 
-  const header = document.createElement("div");
-  header.className = "d-flex align-items-start justify-content-between mb-2";
-  if (heading instanceof HTMLElement) {
-    heading.className = "small fw-semibold mb-0 text-truncate pe-2";
-    heading.style.maxWidth = "calc(100% - 96px)";
-    if (heading.parentNode) {
-      heading.parentNode.removeChild(heading);
-    }
-    header.appendChild(heading);
-  }
-  const rightActions = document.createElement("div");
-  rightActions.className = "d-flex align-items-center gap-1";
-  const copyBtn = document.createElement("button");
-  copyBtn.type = "button";
-  copyBtn.className = "btn btn-sm btn-secondary py-0 px-2 d-none";
-  copyBtn.textContent = "Copy";
-  copyBtn.addEventListener("click", async () => {
-    if (!sourceState.text) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(sourceState.text);
-      flashButtonLabel(copyBtn, "Copied");
-    } catch {
-      setStatus("Could not copy source.", true);
-    }
-  });
-  const closeBtn = document.createElement("button");
-  closeBtn.type = "button";
-  closeBtn.className = "btn-close";
-  closeBtn.setAttribute("aria-label", "Close");
-  closeBtn.addEventListener("click", () => overlay.remove());
-  rightActions.append(copyBtn, closeBtn);
-  header.append(rightActions);
-  panel.insertBefore(header, panel.firstChild);
+  const showModalError = (context, error) => {
+    const message = String(error?.message || error || "Unknown error");
+    const stack = typeof error?.stack === "string" ? error.stack : "";
+    const detail = stack ? `${message}\n${stack}` : message;
+    errorBlock.textContent = `[${context}] ${detail}`;
+    errorBlock.classList.remove("d-none");
+  };
 
-  const tabs = document.createElement("nav");
-  tabs.className = "nav nav-tabs nav-fill mb-2";
-  const infoTabBtn = document.createElement("button");
-  infoTabBtn.type = "button";
-  infoTabBtn.className = "nav-link active py-1 small text-body";
-  infoTabBtn.textContent = "Info";
-  tabs.append(infoTabBtn);
-  let sourceTabBtn = null;
-  if (hasSourceTab) {
-    sourceTabBtn = document.createElement("button");
-    sourceTabBtn.type = "button";
-    sourceTabBtn.className = "nav-link py-1 small text-body";
-    sourceTabBtn.textContent = "Source";
-    tabs.append(sourceTabBtn);
-  }
-  panel.append(tabs);
+  try {
+    const heading = panel.querySelector(".small.fw-semibold.mb-2");
+    const hasSourceTab = isNetworkSourceAsset(item) && Boolean(item?.url);
+    const sourceState = { loaded: false, loading: false, text: "", mimeType: String(item?.mimeType || "") };
 
-  const infoPane = document.createElement("div");
-  infoPane.className = "d-block";
-  const sourcePane = document.createElement("div");
-  sourcePane.className = "d-none flex-grow-1";
-  panel.append(infoPane, sourcePane);
-
-  const setModalTab = async (tabName) => {
-    const isInfo = tabName === "info";
-    infoTabBtn.classList.toggle("active", isInfo);
-    infoPane.classList.toggle("d-none", !isInfo);
-    if (sourceTabBtn) {
-      sourceTabBtn.classList.toggle("active", !isInfo);
-    }
-    sourcePane.classList.toggle("d-none", isInfo);
-    const showCopyForSource = !isInfo && hasSourceTab;
-    copyBtn.classList.toggle("d-none", !showCopyForSource);
-    copyBtn.disabled = !sourceState.loaded || !sourceState.text;
-
-    if (!isInfo && hasSourceTab && !sourceState.loaded && !sourceState.loading) {
-      sourceState.loading = true;
-      sourcePane.textContent = "";
-      const loading = document.createElement("div");
-      loading.className = "small opacity-75";
-      loading.textContent = "Loading source...";
-      sourcePane.append(loading);
-      try {
-        const response = await fetch(String(item.url), { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const contentType = response.headers.get("content-type");
-        if (contentType) {
-          sourceState.mimeType = contentType;
-        }
-        sourceState.text = await response.text();
-        sourceState.loaded = true;
-        sourcePane.textContent = "";
-        const frame = document.createElement("iframe");
-        frame.className = "w-100 border rounded";
-        frame.style.height = "100%";
-        frame.style.minHeight = "56vh";
-        frame.style.backgroundColor = "var(--bs-body-bg)";
-        frame.setAttribute("sandbox", "");
-        frame.setAttribute("title", "Asset source");
-        frame.srcdoc = makeSourceFrameDoc(sourceState.text, sourceState.mimeType);
-        sourcePane.append(frame);
-        copyBtn.disabled = false;
-      } catch (error) {
-        sourcePane.textContent = "";
-        const msg = document.createElement("div");
-        msg.className = "small text-danger";
-        msg.textContent = String(error?.message || error || "Could not load source.");
-        sourcePane.append(msg);
-        copyBtn.disabled = true;
-      } finally {
-        sourceState.loading = false;
+    const header = document.createElement("div");
+    header.className = "d-flex align-items-start justify-content-between mb-2";
+    if (heading instanceof HTMLElement) {
+      heading.className = "small fw-semibold mb-0 text-truncate pe-2";
+      heading.style.maxWidth = "calc(100% - 96px)";
+      if (heading.parentNode) {
+        heading.parentNode.removeChild(heading);
       }
+      header.appendChild(heading);
     }
-  };
-
-  infoTabBtn.addEventListener("click", () => {
-    void setModalTab("info");
-  });
-  if (sourceTabBtn) {
-    sourceTabBtn.addEventListener("click", () => {
-      void setModalTab("source");
+    const rightActions = document.createElement("div");
+    rightActions.className = "d-flex align-items-center gap-1";
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "btn btn-sm btn-secondary py-0 px-2 d-none";
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", async () => {
+      if (!sourceState.text) {
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(sourceState.text);
+        flashButtonLabel(copyBtn, "Copied");
+      } catch {
+        setStatus("Could not copy source.", true);
+      }
     });
-  }
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn-close";
+    closeBtn.setAttribute("aria-label", "Close");
+    closeBtn.addEventListener("click", () => overlay.remove());
+    rightActions.append(copyBtn, closeBtn);
+    header.append(rightActions);
+    panel.insertBefore(header, panel.firstChild);
 
-  if (isNetworkImageAsset(item) && item?.url) {
-    const previewWrap = document.createElement("div");
-    previewWrap.className = "mb-2 text-center";
-    const preview = document.createElement("img");
-    preview.src = String(item.url);
-    preview.alt = String(item.name || "Image preview");
-    preview.setAttribute("loading", "lazy");
-    preview.setAttribute("fetchpriority", "low");
-    preview.className = "img-fluid rounded";
-    preview.style.maxHeight = "180px";
-    previewWrap.append(preview);
-    infoPane.append(previewWrap);
-  }
-  if (isNetworkVideoAsset(item) && item?.url) {
-    const previewWrap = document.createElement("div");
-    previewWrap.className = "mb-2";
-    const video = document.createElement("video");
-    video.src = String(item.url);
-    video.controls = true;
-    video.autoplay = false;
-    video.setAttribute("preload", "metadata");
-    video.setAttribute("playsinline", "");
-    video.className = "w-100 rounded border";
-    video.style.maxHeight = "220px";
-    previewWrap.append(video);
-    infoPane.append(previewWrap);
-  }
+    const body = document.createElement("div");
+    body.className = "d-flex flex-column flex-grow-1 min-h-0 overflow-auto";
+    body.style.backgroundColor = "var(--bs-body-bg)";
+    body.style.overflowX = "hidden";
+    body.style.overflowY = "auto";
+    body.style.webkitOverflowScrolling = "touch";
+    panel.append(body);
 
-  const cards = document.createElement("div");
-  cards.className = "row row-cols-3 g-1 mb-2";
-  const withFallback = (value) => {
-    const text = String(value ?? "").trim();
-    return text ? text : "Unavailable";
-  };
-  const imageAsset = isNetworkImageAsset(item);
-  const appendCard = (label, value) => {
-    const normalized = withFallback(value);
-    if (imageAsset && normalized === "Unavailable") {
-      return;
+    const tabs = document.createElement("nav");
+    tabs.className = "nav nav-tabs nav-fill mb-2";
+    const infoTabBtn = document.createElement("button");
+    infoTabBtn.type = "button";
+    infoTabBtn.className = "nav-link active py-1 small text-body";
+    infoTabBtn.textContent = "Info";
+    tabs.append(infoTabBtn);
+    let sourceTabBtn = null;
+    if (hasSourceTab) {
+      sourceTabBtn = document.createElement("button");
+      sourceTabBtn.type = "button";
+      sourceTabBtn.className = "nav-link py-1 small text-body";
+      sourceTabBtn.textContent = "Source";
+      tabs.append(sourceTabBtn);
     }
-    cards.append(createNetworkInfoCard(label, normalized));
-  };
-  appendCard("MIME type", item?.mimeType);
-  appendCard("Initiator", item?.initiatorType);
-  appendCard("Size", formatNetworkSizeKb(item?.sizeKb));
-  appendCard("Start time", formatNetworkTimeMs(item?.timeMs));
-  appendCard("Duration", formatNetworkTimeMs(item?.durationMs));
-  appendCard("Protocol", formatNetworkProtocol(item?.nextHopProtocol));
-  appendCard("Transfer", formatNetworkSizeKb(item?.transferSizeKb));
-  appendCard("Encoded", formatNetworkSizeKb(item?.encodedBodySizeKb));
-  appendCard("Decoded", formatNetworkSizeKb(item?.decodedBodySizeKb));
-  if (imageAsset) {
-    appendCard("Loading", item?.imageLoading);
-    appendCard("Fetch Priority", item?.imageFetchPriority);
-    appendCard("Decoding", item?.imageDecoding);
-  }
-  if (item?.type === "js") {
-    appendCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable");
-    appendCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable");
-  }
-  if (cards.childElementCount > 0) {
-    infoPane.append(cards);
-  }
+    body.append(tabs);
 
-  const urlValue = String(item?.url || "");
-  if (urlValue) {
-    const urlWrap = document.createElement("div");
-    urlWrap.className = "small mt-2";
-    const a = document.createElement("a");
-    a.href = urlValue;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.className = "small text-break";
-    a.textContent = urlValue;
-    urlWrap.append(a);
-    infoPane.append(urlWrap);
-  }
+    const infoPane = document.createElement("div");
+    infoPane.className = "d-block";
+    const sourcePane = document.createElement("div");
+    sourcePane.className = "d-none flex-grow-1 min-h-0";
+    body.append(infoPane, sourcePane);
+    body.append(errorBlock);
 
-  void setModalTab("info");
+    const setModalTab = async (tabName) => {
+      try {
+        const isInfo = tabName === "info";
+        infoTabBtn.classList.toggle("active", isInfo);
+        infoPane.classList.toggle("d-none", !isInfo);
+        if (sourceTabBtn) {
+          sourceTabBtn.classList.toggle("active", !isInfo);
+        }
+        sourcePane.classList.toggle("d-none", isInfo);
+        const showCopyForSource = !isInfo && hasSourceTab;
+        copyBtn.classList.toggle("d-none", !showCopyForSource);
+        copyBtn.disabled = !sourceState.loaded || !sourceState.text;
+
+        if (!isInfo && hasSourceTab && !sourceState.loaded && !sourceState.loading) {
+          sourceState.loading = true;
+          sourcePane.textContent = "";
+          const loading = document.createElement("div");
+          loading.className = "small opacity-75";
+          loading.textContent = "Loading source...";
+          sourcePane.append(loading);
+          try {
+            const response = await fetch(String(item.url), { cache: "no-store" });
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            const contentType = response.headers.get("content-type");
+            if (contentType) {
+              sourceState.mimeType = contentType;
+            }
+            sourceState.text = await response.text();
+            sourceState.loaded = true;
+            sourcePane.textContent = "";
+            const frame = document.createElement("iframe");
+            frame.className = "w-100 border rounded";
+            frame.style.height = "100%";
+            frame.style.minHeight = "56vh";
+            frame.style.backgroundColor = "var(--bs-body-bg)";
+            frame.setAttribute("sandbox", "");
+            frame.setAttribute("title", "Asset source");
+            frame.srcdoc = makeSourceFrameDoc(sourceState.text, sourceState.mimeType);
+            sourcePane.append(frame);
+            copyBtn.disabled = false;
+          } catch (error) {
+            sourcePane.textContent = "";
+            const msg = document.createElement("div");
+            msg.className = "small text-danger";
+            msg.textContent = String(error?.message || error || "Could not load source.");
+            sourcePane.append(msg);
+            copyBtn.disabled = true;
+          } finally {
+            sourceState.loading = false;
+          }
+        }
+      } catch (error) {
+        showModalError("setModalTab", error);
+      }
+    };
+
+    infoTabBtn.addEventListener("click", () => {
+      void setModalTab("info");
+    });
+    if (sourceTabBtn) {
+      sourceTabBtn.addEventListener("click", () => {
+        void setModalTab("source");
+      });
+    }
+
+    if (isNetworkImageAsset(item) && item?.url) {
+      const previewWrap = document.createElement("div");
+      previewWrap.className = "mb-2 text-center";
+      const preview = document.createElement("img");
+      preview.src = String(item.url);
+      preview.alt = String(item.name || "Image preview");
+      preview.setAttribute("loading", "lazy");
+      preview.setAttribute("fetchpriority", "low");
+      preview.className = "img-fluid rounded";
+      preview.style.maxHeight = "180px";
+      previewWrap.append(preview);
+      infoPane.append(previewWrap);
+    }
+    if (isNetworkVideoAsset(item) && item?.url) {
+      const previewWrap = document.createElement("div");
+      previewWrap.className = "mb-2";
+      const video = document.createElement("video");
+      video.src = String(item.url);
+      video.controls = true;
+      video.autoplay = false;
+      video.setAttribute("preload", "metadata");
+      video.setAttribute("playsinline", "");
+      video.className = "w-100 rounded border";
+      video.style.maxHeight = "220px";
+      previewWrap.append(video);
+      infoPane.append(previewWrap);
+    }
+
+    const detailsList = document.createElement("div");
+    detailsList.className = "small d-flex flex-column gap-1 mb-2";
+    const withFallback = (value) => {
+      const text = String(value ?? "").trim();
+      return text ? text : "Unavailable";
+    };
+    const imageAsset = isNetworkImageAsset(item);
+    const appendDetail = (label, value) => {
+      const normalized = withFallback(value);
+      if (normalized === "Unavailable") {
+        return;
+      }
+      const row = document.createElement("div");
+      row.className = "text-break";
+      const key = document.createElement("strong");
+      key.className = "opacity-75";
+      key.textContent = `${label}: `;
+      const val = document.createElement("span");
+      val.className = "font-monospace";
+      val.textContent = normalized;
+      row.append(key, val);
+      detailsList.append(row);
+    };
+    appendDetail("MIME type", item?.mimeType);
+    appendDetail("Initiator", item?.initiatorType);
+    appendDetail("Size", formatNetworkSizeKb(item?.sizeKb));
+    appendDetail("Start time", formatNetworkTimeMs(item?.timeMs));
+    appendDetail("Duration", formatNetworkTimeMs(item?.durationMs));
+    appendDetail("Protocol", formatNetworkProtocol(item?.nextHopProtocol));
+    appendDetail("Transfer", formatNetworkSizeKb(item?.transferSizeKb));
+    appendDetail("Encoded", formatNetworkSizeKb(item?.encodedBodySizeKb));
+    appendDetail("Decoded", formatNetworkSizeKb(item?.decodedBodySizeKb));
+    if (imageAsset) {
+      appendDetail("Loading", item?.imageLoading);
+      appendDetail("Fetch Priority", item?.imageFetchPriority);
+      appendDetail("Decoding", item?.imageDecoding);
+    }
+    if (item?.type === "js") {
+      appendDetail("Async", item?.scriptAsync === true ? "Yes" : "Unavailable");
+      appendDetail("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable");
+    }
+    if (detailsList.childElementCount > 0) {
+      infoPane.append(detailsList);
+    }
+
+    const urlValue = String(item?.url || "");
+    if (urlValue) {
+      const urlWrap = document.createElement("div");
+      urlWrap.className = "small mt-2";
+      const a = document.createElement("a");
+      a.href = urlValue;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "small text-break";
+      a.textContent = urlValue;
+      urlWrap.append(a);
+      infoPane.append(urlWrap);
+    }
+
+    void setModalTab("info");
+  } catch (error) {
+    panel.append(errorBlock);
+    showModalError("showNetworkAssetDetails", error);
+  }
 
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) {
@@ -3246,7 +3593,7 @@ function renderCssOverview(payload) {
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
 
-  accordion.append(
+  const accordionRows = [
     createCssOverviewExpandableRow(
       "Stylesheets",
       overview.stylesheets ?? 0,
@@ -3267,6 +3614,19 @@ function renderCssOverview(payload) {
       overview.uniqueBorderColors ?? 0,
       createColorListContent(Array.isArray(colors.border) ? colors.border : [])
     ),
+  ];
+
+  if ((overview.uniqueFillColors ?? 0) > 0) {
+    accordionRows.push(
+      createCssOverviewExpandableRow(
+        "Fill colors",
+        overview.uniqueFillColors ?? 0,
+        createColorListContent(Array.isArray(colors.fill) ? colors.fill : [])
+      )
+    );
+  }
+
+  accordionRows.push(
     createCssOverviewExpandableRow(
       "Font families",
       overview.uniqueFontFamilies ?? 0,
@@ -3284,15 +3644,7 @@ function renderCssOverview(payload) {
     )
   );
 
-  if ((overview.uniqueFillColors ?? 0) > 0) {
-    accordion.append(
-      createCssOverviewExpandableRow(
-        "Fill colors",
-        overview.uniqueFillColors ?? 0,
-        createColorListContent(Array.isArray(colors.fill) ? colors.fill : [])
-      )
-    );
-  }
+  accordion.append(...accordionRows);
 
   output.append(summaryCards, accordion);
   initializeAccordionAnimations(output);
@@ -3435,12 +3787,17 @@ async function runAction(action, sourceButton = null) {
       const result = await sendToActiveTab({ action: "seo-snapshot" });
       renderSEO(result);
     } else if (action === "network") {
-      const result = await sendToActiveTab({ action: "network-snapshot" });
+      const result = isMockNetworkModeEnabled()
+        ? getMockNetworkSnapshot()
+        : await sendToActiveTab({ action: "network-snapshot" });
       if (!result || !Array.isArray(result.items)) {
         throw new Error("Network snapshot unavailable. Refresh the page and try again.");
       }
       lastNetworkPayload = result;
       renderNetwork(result);
+      if (isMockNetworkModeEnabled()) {
+        setStatus("Mock Network data loaded.");
+      }
     } else if (action === "css-overview") {
       const result = await sendToActiveTab({ action: "css-overview-snapshot" });
       renderCssOverview(result);
@@ -3490,6 +3847,30 @@ async function runAction(action, sourceButton = null) {
       || "Request failed.";
     setStatus(message, true);
   }
+}
+
+function registerDebugHelpers() {
+  globalThis.webDevToolsDebug = {
+    enableMockNetwork() {
+      try {
+        globalThis.localStorage?.setItem(mockNetworkDebugKey, "true");
+      } catch {
+        // Ignore storage failures in helper mode.
+      }
+      globalThis.location?.reload();
+    },
+    disableMockNetwork() {
+      try {
+        globalThis.localStorage?.setItem(mockNetworkDebugKey, "false");
+      } catch {
+        // Ignore storage failures in helper mode.
+      }
+      globalThis.location?.reload();
+    },
+    mockNetworkEnabled() {
+      return isMockNetworkModeEnabled();
+    },
+  };
 }
 
 async function toggleCssTool(control) {
@@ -3673,6 +4054,8 @@ async function switchTab(tabName, options = {}) {
 }
 
 async function bindEvents() {
+  registerDebugHelpers();
+
   document.addEventListener("click", async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
