@@ -32,6 +32,8 @@
 
 html,
 body {
+  --bs-code-color: var(--bs-body-color);
+
   min-width: 375px;
   max-width: 100vw;
 }
