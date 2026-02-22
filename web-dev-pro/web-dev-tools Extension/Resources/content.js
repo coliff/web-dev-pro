@@ -1807,7 +1807,29 @@ function storageSet(kind, key, value) {
 
 async function storageDelete(kind, key) {
     if (kind === "cookie") {
-        document.cookie = `${encodeURIComponent(key)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        const encodedKey = encodeURIComponent(key);
+        const expiredDate = "Thu, 01 Jan 1970 00:00:00 GMT";
+        const pathSegments = window.location.pathname
+            .split("/")
+            .filter(Boolean);
+        const pathVariants = ["/"];
+        let currentPath = "";
+        for (const segment of pathSegments) {
+            currentPath += `/${segment}`;
+            pathVariants.push(currentPath);
+        }
+
+        const hostname = window.location.hostname;
+        const hostVariants = [hostname];
+        const dottedHost = hostname.startsWith(".") ? hostname : `.${hostname}`;
+        hostVariants.push(dottedHost);
+
+        for (const path of pathVariants) {
+            document.cookie = `${encodedKey}=; expires=${expiredDate}; path=${path}`;
+            for (const host of hostVariants) {
+                document.cookie = `${encodedKey}=; expires=${expiredDate}; path=${path}; domain=${host}`;
+            }
+        }
         return;
     }
 

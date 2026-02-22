@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <meta name="format-detection" content="telephone=no" />
   <title>Web DevTools+</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" />
   <meta name="description" content="Web DevTools+ app for iOS">
   <link rel="stylesheet" href="../bootstrap.min.css" />
   <meta name="color-scheme" content="dark" />
@@ -48,7 +48,7 @@
   <main class="container flex-grow-1 d-flex align-items-center justify-content-center px-3 py-4">
     <section class="text-start w-100">
       <h2 class="h6 text-uppercase opacity-75 mb-3">Setup Steps</h2>
-      <ol class="list-group list-group-numbered shadow-sm">
+      <ol class="list-group list-group-numbered shadow-sm opacity-50">
         <li class="list-group-item bg-dark text-light border-secondary">Open <strong>Settings</strong> on your iPhone or iPad.</li>
         <li class="list-group-item bg-dark text-light border-secondary">Go to <strong>Safari</strong> then <strong>Extensions</strong>.</li>
         <li class="list-group-item bg-dark text-light border-secondary">Tap <strong>Web DevTools+</strong> and turn on <strong>Allow Extension</strong>.</li>
@@ -59,10 +59,15 @@
   </main>
 
   <footer class="pb-4 px-3">
-    <p id="user-agent" class="small opacity-75 text-center mb-0"></p>
+    <p id="user-agent" class="small opacity-75 text-center mb-0" style="font-size: 0.75rem;"></p>
   </footer>
 
-  <script src="Main.js"></script>
+  <script>
+    const userAgentElement = document.getElementById("user-agent");
+    if (userAgentElement) {
+      userAgentElement.textContent = `User Agent: ${navigator.userAgent}`;
+    }
+  </script>
 </body>
 
 </html>

@@ -3306,7 +3306,8 @@ function showNetworkAssetDetails(item) {
               sourceMimeNode.textContent = sourceState.mimeType || "text/plain";
             }
             const frame = document.createElement("iframe");
-            frame.className = "w-100 h-100 border rounded bg-body";
+            const isDarkTheme = resolveThemeMode(activeThemePreference) === "dark";
+            frame.className = `w-100 h-100 border rounded ${isDarkTheme ? "bg-dark" : "bg-body"}`;
             frame.style.minHeight = "56vh";
             frame.setAttribute("sandbox", "");
             frame.setAttribute("title", "Asset source");
@@ -3457,7 +3458,8 @@ function showNetworkAssetDetails(item) {
           );
           sourcePane.textContent = "";
           const frame = document.createElement("iframe");
-          frame.className = "w-100 h-100 border rounded bg-body";
+          const isDarkTheme = resolveThemeMode(activeThemePreference) === "dark";
+          frame.className = `w-100 h-100 border rounded ${isDarkTheme ? "bg-dark" : "bg-body"}`;
           frame.style.minHeight = "56vh";
           frame.setAttribute("sandbox", "");
           frame.setAttribute("title", "Asset source");
@@ -3738,11 +3740,12 @@ function renderNetwork(payload) {
   tableWrap.className = "table-responsive";
   const table = document.createElement("table");
   table.className = "table table-bordered table-striped table-sm align-middle mb-0 network-assets-table";
+  const firstColumnWidth = currentNetworkSubtab === "images" && currentNetworkShowImages ? 60 : 32;
 
   const thead = document.createElement("thead");
   thead.className = "visually-hidden";
   const headRow = document.createElement("tr");
-  headRow.innerHTML = "<th scope=\"col\" class=\"text-center\" style=\"width: 32px; min-width: 32px; max-width: 32px;\">Type</th><th scope=\"col\">Asset info</th>";
+  headRow.innerHTML = `<th scope="col" class="text-center" style="width: ${firstColumnWidth}px; min-width: ${firstColumnWidth}px; max-width: ${firstColumnWidth}px;">Type</th><th scope="col">Asset info</th>`;
   thead.append(headRow);
   table.append(thead);
 
@@ -3752,9 +3755,9 @@ function renderNetwork(payload) {
 
     const iconCell = document.createElement("td");
     iconCell.className = "text-center align-top";
-    iconCell.style.minWidth = "32px";
-    iconCell.style.maxWidth = "32px";
-    iconCell.style.width = "32px";
+    iconCell.style.minWidth = `${firstColumnWidth}px`;
+    iconCell.style.maxWidth = `${firstColumnWidth}px`;
+    iconCell.style.width = `${firstColumnWidth}px`;
     if (currentNetworkSubtab === "images" && currentNetworkShowImages && item?.url) {
       const preview = document.createElement("img");
       preview.src = String(item.url);
