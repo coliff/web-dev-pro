@@ -57,20 +57,17 @@ body {
 .wdt-dialog::backdrop {
   background: rgba(2, 6, 23, 0.45);
   backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
 .wdt-dialog.wdt-dialog-ipad-popup::backdrop {
   background: rgba(2, 6, 23, 0.35);
   backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 .wdt-dialog.wdt-dialog-network-asset::backdrop,
 .wdt-dialog.wdt-dialog-ipad-popup.wdt-dialog-network-asset::backdrop {
   background: rgba(2, 6, 23, 0.45);
   backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
 .wdt-dialog.wdt-dialog-ipad-popup .modal-content {
@@ -197,6 +194,10 @@ button:not(.tab, .btn-sm) {
 
 .output .metric {
   margin-bottom: 4px;
+}
+
+.seo-list > li > strong {
+  display: block;
 }
 
 .storage-row {
