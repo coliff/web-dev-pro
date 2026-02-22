@@ -1189,6 +1189,7 @@ function showDialogShell(title) {
   const panel = document.createElement("div");
   panel.className = "modal-content rounded-2 p-2 bg-body border text-body shadow-sm w-100";
   panel.style.maxWidth = "330px";
+  panel.style.minHeight = "256px";
 
   const heading = document.createElement("div");
   heading.className = "modal-title small fw-semibold mb-2";
@@ -1203,10 +1204,10 @@ function showDialogShell(title) {
     }
 
     const overlay = document.createElement("div");
-    overlay.className = "modal show d-block w-100 h-100 bg-transparent";
+    overlay.className = "position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-start justify-content-center p-2 w-100 h-100 bg-transparent";
 
     const dialogWrap = document.createElement("div");
-    dialogWrap.className = "modal-dialog modal-dialog-centered mx-auto p-2 w-100";
+    dialogWrap.className = "d-flex justify-content-center w-100";
 
     const closeDialog = () => {
       if (dialog.open) {
