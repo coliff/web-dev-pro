@@ -66,6 +66,23 @@ body {
   -webkit-backdrop-filter: none;
 }
 
+.wdt-dialog.wdt-dialog-network-asset::backdrop,
+.wdt-dialog.wdt-dialog-ipad-popup.wdt-dialog-network-asset::backdrop {
+  background: rgba(2, 6, 23, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.wdt-dialog.wdt-dialog-ipad-popup .modal-content {
+  background-color: var(--bs-body-bg) !important;
+  isolation: isolate;
+}
+
+.wdt-dialog.wdt-dialog-ipad-popup .wdt-modal-body {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto !important;
+}
+
 a {
   filter: grayscale(1);
 }
@@ -355,8 +372,9 @@ summary.accordion-button::-webkit-details-marker {
 }
 
 .network-table-thumb {
-  width: 32px;
-  height: 32px;
+  width: 100%;
+  max-width: 50px;
+  height: auto;
   object-fit: contain;
 }
 
