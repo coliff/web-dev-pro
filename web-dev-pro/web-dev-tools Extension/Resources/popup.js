@@ -1407,6 +1407,7 @@ function renderSEO(result) {
   const output = document.getElementById("seo-output");
   output.textContent = "";
   const openGraphTags = Array.isArray(result?.openGraphTags) ? result.openGraphTags : [];
+  const twitterTags = Array.isArray(result?.twitterTags) ? result.twitterTags : [];
   const structuredDataItems = Array.isArray(result?.structuredDataItems) ? result.structuredDataItems : [];
   const iconLinks = Array.isArray(result?.iconLinks) ? result.iconLinks : [];
 
@@ -1823,6 +1824,67 @@ function renderSEO(result) {
   }
   ogDetails.append(ogBody);
   accordion.append(ogDetails);
+
+  const twitterDetails = document.createElement("details");
+  twitterDetails.className = "accordion-item border-bottom-0";
+  twitterDetails.setAttribute("name", "seo-issues");
+  const twitterSummary = document.createElement("summary");
+  twitterSummary.className = "accordion-button rounded-top";
+  const twitterHeader = document.createElement("h2");
+  twitterHeader.className = "accordion-header user-select-none fs-6 text-body";
+  twitterHeader.append(document.createTextNode("Twitter Cards "));
+  const twitterCount = document.createElement("span");
+  twitterCount.className = "opacity-50";
+  twitterCount.textContent = `(${twitterTags.length})`;
+  twitterHeader.append(twitterCount);
+  twitterSummary.append(twitterHeader);
+  lockAccordionWhenEmpty(twitterDetails, twitterSummary, twitterTags.length);
+  twitterDetails.append(twitterSummary);
+  const twitterBody = document.createElement("div");
+  twitterBody.className = "accordion-body border-bottom p-2";
+  const twitterList = document.createElement("ul");
+  twitterList.className = "small mb-0 ps-3";
+  const sortedTwitterTags = [...twitterTags].sort((a, b) => {
+    const aKey = String((a && typeof a === "object" ? a.name : a) || "").toLowerCase();
+    const bKey = String((b && typeof b === "object" ? b.name : b) || "").toLowerCase();
+    return aKey.localeCompare(bKey);
+  });
+
+  for (const tag of sortedTwitterTags) {
+    const li = document.createElement("li");
+    const name = typeof tag === "object" && tag
+      ? String(tag.name || "twitter:*")
+      : String(tag ?? "").split(": ").shift() || "twitter:*";
+    const content = typeof tag === "object" && tag
+      ? String(tag.content || "(empty)")
+      : String(tag ?? "").replace(/^[^:]+:\s*/, "") || "(empty)";
+
+    const nameStrong = document.createElement("strong");
+    nameStrong.textContent = name;
+    li.append(nameStrong, document.createTextNode(": "));
+
+    if (name === "twitter:url" || name === "twitter:image") {
+      const link = document.createElement("a");
+      link.href = content;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = content;
+      li.append(link);
+    } else {
+      li.append(document.createTextNode(content));
+    }
+    twitterList.append(li);
+  }
+  if (!twitterTags.length) {
+    const empty = document.createElement("div");
+    empty.className = "small text-success";
+    empty.textContent = "None";
+    twitterBody.append(empty);
+  } else {
+    twitterBody.append(twitterList);
+  }
+  twitterDetails.append(twitterBody);
+  accordion.append(twitterDetails);
 
   if (structuredDataItems.length > 0) {
     const sdDetails = document.createElement("details");
@@ -2855,12 +2917,17 @@ function renderNetwork(payload) {
 
   if (!hideNetworkInfoAlert) {
     const info = document.createElement("div");
-    info.className = "alert alert-info alert-dismissible fade show py-2 px-2 mb-2";
+    info.className = "alert alert-info fade show py-2 px-2 mb-2 d-flex align-items-start gap-2";
     info.role = "alert";
-    info.textContent = "Tap on an asset to view more details.";
+
+    const message = document.createElement("span");
+    message.className = "small flex-grow-1";
+    message.textContent = "Tap on an asset to view more details.";
+    info.append(message);
+
     const closeBtn = document.createElement("button");
     closeBtn.type = "button";
-    closeBtn.className = "btn-close";
+    closeBtn.className = "btn-close opacity-75";
     closeBtn.setAttribute("aria-label", "Close");
     closeBtn.dataset.networkDismissInfo = "true";
     info.append(closeBtn);

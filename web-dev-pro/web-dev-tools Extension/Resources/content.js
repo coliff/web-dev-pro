@@ -726,6 +726,13 @@ function computeSeoSnapshot() {
         }))
         .slice(0, 30);
     const openGraphCount = openGraphTags.length;
+    const twitterTags = [...document.querySelectorAll('meta[name^="twitter:"]')]
+        .map((meta) => ({
+            name: meta.getAttribute("name") || "twitter:*",
+            content: meta.getAttribute("content") || "(empty)"
+        }))
+        .slice(0, 30);
+    const twitterCount = twitterTags.length;
 
     const structuredData = [];
     const structuredDataItems = [];
@@ -772,8 +779,8 @@ function computeSeoSnapshot() {
     }
 
     const warnings = [];
-    if (title.length < 2 || title.length > 100) {
-        warnings.push(`Title length ${title.length} (target 2-100)`);
+    if (title.length < 2 || title.length > 200) {
+        warnings.push(`Title length ${title.length} (target 2-200)`);
     }
     if (!metaDescription.trim()) {
         warnings.push("Meta description is missing");
@@ -804,6 +811,8 @@ function computeSeoSnapshot() {
         colorScheme,
         openGraphCount,
         openGraphTags,
+        twitterCount,
+        twitterTags,
         structuredData,
         structuredDataItems: structuredDataItems.slice(0, 30),
         warnings
