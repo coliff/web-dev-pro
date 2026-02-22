@@ -784,7 +784,7 @@ function computeSeoSnapshot() {
     }
     if (!metaDescription.trim()) {
         warnings.push("Meta description is missing");
-    } else if (metaDescription.length < 50 || metaDescription.length > 250) {
+    } else if (metaDescription.length > 200) {
         warnings.push(`Meta description length ${metaDescription.length}`);
     }
     if (!canonicalUrl) {

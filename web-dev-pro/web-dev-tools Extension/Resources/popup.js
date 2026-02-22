@@ -1196,7 +1196,6 @@ function showDialogShell(title) {
   const panel = document.createElement("div");
   panel.className = "modal-content rounded-2 p-2 bg-body border text-body shadow-sm w-100";
   panel.style.maxWidth = "330px";
-  panel.style.minHeight = "256px";
 
   const heading = document.createElement("div");
   heading.className = "modal-title small fw-semibold mb-2";
@@ -1211,7 +1210,7 @@ function showDialogShell(title) {
     }
 
     const overlay = document.createElement("div");
-    overlay.className = "position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-start justify-content-center p-2 w-100 h-100 bg-transparent";
+    overlay.className = "position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center p-2 w-100 h-100 bg-transparent";
 
     const dialogWrap = document.createElement("div");
     dialogWrap.className = "d-flex justify-content-center w-100";
@@ -1249,7 +1248,7 @@ function showDialogShell(title) {
   }
 
   const overlay = document.createElement("div");
-  overlay.className = "position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-start justify-content-center p-2";
+  overlay.className = "position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center p-2";
   overlay.style.background = "rgba(2, 6, 23, 0.45)";
   overlay.style.backdropFilter = "blur(6px)";
   overlay.style.webkitBackdropFilter = "blur(6px)";
@@ -2091,6 +2090,74 @@ function renderSEO(result) {
         link.rel = "noopener noreferrer";
         link.textContent = content;
         li.append(link);
+        if (name === "twitter:image" && content && content !== "(empty)") {
+          const imgWrap = document.createElement("div");
+          imgWrap.className = "mt-2";
+          const img = document.createElement("img");
+          img.src = content;
+          img.alt = "Twitter card image";
+          img.className = "shadow border rounded bg-secondary bg-opacity-25 img-fluid mb-2";
+          img.style.maxWidth = "90%";
+          img.loading = "lazy";
+          img.onerror = () => { imgWrap.remove(); };
+          imgWrap.append(img);
+          li.append(imgWrap);
+          (async () => {
+            const parseLength = (value) => {
+              const parsed = Number.parseInt(String(value || ""), 10);
+              return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+            };
+            const controller = new AbortController();
+            const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
+            let bytes = null;
+            try {
+              const headResponse = await fetch(content, { method: "HEAD", cache: "no-store", credentials: "omit", signal: controller.signal });
+              bytes = parseLength(headResponse.headers.get("content-length"));
+            } catch (_error) {
+              // Continue to range request fallback.
+            }
+            if (bytes === null && !controller.signal.aborted) {
+              try {
+                const rangeResponse = await fetch(content, {
+                  method: "GET",
+                  cache: "no-store",
+                  credentials: "omit",
+                  headers: { Range: "bytes=0-0" },
+                  signal: controller.signal
+                });
+                const contentRange = rangeResponse.headers.get("content-range");
+                if (contentRange) {
+                  const match = contentRange.match(/\/(\d+)\s*$/);
+                  if (match?.[1]) {
+                    bytes = parseLength(match[1]);
+                  }
+                }
+                if (bytes === null) {
+                  bytes = parseLength(rangeResponse.headers.get("content-length"));
+                }
+              } catch (_error) {
+                // Can't get size, display nothing.
+              }
+            }
+            globalThis.clearTimeout(timeoutId);
+            if (bytes !== null) {
+              const sizeKb = bytes / 1024;
+              const rounded = sizeKb >= 100 ? Math.round(sizeKb) : Number(sizeKb.toFixed(1));
+              const sizeSpan = document.createElement("span");
+              sizeSpan.className = "opacity-75";
+              sizeSpan.textContent = ` (${rounded} KB)`;
+              li.insertBefore(sizeSpan, imgWrap);
+            }
+          })();
+        }
+      } else if (name === "twitter:site" && content && content !== "(empty)") {
+        const siteValue = content.startsWith("@") ? content.slice(1) : content;
+        const link = document.createElement("a");
+        link.href = `https://x.com/${siteValue}`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = content;
+        li.append(link);
       } else {
         li.append(document.createTextNode(content));
       }
@@ -2726,6 +2793,51 @@ function escapeHtml(input) {
     .replaceAll(">", "&gt;");
 }
 
+function highlightSource(text, language) {
+  const wrap = (regex, className, input) => input.replace(regex, `<span class="${className}">$&</span>`);
+
+  if (language === "markup") {
+    let out = escapeHtml(text);
+    out = wrap(/&lt;!--[\s\S]*?--&gt;/g, "tok-comment", out);
+    out = out.replace(/(&lt;\/?)([a-zA-Z][\w:-]*)([^&]*?)(\/?&gt;)/g, (_, open, tag, attrs, close) => {
+      const highlightedAttrs = attrs.replace(/\s([a-zA-Z_:][\w:.-]*)(\s*=\s*)(\"[^\"]*\"|\'[^\']*\')/g, (match, name, eq, value) => {
+        return " " + `<span class="tok-attr">${name}</span>` + eq + `<span class="tok-string">${value}</span>`;
+      });
+      return open + `<span class="tok-tag">${tag}</span>` + highlightedAttrs + close;
+    });
+    return out;
+  }
+
+  if (language === "json") {
+    let out = escapeHtml(text);
+    out = wrap(/\"(?:\\.|[^\"\\])*\"(?=\s*:)/g, "tok-attr", out);
+    out = wrap(/\"(?:\\.|[^\"\\])*\"/g, "tok-string", out);
+    out = wrap(/\b(?:true|false|null)\b/g, "tok-keyword", out);
+    out = wrap(/-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, "tok-number", out);
+    return out;
+  }
+
+  const highlightCodeWithKeywords = (keywordRegex) => {
+    let out = escapeHtml(text);
+    out = wrap(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "tok-comment", out);
+    out = wrap(/\"(?:\\.|[^\"\\])*\"|\'(?:\\.|[^\'\\])*\'|\`(?:\\.|[^\`\\])*\`/g, "tok-string", out);
+    if (keywordRegex) {
+      out = wrap(keywordRegex, "tok-keyword", out);
+    }
+    out = wrap(/-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, "tok-number", out);
+    out = wrap(/[{}()[\];,.:+\-*/%=<>!&|?]/g, "tok-operator", out);
+    return out;
+  };
+
+  if (language === "css") {
+    return highlightCodeWithKeywords(/\b(?:@media|@supports|@keyframes|from|to|important)\b/g);
+  }
+  if (language === "javascript") {
+    return highlightCodeWithKeywords(/\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|throw|new|class|extends|import|export|async|await|true|false|null|undefined)\b/g);
+  }
+  return highlightCodeWithKeywords(/\b(?:true|false|null|undefined|yes|no|on|off)\b/g);
+}
+
 function getNetworkSourceLanguage(mimeType = "", fileName = "") {
   const normalizedMime = String(mimeType || "").toLowerCase();
   const ext = String(fileName || "")
@@ -2943,8 +3055,8 @@ function formatSourceWithPrettierLikeRules(sourceText, mimeType = "", fileName =
 }
 
 function makeSourceFrameDoc(codeText, mimeType = "", fileName = "") {
-  const escapedCode = escapeHtml(codeText);
   const language = getNetworkSourceLanguage(mimeType, fileName);
+  const highlightedCode = highlightSource(codeText, language);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2974,75 +3086,7 @@ function makeSourceFrameDoc(codeText, mimeType = "", fileName = "") {
 </style>
 </head>
 <body>
-  <pre data-language="${language}"><code id="source-code">${escapedCode}</code></pre>
-  <script>
-    (() => {
-      const codeNode = document.getElementById("source-code");
-      if (!(codeNode instanceof HTMLElement)) {
-        return;
-      }
-      const pre = codeNode.closest("pre");
-      const language = pre?.dataset?.language || "plain";
-      const source = codeNode.textContent || "";
-      const esc = (text) => String(text)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
-
-      const wrap = (regex, className, input) => input.replace(regex, '<span class="' + className + '">$&</span>');
-
-      const highlightMarkup = (text) => {
-        let out = esc(text);
-        out = wrap(/&lt;!--[\s\S]*?--&gt;/g, "tok-comment", out);
-        out = out.replace(/(&lt;\/?)([a-zA-Z][\w:-]*)([^&]*?)(\/?&gt;)/g, (_, open, tag, attrs, close) => {
-          const highlightedAttrs = attrs.replace(/\s([a-zA-Z_:][\w:.-]*)(\s*=\s*)(\"[^\"]*\"|\'[^\']*\')/g, (match, name, eq, value) => {
-            return " " + '<span class="tok-attr">' + name + "</span>" + eq + '<span class="tok-string">' + value + "</span>";
-          });
-          return open + '<span class="tok-tag">' + tag + "</span>" + highlightedAttrs + close;
-        });
-        return out;
-      };
-
-      const highlightJson = (text) => {
-        let out = esc(text);
-        out = wrap(/\"(?:\\.|[^\"\\])*\"(?=\s*:)/g, "tok-attr", out);
-        out = wrap(/\"(?:\\.|[^\"\\])*\"/g, "tok-string", out);
-        out = wrap(/\b(?:true|false|null)\b/g, "tok-keyword", out);
-        out = wrap(/-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, "tok-number", out);
-        return out;
-      };
-
-      const highlightCode = (text, keywordRegex) => {
-        let out = esc(text);
-        out = wrap(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "tok-comment", out);
-        out = wrap(/\"(?:\\.|[^\"\\])*\"|\'(?:\\.|[^\'\\])*\'|\`(?:\\.|[^\`\\])*\`/g, "tok-string", out);
-        if (keywordRegex) {
-          out = wrap(keywordRegex, "tok-keyword", out);
-        }
-        out = wrap(/-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, "tok-number", out);
-        out = wrap(/[{}()[\];,.:+\-*/%=<>!&|?]/g, "tok-operator", out);
-        return out;
-      };
-
-      if (language === "markup") {
-        codeNode.innerHTML = highlightMarkup(source);
-        return;
-      }
-      if (language === "json") {
-        codeNode.innerHTML = highlightJson(source);
-        return;
-      }
-      if (language === "css") {
-        codeNode.innerHTML = highlightCode(source, /\b(?:@media|@supports|@keyframes|from|to|important)\b/g);
-        return;
-      }
-      if (language === "javascript") {
-        codeNode.innerHTML = highlightCode(source, /\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|throw|new|class|extends|import|export|async|await|true|false|null|undefined)\b/g);
-        return;
-      }
-      codeNode.innerHTML = highlightCode(source, /\b(?:true|false|null|undefined|yes|no|on|off)\b/g);
-    })();
-  </script>
+  <pre><code>${highlightedCode}</code></pre>
 </body>
 </html>`;
 }
@@ -3220,7 +3264,7 @@ function showNetworkAssetDetails(item) {
             const frame = document.createElement("iframe");
             frame.className = "w-100 h-100 border rounded bg-body";
             frame.style.minHeight = "56vh";
-            frame.setAttribute("sandbox", "allow-scripts");
+            frame.setAttribute("sandbox", "");
             frame.setAttribute("title", "Asset source");
             frame.srcdoc = makeSourceFrameDoc(sourceState.renderedText, sourceState.mimeType, sourceFileName);
             sourcePane.append(frame);
