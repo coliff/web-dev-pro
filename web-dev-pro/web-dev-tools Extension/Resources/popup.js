@@ -1626,13 +1626,24 @@ function initializeAccordionAnimations(root = document) {
   });
 }
 
+function stripProtocol(url) {
+  return String(url).replace(/^https?:\/\//i, "");
+}
+
 function renderSEO(result) {
   const output = document.getElementById("seo-output");
   output.textContent = "";
   const openGraphTags = Array.isArray(result?.openGraphTags) ? result.openGraphTags : [];
   const twitterTags = Array.isArray(result?.twitterTags) ? result.twitterTags : [];
   const structuredDataItems = Array.isArray(result?.structuredDataItems) ? result.structuredDataItems : [];
-  const iconLinks = Array.isArray(result?.iconLinks) ? result.iconLinks : [];
+  const iconLinksRaw = Array.isArray(result?.iconLinks) ? result.iconLinks : [];
+  const seenIconKeys = new Set();
+  const iconLinks = iconLinksRaw.filter((icon) => {
+    const key = JSON.stringify(icon);
+    if (seenIconKeys.has(key)) return false;
+    seenIconKeys.add(key);
+    return true;
+  });
 
   const accordion = document.createElement("div");
   accordion.className = "accordion border-bottom-0";
@@ -1652,7 +1663,7 @@ function renderSEO(result) {
   const metaBody = document.createElement("div");
   metaBody.className = "accordion-body border-bottom p-2";
   const metaList = document.createElement("ul");
-  metaList.className = "small mb-0 ps-3";
+  metaList.className = "small mb-0 ps-3 seo-list";
 
   const titleItem = document.createElement("li");
   const titleLabel = document.createElement("strong");
@@ -1679,7 +1690,7 @@ function renderSEO(result) {
     link.href = canonicalUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = canonicalUrl;
+    link.textContent = stripProtocol(canonicalUrl);
     canonicalItem.append(link);
     metaList.append(canonicalItem);
   }
@@ -1695,7 +1706,7 @@ function renderSEO(result) {
       link.href = authorLink;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = authorLink;
+      link.textContent = stripProtocol(authorLink);
       authorItem.append(link);
     } else {
       authorItem.append(document.createTextNode(authorLink));
@@ -1714,7 +1725,7 @@ function renderSEO(result) {
       link.href = monetizationLink;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = monetizationLink;
+      link.textContent = stripProtocol(monetizationLink);
       monetizationItem.append(link);
     } else {
       monetizationItem.append(document.createTextNode(monetizationLink));
@@ -1765,7 +1776,7 @@ function renderSEO(result) {
       link.href = pingbackLink;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = pingbackLink;
+      link.textContent = stripProtocol(pingbackLink);
       pingbackItem.append(link);
     } else {
       pingbackItem.append(document.createTextNode(pingbackLink));
@@ -1784,7 +1795,7 @@ function renderSEO(result) {
       link.href = webmentionLink;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = webmentionLink;
+      link.textContent = stripProtocol(webmentionLink);
       webmentionItem.append(link);
     } else {
       webmentionItem.append(document.createTextNode(webmentionLink));
@@ -1815,7 +1826,7 @@ function renderSEO(result) {
       link.href = profileUrl;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = fediverseCreator;
+      link.textContent = stripProtocol(fediverseCreator);
       fediverseItem.append(link);
     } else {
       fediverseItem.append(document.createTextNode(fediverseCreator));
@@ -1945,7 +1956,7 @@ function renderSEO(result) {
   const ogBody = document.createElement("div");
   ogBody.className = "accordion-body border-bottom p-2";
   const ogList = document.createElement("ul");
-  ogList.className = "small mb-0 ps-3";
+  ogList.className = "small mb-0 ps-3 seo-list";
   const sortedOpenGraphTags = [...openGraphTags].sort((a, b) => {
     const aKey = String((a && typeof a === "object" ? a.property : a) || "").toLowerCase();
     const bKey = String((b && typeof b === "object" ? b.property : b) || "").toLowerCase();
@@ -1962,15 +1973,15 @@ function renderSEO(result) {
       : String(tag ?? "").replace(/^[^:]+:\s*/, "") || "(empty)";
 
     const propStrong = document.createElement("strong");
-    propStrong.textContent = property;
-    li.append(propStrong, document.createTextNode(": "));
+    propStrong.textContent = `${property}:`;
+    li.append(propStrong);
 
     if (property === "og:url" || property === "og:image") {
       const link = document.createElement("a");
       link.href = content;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.textContent = content;
+      link.textContent = stripProtocol(content);
       li.append(link);
       if (property === "og:image" && content && content !== "(empty)") {
         const imgWrap = document.createElement("div");
@@ -2066,7 +2077,7 @@ function renderSEO(result) {
     const twitterBody = document.createElement("div");
     twitterBody.className = "accordion-body border-bottom p-2";
     const twitterList = document.createElement("ul");
-    twitterList.className = "small mb-0 ps-3";
+    twitterList.className = "small mb-0 ps-3 seo-list";
     const sortedTwitterTags = [...twitterTags].sort((a, b) => {
       const aKey = String((a && typeof a === "object" ? a.name : a) || "").toLowerCase();
       const bKey = String((b && typeof b === "object" ? b.name : b) || "").toLowerCase();
@@ -2083,15 +2094,15 @@ function renderSEO(result) {
         : String(tag ?? "").replace(/^[^:]+:\s*/, "") || "(empty)";
 
       const nameStrong = document.createElement("strong");
-      nameStrong.textContent = name;
-      li.append(nameStrong, document.createTextNode(": "));
+      nameStrong.textContent = `${name}:`;
+      li.append(nameStrong);
 
       if (name === "twitter:url" || name === "twitter:image") {
         const link = document.createElement("a");
         link.href = content;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
-        link.textContent = content;
+        link.textContent = stripProtocol(content);
         li.append(link);
         if (name === "twitter:image" && content && content !== "(empty)") {
           const imgWrap = document.createElement("div");
@@ -2201,7 +2212,7 @@ function renderSEO(result) {
         link.href = match[1];
         link.target = "_blank";
         link.rel = "noopener noreferrer";
-        link.textContent = match[1];
+        link.textContent = stripProtocol(match[1]);
         li.append(link);
       } else {
         li.textContent = text;
@@ -4155,7 +4166,7 @@ function createStorageToolbar(kind, count) {
   countLabel.textContent = `${count} ${storageKindTitle(kind)} item${plural}`;
 
   const actions = document.createElement("div");
-  actions.className = "d-flex align-items-center gap-1";
+  actions.className = "d-flex align-items-center gap-2";
 
   const reloadBtn = document.createElement("button");
   reloadBtn.type = "button";
@@ -4166,7 +4177,7 @@ function createStorageToolbar(kind, count) {
 
   const clearBtn = document.createElement("button");
   clearBtn.type = "button";
-  clearBtn.className = "btn btn-sm btn-outline-danger py-0 px-2";
+  clearBtn.className = "btn btn-sm btn-outline-secondary py-0 px-2";
   clearBtn.textContent = "Delete All";
   clearBtn.dataset.storageAction = "clear-all";
   clearBtn.dataset.kind = kind;
@@ -4439,16 +4450,6 @@ function renderStorage(payload) {
 
   if (!items.length) {
     output.append(createStorageToolbar(currentStorageKind, 0));
-    const empty = document.createElement("p");
-    empty.className = "text-center mb-0";
-    if (currentStorageKind === "localStorage") {
-      empty.textContent = "No local items found.";
-    } else if (currentStorageKind === "cookie") {
-      empty.textContent = "No cookie items found.";
-    } else {
-      empty.textContent = "No session items found.";
-    }
-    output.append(empty);
     return;
   }
 
