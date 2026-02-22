@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en-US" data-bs-theme="dark" class="h-100 w-100">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSS Vars Demo</title>
+  <link rel="stylesheet" href="bootstrap.min.css" />
+  <link rel="stylesheet" href="popup.css" />
+  <style>
+    html, body { width: 390px; height: 700px; overflow: hidden; }
+  </style>
+</head>
+<body class="m-0 p-0 h-100 d-flex flex-column overflow-hidden w-100">
+  <main class="d-flex flex-column flex-grow-1 w-100">
+    <nav class="nav nav-tabs nav-fill tabs mb-0 border-bottom" aria-label="Tools">
+      <button class="nav-link tab mb-0 border-0" type="button" aria-label="CSS" style="opacity:.4">CSS</button>
+    </nav>
+    <div class="main-content d-flex flex-column flex-grow-1 w-100 overflow-hidden" id="main-content">
+      <section class="tool-group pt-3 tab-panel overflow-hidden d-flex flex-column" data-panel="css">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="fs-5 ms-3 font-monospace">CSS</h2>
+        </div>
+        <nav class="nav nav-tabs nav-fill" aria-label="CSS tools">
+          <button class="nav-link py-1 small text-body ms-3" type="button">Quick Tools</button>
+          <button class="nav-link py-1 small text-body" type="button">CSS Overview</button>
+          <button class="nav-link active py-1 small text-body me-3" type="button">CSS Vars</button>
+        </nav>
+        <div class="pt-2 bg-body overflow-auto flex-grow-1 min-h-0 px-2">
+          <div id="css-vars-output" class="output rounded-3 overflow-auto p-2 small"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const items = [
+      { name: "--bs-blue", declarations: [{ value: "#0d6efd", selector: ":root" }] },
+      { name: "--bs-body-bg", declarations: [{ value: "#212529", selector: ":root" }] },
+      { name: "--bs-body-color", declarations: [{ value: "#dee2e6", selector: ":root" }] },
+      { name: "--bs-border-color", declarations: [{ value: "#495057", selector: ":root" }] },
+      { name: "--bs-border-radius", declarations: [{ value: "0.375rem", selector: ":root" }] },
+      { name: "--bs-danger", declarations: [{ value: "#dc3545", selector: ":root" }] },
+      { name: "--bs-font-monospace", declarations: [{ value: "SFMono-Regular, Menlo, Monaco, Consolas", selector: ":root" }] },
+      { name: "--bs-font-sans-serif", declarations: [{ value: "system-ui, -apple-system, Segoe UI, Roboto", selector: ":root" }] },
+      { name: "--bs-green", declarations: [{ value: "#198754", selector: ":root" }] },
+      { name: "--bs-info", declarations: [{ value: "#0dcaf0", selector: ":root" }] },
+      { name: "--bs-link-color", declarations: [{ value: "#6ea8fe", selector: ":root" }, { value: "#0d6efd", selector: "[data-bs-theme=light]" }] },
+      { name: "--bs-primary", declarations: [{ value: "#0d6efd", selector: ":root" }] },
+      { name: "--bs-secondary", declarations: [{ value: "#6c757d", selector: ":root" }] },
+      { name: "--bs-success", declarations: [{ value: "#198754", selector: ":root" }] },
+      { name: "--bs-warning", declarations: [{ value: "#ffc107", selector: ":root" }] },
+    ];
+
+    function isColorValue(v) {
+      const s = String(v || "").trim();
+      return /^#[0-9a-fA-F]{3,8}$/.test(s) || /^rgba?\(/i.test(s) || /^hsla?\(/i.test(s) || /^oklch\(/i.test(s) || /^color\(/i.test(s);
+    }
+
+    const output = document.getElementById("css-vars-output");
+    const countRow = document.createElement("p");
+    countRow.className = "small opacity-75 mb-2 mt-0";
+    countRow.textContent = `${items.length} custom properties found`;
+    output.append(countRow);
+
+    const list = document.createElement("div");
+    list.className = "d-flex flex-column gap-1";
+
+    for (const item of items) {
+      const firstDecl = item.declarations[0];
+      const value = firstDecl?.value ?? "";
+      const selector = firstDecl?.selector ?? "";
+      const extraCount = item.declarations.length - 1;
+
+      const row = document.createElement("div");
+      row.className = "rounded-3 bg-secondary bg-opacity-10 px-2 py-1";
+
+      const topRow = document.createElement("div");
+      topRow.className = "d-flex align-items-center gap-2";
+
+      if (isColorValue(value)) {
+        const swatch = document.createElement("span");
+        swatch.className = "d-inline-block rounded-circle border flex-shrink-0";
+        swatch.style.width = "0.85rem";
+        swatch.style.height = "0.85rem";
+        swatch.style.backgroundColor = value;
+        topRow.append(swatch);
+      }
+
+      const nameEl = document.createElement("code");
+      nameEl.className = "font-monospace text-break flex-grow-1";
+      nameEl.textContent = item.name;
+      topRow.append(nameEl);
+
+      const valueEl = document.createElement("span");
+      valueEl.className = "opacity-75 font-monospace text-break text-end ms-1";
+      valueEl.textContent = value;
+      topRow.append(valueEl);
+
+      row.append(topRow);
+
+      if (selector) {
+        const meta = document.createElement("div");
+        meta.className = "opacity-50 mt-1";
+        meta.style.fontSize = "0.7rem";
+        meta.textContent = selector + (extraCount > 0 ? ` +${extraCount} more` : "");
+        row.append(meta);
+      }
+
+      list.append(row);
+    }
+
+    output.append(list);
+  </script>
+</body>
+</html>

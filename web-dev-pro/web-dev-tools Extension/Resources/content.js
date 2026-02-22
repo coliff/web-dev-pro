@@ -1453,6 +1453,63 @@ function computeNetworkSnapshot() {
     return { items };
 }
 
+function computeCssVariablesSnapshot() {
+    const variables = new Map();
+
+    function extractVarsFromRuleList(ruleList) {
+        if (!ruleList) {
+            return;
+        }
+        for (const rule of ruleList) {
+            if (rule.style) {
+                const selector = rule.selectorText || "";
+                for (const prop of rule.style) {
+                    if (prop.startsWith("--")) {
+                        const key = prop.trim();
+                        const value = rule.style.getPropertyValue(key).trim();
+                        if (!variables.has(key)) {
+                            variables.set(key, []);
+                        }
+                        variables.get(key).push({ value, selector });
+                    }
+                }
+            }
+            if (rule.cssRules) {
+                extractVarsFromRuleList(rule.cssRules);
+            }
+        }
+    }
+
+    const styleSheets = document.styleSheets ? [...document.styleSheets] : [];
+    for (const sheet of styleSheets) {
+        try {
+            if (sheet.cssRules) {
+                extractVarsFromRuleList(sheet.cssRules);
+            }
+        } catch (_) {
+            // Cross-origin or inaccessible stylesheet
+        }
+    }
+
+    const rootStyle = document.documentElement.style;
+    for (const prop of rootStyle) {
+        if (prop.startsWith("--")) {
+            const key = prop.trim();
+            const value = rootStyle.getPropertyValue(key).trim();
+            if (!variables.has(key)) {
+                variables.set(key, []);
+            }
+            variables.get(key).unshift({ value, selector: ":root (inline)" });
+        }
+    }
+
+    const items = [...variables.entries()]
+        .map(([name, declarations]) => ({ name, declarations }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    return { items, totalCount: items.length };
+}
+
 function computeCssOverviewSnapshot() {
     const elements = [...document.querySelectorAll("*")];
     const textColors = new Map();
@@ -1897,6 +1954,10 @@ ext.runtime.onMessage.addListener((request) => {
 
     if (request.action === "css-overview-snapshot") {
         return Promise.resolve(computeCssOverviewSnapshot());
+    }
+
+    if (request.action === "css-variables-snapshot") {
+        return Promise.resolve(computeCssVariablesSnapshot());
     }
 
     if (request.action === "storage-snapshot") {
