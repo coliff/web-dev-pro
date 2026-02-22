@@ -423,15 +423,20 @@ async function saveTab(tabName) {
 
 async function loadCssSubtab() {
   const stored = await loadStoredValue(cssSubtabKey);
-  return stored === "overview" ? "overview" : "quick-tools";
+  if (stored === "overview" || stored === "vars") {
+    return stored;
+  }
+  return "quick-tools";
 }
 
 async function saveCssSubtab(subtab) {
-  await saveStoredValue(cssSubtabKey, subtab === "overview" ? "overview" : "quick-tools");
+  const valid = subtab === "overview" || subtab === "vars" ? subtab : "quick-tools";
+  await saveStoredValue(cssSubtabKey, valid);
 }
 
 function switchCssSubtab(subtabName) {
   const isOverview = subtabName === "overview";
+  const isVars = subtabName === "vars";
   document.querySelectorAll("[data-css-subtab]").forEach((btn) => {
     const active = (btn instanceof HTMLElement && btn.dataset.cssSubtab === subtabName);
     btn.classList.toggle("active", active);
@@ -454,6 +459,8 @@ function switchCssSubtab(subtabName) {
   void saveCssSubtab(subtabName);
   if (isOverview) {
     void runAction("css-overview");
+  } else if (isVars) {
+    void runAction("css-variables");
   }
 }
 
@@ -3998,6 +4005,98 @@ function renderCssOverview(payload) {
   initializeAccordionAnimations(output);
 }
 
+function isColorValue(value) {
+  const v = String(value || "").trim();
+  return /^#[0-9a-fA-F]{3,8}$/.test(v)
+    || /^rgba?\(/i.test(v)
+    || /^hsla?\(/i.test(v)
+    || /^hwb\(/i.test(v)
+    || /^lab\(/i.test(v)
+    || /^lch\(/i.test(v)
+    || /^oklab\(/i.test(v)
+    || /^oklch\(/i.test(v)
+    || /^color\(/i.test(v);
+}
+
+function renderCssVariables(payload) {
+  const output = document.getElementById("css-vars-output");
+  if (!output) {
+    return;
+  }
+  output.textContent = "";
+
+  if (!payload || typeof payload !== "object") {
+    const msg = document.createElement("p");
+    msg.className = "small text-secondary mb-0";
+    msg.textContent = "CSS variables unavailable on this page.";
+    output.append(msg);
+    return;
+  }
+
+  const items = Array.isArray(payload.items) ? payload.items : [];
+
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.className = "small text-secondary mb-0";
+    empty.textContent = "No CSS custom properties found on this page.";
+    output.append(empty);
+    return;
+  }
+
+  const countRow = document.createElement("p");
+  countRow.className = "small opacity-75 mb-2 mt-0";
+  countRow.textContent = `${items.length} custom ${items.length === 1 ? "property" : "properties"} found`;
+  output.append(countRow);
+
+  const list = document.createElement("div");
+  list.className = "d-flex flex-column gap-1";
+
+  for (const item of items) {
+    const firstDecl = Array.isArray(item.declarations) && item.declarations.length ? item.declarations[0] : null;
+    const value = firstDecl?.value ?? "";
+    const selector = firstDecl?.selector ?? "";
+    const extraCount = Array.isArray(item.declarations) ? item.declarations.length - 1 : 0;
+
+    const row = document.createElement("div");
+    row.className = "rounded-3 bg-secondary bg-opacity-10 px-2 py-1";
+
+    const topRow = document.createElement("div");
+    topRow.className = "d-flex align-items-center gap-2";
+
+    if (isColorValue(value)) {
+      const swatch = document.createElement("span");
+      swatch.className = "d-inline-block rounded-circle border flex-shrink-0";
+      swatch.style.width = "0.85rem";
+      swatch.style.height = "0.85rem";
+      swatch.style.backgroundColor = value;
+      topRow.append(swatch);
+    }
+
+    const nameEl = document.createElement("code");
+    nameEl.className = "font-monospace text-break flex-grow-1";
+    nameEl.textContent = item.name;
+    topRow.append(nameEl);
+
+    const valueEl = document.createElement("span");
+    valueEl.className = "opacity-75 font-monospace text-break text-end ms-1";
+    valueEl.textContent = value;
+    topRow.append(valueEl);
+
+    row.append(topRow);
+
+    if (selector) {
+      const meta = document.createElement("div");
+      meta.className = "opacity-50 mt-1";
+      meta.textContent = selector + (extraCount > 0 ? ` +${extraCount} more` : "");
+      row.append(meta);
+    }
+
+    list.append(row);
+  }
+
+  output.append(list);
+}
+
 function makeStorageRow(item) {
   const row = document.createElement("div");
   row.className = "storage-row rounded-3 bg-secondary bg-opacity-25";
@@ -4149,6 +4248,9 @@ async function runAction(action, sourceButton = null) {
     } else if (action === "css-overview") {
       const result = await sendToActiveTab({ action: "css-overview-snapshot" });
       renderCssOverview(result);
+    } else if (action === "css-variables") {
+      const result = await sendToActiveTab({ action: "css-variables-snapshot" });
+      renderCssVariables(result);
     } else if (action === "a11y") {
       const result = await sendToActiveTab({ action: "a11y-snapshot" });
       renderA11y(result);
