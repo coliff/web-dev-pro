@@ -3213,7 +3213,7 @@ function showNetworkAssetDetails(item) {
             const frame = document.createElement("iframe");
             frame.className = "w-100 h-100 border rounded bg-body";
             frame.style.minHeight = "56vh";
-            frame.setAttribute("sandbox", "");
+            frame.setAttribute("sandbox", "allow-scripts");
             frame.setAttribute("title", "Asset source");
             frame.srcdoc = makeSourceFrameDoc(sourceState.renderedText, sourceState.mimeType, sourceFileName);
             sourcePane.append(frame);
@@ -3548,12 +3548,16 @@ function renderNetwork(payload) {
   const items = Array.isArray(payload?.items) ? payload.items : [];
   const isDocTab = currentNetworkSubtab === "doc";
   const applyThirdPartyFilter = currentNetworkFilter === "third-party" && !isDocTab;
+  const applyExcludeThirdPartyFilter = currentNetworkFilter === "exclude-third-party" && !isDocTab;
   const filtered = items.filter((item) => {
     if (item?.type !== currentNetworkSubtab) {
       return false;
     }
     if (applyThirdPartyFilter) {
       return item?.isThirdParty === true;
+    }
+    if (applyExcludeThirdPartyFilter) {
+      return item?.isThirdParty !== true;
     }
     return true;
   });
@@ -3592,10 +3596,12 @@ function renderNetwork(payload) {
     });
   }
 
+  const showImagesWrap = document.getElementById("network-show-images-wrap");
   if (!filtered.length) {
     lastRenderedNetworkItems = [];
     sortWrap?.classList.add("d-none");
     filterWrap?.classList.add("d-none");
+    showImagesWrap?.classList.add("d-none");
     const empty = document.createElement("p");
     empty.className = "small text-secondary text-center mb-0";
     empty.textContent = "No matching requests found.";
@@ -3629,6 +3635,7 @@ function renderNetwork(payload) {
     sortWrap?.classList.remove("d-none");
     filterWrap?.classList.remove("d-none");
   }
+  showImagesWrap?.classList.toggle("d-none", currentNetworkSubtab !== "images");
   lastRenderedNetworkItems = filtered;
 
   const tableWrap = document.createElement("div");
@@ -4672,7 +4679,7 @@ async function bindEvents() {
   const networkFilterSelect = document.getElementById("network-filter-select");
   if (networkFilterSelect instanceof HTMLSelectElement) {
     const stored = await loadStoredValue(networkFilterKey);
-    if (stored === "third-party" || stored === "all") {
+    if (stored === "third-party" || stored === "exclude-third-party" || stored === "all") {
       currentNetworkFilter = stored;
       networkFilterSelect.value = stored;
     } else {
@@ -4681,7 +4688,7 @@ async function bindEvents() {
     }
     networkFilterSelect.addEventListener("change", async () => {
       const value = networkFilterSelect.value;
-      currentNetworkFilter = value === "third-party" ? "third-party" : "all";
+      currentNetworkFilter = value === "third-party" || value === "exclude-third-party" ? value : "all";
       await saveStoredValue(networkFilterKey, currentNetworkFilter);
       if (lastNetworkPayload) {
         renderNetwork(lastNetworkPayload);
