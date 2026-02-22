@@ -35,6 +35,19 @@ const systemThemeMediaQuery = globalThis.matchMedia
   ? globalThis.matchMedia("(prefers-color-scheme: dark)")
   : null;
 
+function isIpadExtensionPopupContext() {
+  const ua = String(navigator.userAgent || "");
+  const isIpadLike = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && Number(navigator.maxTouchPoints) > 1);
+  if (!isIpadLike) {
+    return false;
+  }
+  const protocol = String(globalThis.location?.protocol || "");
+  return protocol === "safari-web-extension:"
+    || protocol === "chrome-extension:"
+    || protocol === "moz-extension:"
+    || protocol === "ms-browser-extension:";
+}
+
 function isMockNetworkModeEnabled() {
   try {
     const params = new URLSearchParams(globalThis.location?.search || "");
@@ -1174,31 +1187,26 @@ function flashButtonLabel(button, nextLabel, timeoutMs = 900) {
 
 function showDialogShell(title) {
   const panel = document.createElement("div");
-  panel.className = "rounded-2 p-2 bg-body border text-body shadow-sm";
-  panel.style.width = "100%";
+  panel.className = "modal-content rounded-2 p-2 bg-body border text-body shadow-sm w-100";
   panel.style.maxWidth = "330px";
-  panel.style.borderColor = "var(--bs-border-color)";
 
   const heading = document.createElement("div");
-  heading.className = "small fw-semibold mb-2";
+  heading.className = "modal-title small fw-semibold mb-2";
   heading.textContent = title;
   panel.append(heading);
 
   if (typeof HTMLDialogElement !== "undefined") {
     const dialog = document.createElement("dialog");
-    dialog.className = "border-0 p-0 m-0";
-    dialog.style.width = "100vw";
-    dialog.style.maxWidth = "100vw";
-    dialog.style.height = "100vh";
-    dialog.style.maxHeight = "100vh";
-    dialog.style.background = "transparent";
-    dialog.style.overflow = "visible";
+    dialog.className = "wdt-dialog modal d-block border-0 p-0 m-0 vw-100 vh-100 mw-100 mh-100 bg-transparent overflow-visible";
+    if (isIpadExtensionPopupContext()) {
+      dialog.classList.add("wdt-dialog-ipad-popup");
+    }
 
     const overlay = document.createElement("div");
-    overlay.className = "w-100 h-100 d-flex align-items-start justify-content-center p-2";
-    overlay.style.background = "rgba(2, 6, 23, 0.45)";
-    overlay.style.backdropFilter = "blur(6px)";
-    overlay.style.webkitBackdropFilter = "blur(6px)";
+    overlay.className = "modal show d-block w-100 h-100 bg-transparent";
+
+    const dialogWrap = document.createElement("div");
+    dialogWrap.className = "modal-dialog modal-dialog-centered mx-auto p-2 w-100";
 
     const closeDialog = () => {
       if (dialog.open) {
@@ -1224,7 +1232,8 @@ function showDialogShell(title) {
       closeDialog();
     });
 
-    overlay.append(panel);
+    dialogWrap.append(panel);
+    overlay.append(dialogWrap);
     dialog.append(overlay);
     document.body.append(dialog);
     dialog.showModal();
@@ -2709,32 +2718,225 @@ function escapeHtml(input) {
     .replaceAll(">", "&gt;");
 }
 
-function makeSourceFrameDoc(codeText, mimeType = "") {
-  const escapedCode = escapeHtml(codeText);
-  const escapedMime = escapeHtml(mimeType || "text/plain");
+function getNetworkSourceLanguage(mimeType = "", fileName = "") {
   const normalizedMime = String(mimeType || "").toLowerCase();
-  let language = "plain";
+  const ext = String(fileName || "")
+    .trim()
+    .toLowerCase()
+    .split("?")[0]
+    .split("#")[0]
+    .split(".")
+    .pop();
+
   if (
     normalizedMime.includes("json")
     || normalizedMime.includes("manifest")
     || normalizedMime.includes("webmanifest")
+    || ext === "json"
+    || ext === "webmanifest"
   ) {
-    language = "json";
-  } else if (
+    return "json";
+  }
+  if (
     normalizedMime.includes("html")
     || normalizedMime.includes("xml")
     || normalizedMime.includes("svg")
+    || ["html", "htm", "xml", "svg"].includes(ext)
   ) {
-    language = "markup";
-  } else if (normalizedMime.includes("css")) {
-    language = "css";
-  } else if (
+    return "markup";
+  }
+  if (normalizedMime.includes("css") || ext === "css") {
+    return "css";
+  }
+  if (
     normalizedMime.includes("javascript")
     || normalizedMime.includes("ecmascript")
     || normalizedMime.includes("typescript")
+    || ["js", "mjs", "cjs", "jsx", "ts", "tsx"].includes(ext)
   ) {
-    language = "javascript";
+    return "javascript";
   }
+  return "plain";
+}
+
+function formatSourceWithPrettierLikeRules(sourceText, mimeType = "", fileName = "") {
+  const text = String(sourceText ?? "");
+  const language = getNetworkSourceLanguage(mimeType, fileName);
+  const normalizeLineEndings = (value) => value.replaceAll("\r\n", "\n");
+
+  const formatBracketLanguage = (value, breakSemicolons = true) => {
+    const input = normalizeLineEndings(value);
+    let formatted = "";
+    let indentLevel = 0;
+    let inSingle = false;
+    let inDouble = false;
+    let inTemplate = false;
+    let escaped = false;
+    let lastNonSpace = "";
+
+    const pushIndent = () => {
+      formatted += "  ".repeat(Math.max(0, indentLevel));
+    };
+
+    for (let i = 0; i < input.length; i += 1) {
+      const char = input[i];
+      const next = input[i + 1] || "";
+
+      if (escaped) {
+        formatted += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        formatted += char;
+        escaped = true;
+        continue;
+      }
+
+      if (!inDouble && !inTemplate && char === "'" && !inSingle) {
+        inSingle = true;
+        formatted += char;
+        continue;
+      }
+      if (inSingle && char === "'") {
+        inSingle = false;
+        formatted += char;
+        continue;
+      }
+      if (!inSingle && !inTemplate && char === "\"" && !inDouble) {
+        inDouble = true;
+        formatted += char;
+        continue;
+      }
+      if (inDouble && char === "\"") {
+        inDouble = false;
+        formatted += char;
+        continue;
+      }
+      if (!inSingle && !inDouble && char === "`") {
+        inTemplate = !inTemplate;
+        formatted += char;
+        continue;
+      }
+
+      if (inSingle || inDouble || inTemplate) {
+        formatted += char;
+        continue;
+      }
+
+      if (char === "{" || char === "[") {
+        if (!formatted.endsWith("\n")) {
+          formatted += "\n";
+        }
+        pushIndent();
+        formatted += char;
+        formatted += "\n";
+        indentLevel += 1;
+        pushIndent();
+        lastNonSpace = char;
+        continue;
+      }
+
+      if (char === "}" || char === "]") {
+        indentLevel = Math.max(0, indentLevel - 1);
+        if (!formatted.endsWith("\n")) {
+          formatted += "\n";
+        }
+        pushIndent();
+        formatted += char;
+        if (next && next !== "," && next !== "\n" && next !== ";") {
+          formatted += "\n";
+          pushIndent();
+        }
+        lastNonSpace = char;
+        continue;
+      }
+
+      if (char === "," || (breakSemicolons && char === ";")) {
+        formatted += char;
+        formatted += "\n";
+        pushIndent();
+        lastNonSpace = char;
+        continue;
+      }
+
+      if (char === "\n") {
+        if (!formatted.endsWith("\n")) {
+          formatted += "\n";
+        }
+        pushIndent();
+        continue;
+      }
+
+      if (char === ":" && language === "css") {
+        formatted += ": ";
+        lastNonSpace = char;
+        continue;
+      }
+
+      if (char === " " || char === "\t") {
+        if (lastNonSpace && !formatted.endsWith(" ") && !formatted.endsWith("\n")) {
+          formatted += " ";
+        }
+        continue;
+      }
+
+      formatted += char;
+      if (char.trim()) {
+        lastNonSpace = char;
+      }
+    }
+
+    return formatted
+      .split("\n")
+      .map((line) => line.replace(/\s+$/g, ""))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
+  if (language === "json") {
+    const parsed = JSON.parse(text);
+    return JSON.stringify(parsed, null, 2);
+  }
+
+  if (language === "css") {
+    return formatBracketLanguage(text, true);
+  }
+
+  if (language === "javascript") {
+    return formatBracketLanguage(text, true);
+  }
+
+  if (language === "markup") {
+    const lines = normalizeLineEndings(text)
+      .replace(/>\s+</g, ">\n<")
+      .split("\n");
+    let indentLevel = 0;
+    const indented = lines.map((rawLine) => {
+      const line = rawLine.trim();
+      if (!line) {
+        return "";
+      }
+      if (/^<\//.test(line)) {
+        indentLevel = Math.max(0, indentLevel - 1);
+      }
+      const result = `${"  ".repeat(indentLevel)}${line}`;
+      if (/^<[^!?/][^>]*[^/]?>$/.test(line) && !line.includes("</")) {
+        indentLevel += 1;
+      }
+      return result;
+    });
+    return indented.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  return normalizeLineEndings(text).trimEnd();
+}
+
+function makeSourceFrameDoc(codeText, mimeType = "", fileName = "") {
+  const escapedCode = escapeHtml(codeText);
+  const language = getNetworkSourceLanguage(mimeType, fileName);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2742,7 +2944,6 @@ function makeSourceFrameDoc(codeText, mimeType = "") {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   html, body { margin: 0; width: 100%; height: 100%; background: #0b0f14; color: #d7dde7; }
-  .meta { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; opacity: 0.7; padding: 8px 10px; border-bottom: 1px solid #2a3039; }
   pre {
     margin: 0;
     padding: 12px;
@@ -2750,7 +2951,7 @@ function makeSourceFrameDoc(codeText, mimeType = "") {
     overflow-wrap: anywhere;
     word-break: break-word;
     overflow: auto;
-    height: calc(100% - 36px);
+    height: 100%;
     box-sizing: border-box;
     tab-size: 2;
   }
@@ -2765,7 +2966,6 @@ function makeSourceFrameDoc(codeText, mimeType = "") {
 </style>
 </head>
 <body>
-  <div class="meta">${escapedMime}</div>
   <pre data-language="${language}"><code id="source-code">${escapedCode}</code></pre>
   <script>
     (() => {
@@ -2808,7 +3008,9 @@ function makeSourceFrameDoc(codeText, mimeType = "") {
         let out = esc(text);
         out = wrap(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "tok-comment", out);
         out = wrap(/\"(?:\\.|[^\"\\])*\"|\'(?:\\.|[^\'\\])*\'|\`(?:\\.|[^\`\\])*\`/g, "tok-string", out);
-        out = wrap(keywordRegex, "tok-keyword", out);
+        if (keywordRegex) {
+          out = wrap(keywordRegex, "tok-keyword", out);
+        }
         out = wrap(/-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g, "tok-number", out);
         out = wrap(/[{}()[\];,.:+\-*/%=<>!&|?]/g, "tok-operator", out);
         return out;
@@ -2828,7 +3030,9 @@ function makeSourceFrameDoc(codeText, mimeType = "") {
       }
       if (language === "javascript") {
         codeNode.innerHTML = highlightCode(source, /\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|throw|new|class|extends|import|export|async|await|true|false|null|undefined)\b/g);
+        return;
       }
+      codeNode.innerHTML = highlightCode(source, /\b(?:true|false|null|undefined|yes|no|on|off)\b/g);
     })();
   </script>
 </body>
@@ -2867,18 +3071,13 @@ function showNetworkAssetDetails(item) {
   const rawName = String(item?.name || "Asset");
   const title = rawName.length > 42 ? `${rawName.slice(0, 42)}...` : rawName;
   const { overlay, panel } = showDialogShell(title);
-  overlay.style.backdropFilter = "none";
-  overlay.style.webkitBackdropFilter = "none";
   panel.style.maxWidth = "360px";
   panel.style.maxHeight = "92vh";
-  panel.style.overflow = "hidden";
-  panel.style.backgroundColor = "var(--bs-body-bg)";
-  panel.classList.add("d-flex", "flex-column");
+  panel.classList.add("d-flex", "flex-column", "overflow-hidden");
 
   const errorBlock = document.createElement("pre");
-  errorBlock.className = "small text-danger border rounded p-2 mt-2 mb-0 d-none";
+  errorBlock.className = "small text-danger border rounded p-2 mt-2 mb-0 d-none overflow-auto";
   errorBlock.style.whiteSpace = "pre-wrap";
-  errorBlock.style.overflow = "auto";
   errorBlock.style.maxHeight = "120px";
 
   const showModalError = (context, error) => {
@@ -2892,7 +3091,20 @@ function showNetworkAssetDetails(item) {
   try {
     const heading = panel.querySelector(".small.fw-semibold.mb-2");
     const hasSourceTab = isNetworkSourceAsset(item) && Boolean(item?.url);
-    const sourceState = { loaded: false, loading: false, text: "", mimeType: String(item?.mimeType || "") };
+    const hasFontPreviewTab = item?.type === "font" && Boolean(item?.url);
+    const sourceState = {
+      loaded: false,
+      loading: false,
+      text: "",
+      renderedText: "",
+      mimeType: String(item?.mimeType || ""),
+    };
+    const sourceFileName = String(item?.name || item?.url || "");
+    let sourcePaneToolbar = null;
+    let sourceMimeNode = null;
+    let copyBtn = null;
+    let prettierBtn = null;
+    const fontPreviewState = { loaded: false, loading: false };
 
     const header = document.createElement("div");
     header.className = "d-flex align-items-start justify-content-between mb-2";
@@ -2906,35 +3118,17 @@ function showNetworkAssetDetails(item) {
     }
     const rightActions = document.createElement("div");
     rightActions.className = "d-flex align-items-center gap-1";
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.className = "btn btn-sm btn-secondary py-0 px-2 d-none";
-    copyBtn.textContent = "Copy";
-    copyBtn.addEventListener("click", async () => {
-      if (!sourceState.text) {
-        return;
-      }
-      try {
-        await navigator.clipboard.writeText(sourceState.text);
-        flashButtonLabel(copyBtn, "Copied");
-      } catch {
-        setStatus("Could not copy source.", true);
-      }
-    });
     const closeBtn = document.createElement("button");
     closeBtn.type = "button";
     closeBtn.className = "btn-close";
     closeBtn.setAttribute("aria-label", "Close");
     closeBtn.addEventListener("click", () => overlay.remove());
-    rightActions.append(copyBtn, closeBtn);
+    rightActions.append(closeBtn);
     header.append(rightActions);
     panel.insertBefore(header, panel.firstChild);
 
     const body = document.createElement("div");
-    body.className = "d-flex flex-column flex-grow-1 min-h-0 overflow-auto";
-    body.style.backgroundColor = "var(--bs-body-bg)";
-    body.style.overflowX = "hidden";
-    body.style.overflowY = "auto";
+    body.className = "d-flex flex-column flex-grow-1 min-h-0 overflow-auto overflow-x-hidden bg-body";
     body.style.webkitOverflowScrolling = "touch";
     panel.append(body);
 
@@ -2946,6 +3140,7 @@ function showNetworkAssetDetails(item) {
     infoTabBtn.textContent = "Info";
     tabs.append(infoTabBtn);
     let sourceTabBtn = null;
+    let previewTabBtn = null;
     if (hasSourceTab) {
       sourceTabBtn = document.createElement("button");
       sourceTabBtn.type = "button";
@@ -2953,29 +3148,45 @@ function showNetworkAssetDetails(item) {
       sourceTabBtn.textContent = "Source";
       tabs.append(sourceTabBtn);
     }
+    if (hasFontPreviewTab) {
+      previewTabBtn = document.createElement("button");
+      previewTabBtn.type = "button";
+      previewTabBtn.className = "nav-link py-1 small text-body";
+      previewTabBtn.textContent = "Preview";
+      tabs.append(previewTabBtn);
+    }
     body.append(tabs);
 
     const infoPane = document.createElement("div");
     infoPane.className = "d-block";
     const sourcePane = document.createElement("div");
     sourcePane.className = "d-none flex-grow-1 min-h-0";
-    body.append(infoPane, sourcePane);
+    const previewPane = document.createElement("div");
+    previewPane.className = "d-none flex-grow-1 min-h-0";
+    body.append(infoPane, sourcePane, previewPane);
     body.append(errorBlock);
 
     const setModalTab = async (tabName) => {
       try {
         const isInfo = tabName === "info";
+        const isSource = tabName === "source";
+        const isPreview = tabName === "preview";
         infoTabBtn.classList.toggle("active", isInfo);
         infoPane.classList.toggle("d-none", !isInfo);
         if (sourceTabBtn) {
-          sourceTabBtn.classList.toggle("active", !isInfo);
+          sourceTabBtn.classList.toggle("active", isSource);
         }
-        sourcePane.classList.toggle("d-none", isInfo);
-        const showCopyForSource = !isInfo && hasSourceTab;
-        copyBtn.classList.toggle("d-none", !showCopyForSource);
-        copyBtn.disabled = !sourceState.loaded || !sourceState.text;
+        if (previewTabBtn) {
+          previewTabBtn.classList.toggle("active", isPreview);
+        }
+        sourcePane.classList.toggle("d-none", !isSource);
+        previewPane.classList.toggle("d-none", !isPreview);
 
-        if (!isInfo && hasSourceTab && !sourceState.loaded && !sourceState.loading) {
+        if (sourcePaneToolbar) {
+          sourcePaneToolbar.classList.toggle("d-none", !isSource);
+        }
+
+        if (isSource && hasSourceTab && !sourceState.loaded && !sourceState.loading) {
           sourceState.loading = true;
           sourcePane.textContent = "";
           const loading = document.createElement("div");
@@ -2992,27 +3203,98 @@ function showNetworkAssetDetails(item) {
               sourceState.mimeType = contentType;
             }
             sourceState.text = await response.text();
+            sourceState.renderedText = sourceState.text;
             sourceState.loaded = true;
             sourcePane.textContent = "";
+            if (sourceMimeNode) {
+              sourceMimeNode.textContent = sourceState.mimeType || "text/plain";
+            }
             const frame = document.createElement("iframe");
-            frame.className = "w-100 border rounded";
-            frame.style.height = "100%";
+            frame.className = "w-100 h-100 border rounded bg-body";
             frame.style.minHeight = "56vh";
-            frame.style.backgroundColor = "var(--bs-body-bg)";
             frame.setAttribute("sandbox", "");
             frame.setAttribute("title", "Asset source");
-            frame.srcdoc = makeSourceFrameDoc(sourceState.text, sourceState.mimeType);
+            frame.srcdoc = makeSourceFrameDoc(sourceState.renderedText, sourceState.mimeType, sourceFileName);
             sourcePane.append(frame);
-            copyBtn.disabled = false;
+            if (sourcePaneToolbar) {
+              sourcePaneToolbar.classList.remove("d-none");
+            }
+            if (copyBtn) {
+              copyBtn.disabled = false;
+            }
+            if (prettierBtn) {
+              prettierBtn.disabled = false;
+            }
           } catch (error) {
             sourcePane.textContent = "";
             const msg = document.createElement("div");
             msg.className = "small text-danger";
             msg.textContent = String(error?.message || error || "Could not load source.");
             sourcePane.append(msg);
-            copyBtn.disabled = true;
+            if (sourcePaneToolbar) {
+              sourcePaneToolbar.classList.remove("d-none");
+            }
+            if (copyBtn) {
+              copyBtn.disabled = true;
+            }
+            if (prettierBtn) {
+              prettierBtn.disabled = true;
+            }
           } finally {
             sourceState.loading = false;
+          }
+        }
+
+        if (isPreview && hasFontPreviewTab && !fontPreviewState.loaded && !fontPreviewState.loading) {
+          fontPreviewState.loading = true;
+          previewPane.textContent = "";
+          const loading = document.createElement("div");
+          loading.className = "small opacity-75";
+          loading.textContent = "Loading font preview...";
+          previewPane.append(loading);
+          try {
+            const baseFamily = String(item?.name || "Font Preview")
+              .replace(/\.[a-z0-9]+$/i, "")
+              .replace(/[^\w -]/g, "")
+              .trim() || "Font Preview";
+            const familyName = `WDT Preview ${baseFamily}`;
+            const fontFace = new FontFace(familyName, `url("${String(item.url)}")`);
+            await fontFace.load();
+            document.fonts.add(fontFace);
+
+            previewPane.textContent = "";
+            const previewCard = document.createElement("div");
+            previewCard.className = "border rounded p-3 bg-body-secondary bg-opacity-10";
+
+            const titleNode = document.createElement("div");
+            titleNode.className = "small text-body-secondary mb-2";
+            titleNode.textContent = familyName;
+
+            const lineLarge = document.createElement("p");
+            lineLarge.className = "mb-2";
+            lineLarge.style.fontFamily = `"${familyName}", sans-serif`;
+            lineLarge.style.fontSize = "24px";
+            lineLarge.style.lineHeight = "1.3";
+            lineLarge.textContent = "The quick brown fox jumps over the lazy dog";
+
+            const lineSmall = document.createElement("p");
+            lineSmall.className = "mb-0";
+            lineSmall.style.fontFamily = `"${familyName}", sans-serif`;
+            lineSmall.style.fontSize = "16px";
+            lineSmall.style.lineHeight = "1.4";
+            lineSmall.textContent = "The quick brown fox jumps over the lazy dog";
+
+            previewCard.append(titleNode, lineLarge, lineSmall);
+            previewPane.append(previewCard);
+            fontPreviewState.loaded = true;
+          } catch (error) {
+            previewPane.textContent = "";
+            const msg = document.createElement("div");
+            msg.className = "small text-danger";
+            msg.textContent = `Could not load font preview: ${String(error?.message || error || "Unknown error")}`;
+            previewPane.append(msg);
+          } finally {
+            fontPreviewState.loading = false;
           }
         }
       } catch (error) {
@@ -3027,6 +3309,73 @@ function showNetworkAssetDetails(item) {
       sourceTabBtn.addEventListener("click", () => {
         void setModalTab("source");
       });
+    }
+    if (previewTabBtn) {
+      previewTabBtn.addEventListener("click", () => {
+        void setModalTab("preview");
+      });
+    }
+
+    if (hasSourceTab) {
+      sourcePaneToolbar = document.createElement("div");
+      sourcePaneToolbar.className = "d-none d-flex align-items-center justify-content-between gap-2 mb-1";
+      sourceMimeNode = document.createElement("div");
+      sourceMimeNode.className = "small text-body-secondary font-monospace text-truncate";
+      sourceMimeNode.textContent = sourceState.mimeType || "text/plain";
+      sourceMimeNode.style.maxWidth = "62%";
+
+      const sourceActions = document.createElement("div");
+      sourceActions.className = "d-flex align-items-center gap-1";
+
+      copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "btn btn-sm btn-secondary py-0 px-2";
+      copyBtn.textContent = "Copy";
+      copyBtn.disabled = true;
+      copyBtn.addEventListener("click", async () => {
+        if (!sourceState.renderedText) {
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(sourceState.renderedText);
+          flashButtonLabel(copyBtn, "Copied");
+        } catch {
+          setStatus("Could not copy source.", true);
+        }
+      });
+
+      prettierBtn = document.createElement("button");
+      prettierBtn.type = "button";
+      prettierBtn.className = "btn btn-sm btn-secondary py-0 px-2";
+      prettierBtn.textContent = "Prettier";
+      prettierBtn.disabled = true;
+      prettierBtn.addEventListener("click", () => {
+        if (!sourceState.loaded || !sourceState.text) {
+          return;
+        }
+        try {
+          sourceState.renderedText = formatSourceWithPrettierLikeRules(
+            sourceState.text,
+            sourceState.mimeType,
+            sourceFileName,
+          );
+          sourcePane.textContent = "";
+          const frame = document.createElement("iframe");
+          frame.className = "w-100 h-100 border rounded bg-body";
+          frame.style.minHeight = "56vh";
+          frame.setAttribute("sandbox", "");
+          frame.setAttribute("title", "Asset source");
+          frame.srcdoc = makeSourceFrameDoc(sourceState.renderedText, sourceState.mimeType, sourceFileName);
+          sourcePane.append(frame);
+          flashButtonLabel(prettierBtn, "Formatted");
+        } catch (error) {
+          setStatus(`Prettier failed: ${String(error?.message || error || "Unknown error")}`, true);
+        }
+      });
+
+      sourceActions.append(copyBtn, prettierBtn);
+      sourcePaneToolbar.append(sourceMimeNode, sourceActions);
+      body.insertBefore(sourcePaneToolbar, sourcePane);
     }
 
     if (isNetworkImageAsset(item) && item?.url) {
@@ -3057,49 +3406,40 @@ function showNetworkAssetDetails(item) {
       infoPane.append(previewWrap);
     }
 
-    const detailsList = document.createElement("div");
-    detailsList.className = "small d-flex flex-column gap-1 mb-2";
+    const cards = document.createElement("div");
+    cards.className = "row row-cols-3 g-1 mb-2";
     const withFallback = (value) => {
       const text = String(value ?? "").trim();
       return text ? text : "Unavailable";
     };
     const imageAsset = isNetworkImageAsset(item);
-    const appendDetail = (label, value) => {
+    const appendCard = (label, value) => {
       const normalized = withFallback(value);
       if (normalized === "Unavailable") {
         return;
       }
-      const row = document.createElement("div");
-      row.className = "text-break";
-      const key = document.createElement("strong");
-      key.className = "opacity-75";
-      key.textContent = `${label}: `;
-      const val = document.createElement("span");
-      val.className = "font-monospace";
-      val.textContent = normalized;
-      row.append(key, val);
-      detailsList.append(row);
+      cards.append(createNetworkInfoCard(label, normalized));
     };
-    appendDetail("MIME type", item?.mimeType);
-    appendDetail("Initiator", item?.initiatorType);
-    appendDetail("Size", formatNetworkSizeKb(item?.sizeKb));
-    appendDetail("Start time", formatNetworkTimeMs(item?.timeMs));
-    appendDetail("Duration", formatNetworkTimeMs(item?.durationMs));
-    appendDetail("Protocol", formatNetworkProtocol(item?.nextHopProtocol));
-    appendDetail("Transfer", formatNetworkSizeKb(item?.transferSizeKb));
-    appendDetail("Encoded", formatNetworkSizeKb(item?.encodedBodySizeKb));
-    appendDetail("Decoded", formatNetworkSizeKb(item?.decodedBodySizeKb));
+    appendCard("MIME type", item?.mimeType);
+    appendCard("Initiator", item?.initiatorType);
+    appendCard("Size", formatNetworkSizeKb(item?.sizeKb));
+    appendCard("Start time", formatNetworkTimeMs(item?.timeMs));
+    appendCard("Duration", formatNetworkTimeMs(item?.durationMs));
+    appendCard("Protocol", formatNetworkProtocol(item?.nextHopProtocol));
+    appendCard("Transfer", formatNetworkSizeKb(item?.transferSizeKb));
+    appendCard("Encoded", formatNetworkSizeKb(item?.encodedBodySizeKb));
+    appendCard("Decoded", formatNetworkSizeKb(item?.decodedBodySizeKb));
     if (imageAsset) {
-      appendDetail("Loading", item?.imageLoading);
-      appendDetail("Fetch Priority", item?.imageFetchPriority);
-      appendDetail("Decoding", item?.imageDecoding);
+      appendCard("Loading", item?.imageLoading);
+      appendCard("Fetch Priority", item?.imageFetchPriority);
+      appendCard("Decoding", item?.imageDecoding);
     }
     if (item?.type === "js") {
-      appendDetail("Async", item?.scriptAsync === true ? "Yes" : "Unavailable");
-      appendDetail("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable");
+      appendCard("Async", item?.scriptAsync === true ? "Yes" : "Unavailable");
+      appendCard("Defer", item?.scriptDefer === true ? "Yes" : "Unavailable");
     }
-    if (detailsList.childElementCount > 0) {
-      infoPane.append(detailsList);
+    if (cards.childElementCount > 0) {
+      infoPane.append(cards);
     }
 
     const urlValue = String(item?.url || "");
